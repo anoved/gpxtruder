@@ -105,18 +105,36 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	var xoffset = -1/2 * (minx + maxx);
 	var yoffset = -1/2 * (miny + maxy);
 	
-	var stuff = "translate([" + xoffset + "," + yoffset + ",0]) union() {\n";
+	//var scad = "translate([" + xoffset + "," + yoffset + ",0]) union() {\n";
+	var scad = "translate([" + xoffset + "," + yoffset + ",0])";
 
+
+	var polypoints = [];
+	var polyfaces = [];
+	
 	for (i = 1; i < p.length; i++) {
 	
-		// FIXME should use round down of minz instead of hard-coded 255
-		var post = "translate([" + p[i][0] + "," + p[i][1] + ",0]) cylinder(h=" + (p[i][2] - 255) * 5.0 + ", d=30);\n";
-		stuff += post;
+		//~ // FIXME should use round down of minz instead of hard-coded 255
+		//~ var post = "translate([" + p[i][0] + "," + p[i][1] + ",0]) cylinder(h=" + (p[i][2] - 255) * 5.0 + ", d=30);\n";
+		//~ var posta = "translate([" + p[i-1][0] + "," + p[i-1][1] + ",0]) cylinder(h=" + (p[i-1][2] - 255) * 5.0 + ", d=30);\n";
+		//~ scad += 'hull() {' + posta + ' ' + post + '};';
+		
+		// individual polyhedrons
+		//scad += 'polyhedron(points=[[' + p[i-1][0] + ',' + p[i-1][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ',' + 5*(p[i][2] - 255) + '],[' + p[i-1][0] + ',' + p[i-1][1] + ',' + 5*(p[i-1][2]-255) + ']],faces=[[0, 1, 2, 3],[3, 2, 1, 0]]);';
+		
+		// could probably assemble all points into one big polyhedron.
+		// not sure how it would handle self-intersections, though?
+		
+		polypoints.push('[' + p[i-1][0] + ',' + p[i-1][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ',' + 5*(p[i][2] - 255) + '],[' + p[i-1][0] + ',' + p[i-1][1] + ',' + 5*(p[i-1][2]-255) + ']');
+		polyfaces.push('[' + (i*4-4) + ',' + (i*4-3) + ',' + (i*4-2) + ',' + (i*4-1) + '],[' + (i*4-1) + ',' + (i*4-2) + ',' + (i*4-3) + ',' + (i*4-4) + ']');
+		
 	}
 	
-	stuff += "}";
+	scad += ' polyhedron(points=[' + polypoints.join(',') + '], faces=[' + polyfaces.join(',') + ']);';
 	
-	document.getElementById(this.output).innerHTML = stuff;
+	//scad += "}";
+	
+	document.getElementById(this.output).innerHTML = scad;
 }
 
 GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
