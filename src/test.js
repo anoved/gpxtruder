@@ -33,7 +33,6 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-
 function GpxDiddler(content, output) {
 	this.content = content;
 	this.output = output;
@@ -124,7 +123,8 @@ GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
 	var lon = parseFloat(gpxpt.getAttribute('lon'));
 	var lat = parseFloat(gpxpt.getAttribute('lat'));
 	var ele = parseFloat(gpxpt.getElementsByTagName('ele')[0].innerHTML);
-	var xy = proj4('+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs', [lon, lat]);
+	// Albers Equal Area Conic North America
+	var xy = proj4('+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs', [lon, lat]);
 	return [xy[0], xy[1], ele];
 }
 
