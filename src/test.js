@@ -122,12 +122,18 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 		// individual polyhedrons
 		//scad += 'polyhedron(points=[[' + p[i-1][0] + ',' + p[i-1][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ',' + 5*(p[i][2] - 255) + '],[' + p[i-1][0] + ',' + p[i-1][1] + ',' + 5*(p[i-1][2]-255) + ']],faces=[[0, 1, 2, 3],[3, 2, 1, 0]]);';
 		
-		// could probably assemble all points into one big polyhedron.
-		// not sure how it would handle self-intersections, though?
 		
-		polypoints.push('[' + p[i-1][0] + ',' + p[i-1][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ',' + 5*(p[i][2] - 255) + '],[' + p[i-1][0] + ',' + p[i-1][1] + ',' + 5*(p[i-1][2]-255) + ']');
+		var x0 = p[i-1][0],
+			y0 = p[i-1][1],
+			z0 = 5 * (p[i-1][2] - 255),
+			
+			x1 = p[i][0],
+			y1 = p[i][1],
+			z1 = 5 * (p[i][2] - 255);
+		
+		polypoints.push('[' + x0 + ',' + y0 + ', 0],[' + x1 + ',' + y1 + ', 0],[' + x1 + ',' + y1 + ',' + z1 + '],[' + x0 + ',' + y0 + ',' + z0 + ']');
 		polyfaces.push('[' + (i*4-4) + ',' + (i*4-3) + ',' + (i*4-2) + ',' + (i*4-1) + '],[' + (i*4-1) + ',' + (i*4-2) + ',' + (i*4-3) + ',' + (i*4-4) + ']');
-		
+
 	}
 	
 	scad += ' polyhedron(points=[' + polypoints.join(',') + '], faces=[' + polyfaces.join(',') + ']);';
