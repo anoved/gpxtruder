@@ -5,25 +5,25 @@ function setup() {
 	var form = document.forms.namedItem('gpxform');
 	form.addEventListener('submit', function(ev) {
 		ev.preventDefault();
-		GPXLoader(document.getElementById('gpxfile').files[0]);
+		loader(document.getElementById('gpxfile').files[0]);
 	}, false);
 }
 
 /*
  * Get a File object URL from form input or drag and drop.
  * Use XMLHttpRequest to retrieve the file content, and
- * pass the content on to be processed.
+ * pass the content on to be processed. Basic Javascript GPX
+ * parsing based on https://github.com/peplin/gpxviewer/
  */
-function GPXLoader(gpxfile) {
+function loader(gpxfile) {
 	
 	var gpxurl = window.URL.createObjectURL(gpxfile);
 
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if (req.readyState === 4) {
-			/*var gd = new GPXDoc(req.responseXML);
-			LoadTracks(gd.content);*/
-			LoadTracks(req.responseXML);
+			var gd = new GpxDiddler(req.responseXML, 'output');
+			gd.LoadTracks();
 		}
 	}
 	
@@ -33,47 +33,44 @@ function GPXLoader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-/*function GPXDoc(content) {
-	this.content = content;
-}*/
 
-function LoadTracks(gpxdoc) {
-	var tracks = gpxdoc.documentElement.getElementsByTagName("trk");
+function GpxDiddler(content, output) {
+	this.content = content;
+	this.output = output;
+}
+
+GpxDiddler.prototype.LoadTracks = function() {
+	var tracks = this.content.documentElement.getElementsByTagName('trk');
 	for (var i = 0; i < tracks.length; i++) {
 		this.LoadTrack(tracks[i]);
 	}
 }
 
-function LoadTrack(track) {
-	var segments = track.getElementsByTagName("trkseg");
+GpxDiddler.prototype.LoadTrack = function(track) {
+	var segments = track.getElementsByTagName('trkseg');
 	for (var i = 0; i < segments.length; i++) {
-		LoadSegment(segments[i]);
+		this.LoadSegment(segments[i]);
 	}
 }
 
-function getcoords(point) {
-	var lon = parseFloat(point.getAttribute("lon"));
-	var lat = parseFloat(point.getAttribute("lat"));
-	var ele = parseFloat(point.getElementsByTagName("ele")[0].innerHTML);
-	var xy = proj4("+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", [lon, lat]);
-	return [xy[0], xy[1], ele];
-}
-
-function LoadSegment(segment) {
-	var points = segment.getElementsByTagName("trkpt");
+GpxDiddler.prototype.LoadSegment = function(segment) {
 	
+	var points = segment.getElementsByTagName('trkpt');
+	var p = [];
 	
-	var xyz1 = getcoords(points[0]);
+	// Initialize extents using first projected point.
+	var xyz1 = this.LL2XYZ(points[0]);
 	var minx = xyz1[0];
 	var maxx = xyz1[0];
 	var miny = xyz1[1];
 	var maxy = xyz1[1];
 	var minz = xyz1[2];
 	var maxz = xyz1[2];
+	p.push(xyz1);
 	
-	var p = [xyz1];
+	// Project the rest of the points, updating extents.
 	for (var i = 1; i < points.length; i++) {
-		var xyz = getcoords(points[i]);
+		var xyz = this.LL2XYZ(points[i]);
 		
 		if (xyz[0] < minx) {
 			minx = xyz[0];
@@ -109,7 +106,6 @@ function LoadSegment(segment) {
 	var xoffset = -1/2 * (minx + maxx);
 	var yoffset = -1/2 * (miny + maxy);
 	
-	
 	var stuff = "translate([" + xoffset + "," + yoffset + ",0]) union() {\n";
 
 	for (i = 1; i < p.length; i++) {
@@ -121,6 +117,14 @@ function LoadSegment(segment) {
 	
 	stuff += "}";
 	
-	document.getElementById("output").innerHTML = stuff;
+	document.getElementById(this.output).innerHTML = stuff;
+}
+
+GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
+	var lon = parseFloat(gpxpt.getAttribute('lon'));
+	var lat = parseFloat(gpxpt.getAttribute('lat'));
+	var ele = parseFloat(gpxpt.getElementsByTagName('ele')[0].innerHTML);
+	var xy = proj4('+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs', [lon, lat]);
+	return [xy[0], xy[1], ele];
 }
 
