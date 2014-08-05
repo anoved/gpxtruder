@@ -47,6 +47,9 @@ function GpxDiddler(content, output) {
 	this.xextent = 0;
 	this.yextent = 0;
 	this.zextent = 0;
+	
+	this.xoffset = 0;
+	this.yoffset = 0;
 }
 
 GpxDiddler.prototype.LoadTracks = function() {
@@ -64,10 +67,9 @@ GpxDiddler.prototype.LoadTrack = function(track) {
 }
 
 GpxDiddler.prototype.LoadSegment = function(segment) {
-	
 	var trkpts = segment.getElementsByTagName('trkpt');
 	var points = this.ProjectPoints(trkpts);
-	var scad = process_path(points);
+	var scad = this.process_path(points);
 	document.getElementById(this.output).innerHTML = scad;
 }
 
@@ -120,8 +122,8 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	this.yextent = this.maxy - this.miny;
 	this.zextent = this.maxz - this.minz;
 	
-	//var xoffset = -1/2 * (minx + maxx);
-	//var yoffset = -1/2 * (miny + maxy);
+	this.xoffset = -1/2 * (this.minx + this.maxx);
+	this.yoffset = -1/2 * (this.miny + this.maxy);
 	
 	return p;
 }
@@ -165,8 +167,20 @@ function segment_angle(p, i) {
  */
 function joint_points(p, i, absa, avga) {
 	
+	// FIXME: SCAD output compiles to STL successfully with a buffer value
+	//        of 5, but fails with CGAL assertion errors for wider buffers
+	//        like 16 or 20. Makes me worry about some misunderstood thing,
+	//        and OpenSCAD's general flakiness with all but simplest input.
+	
+	// FIXME: Actually, the CGAL assertion errors occur with a buffer width
+	//        of 5 as well for a longer track, meaning it IS one of these
+	//        flaky indeterminate OpenSCAD wimp-ass garbage failures.
+	
+	// My best guess is that there is some minimum distance issue where
+	// we are basically getting coincident points.
+	
 	// the standard segment buffer width
-	var buffer = 1;
+	var buffer = 5;
 	
 	// distance from endpoint to segment buffer intersection
 	var jointr = buffer/Math.cos(avga - absa),
@@ -187,14 +201,17 @@ function joint_points(p, i, absa, avga) {
  * corners of the quad representing a buffered path for
  * that segment; consecutive segments share endpoints.
  */
-function process_path(p) {
+GpxDiddler.prototype.process_path = function(p) {
 	
 	var a0 = segment_angle(p, 0),
 		a1,
 		ra = 0,
 		ja = a0,
 		pj = joint_points(p, 0, a0, ja),
-		pk;
+		pk,
+		scad = "translate([" + this.xoffset + ", " + this.yoffset + ", 0]) union() {\n",
+		lasti = 0;
+	
 	
 	for (var i = 1; i < p.length; i++) {
 		
@@ -203,13 +220,52 @@ function process_path(p) {
 		ja = ra / 2 + a0;
 		pk = joint_points(p, i, a1, ja);
 		
-		console.log(pj.toString(), pk.toString());
+		// this minimum distance check does not eliminate erratic OpenSCAD internal CGAL errors
+		var xydist = Math.sqrt(Math.pow(p[i][0] - p[lasti][0], 2) + Math.pow(p[i][1] - p[lasti][1], 2));
+		if (xydist < 5) {
+			continue;
+		}
+		
+		//console.log(pj.toString(), pk.toString());
+		// use this.xoffset and this.yoffset instead of final 0,0 to hard-translate coords
+		scad += ptstopolyhedron(pj, pk, p[i-1][2], p[i][2], 0, 0);
 		
 		a0 = a1;
 		pj = pk;
+		lasti = i;
 	}
 	
-	return '';
+	scad += '}';
+	
+	return scad;
+}
+
+function ptstopolyhedron(j, k, jz, kz, ox, oy) {
+	return "polyhedron(\
+points = [\
+[" + (j[0][0]+ox) + "," + (j[0][1]+oy) + "," + 0 + "], \
+[" + (j[1][0]+ox) + "," + (j[1][1]+oy) + "," + 0 + "], \
+[" + (k[0][0]+ox) + "," + (k[0][1]+oy) + "," + 0 + "], \
+[" + (k[1][0]+ox) + "," + (k[1][1]+oy) + "," + 0 + "], \
+[" + (j[0][0]+ox) + "," + (j[0][1]+oy) + "," + jz + "], \
+[" + (j[1][0]+ox) + "," + (j[1][1]+oy) + "," + jz + "], \
+[" + (k[0][0]+ox) + "," + (k[0][1]+oy) + "," + kz + "], \
+[" + (k[1][0]+ox) + "," + (k[1][1]+oy) + "," + kz + "]\
+],\
+faces = [\
+[0, 1, 2], \
+[1, 3, 2], \
+[4, 7, 5], \
+[4, 6, 7], \
+[7, 2, 3], \
+[7, 6, 2], \
+[4, 5, 1], \
+[4, 1, 0], \
+[7, 1, 5], \
+[7, 3, 1], \
+[6, 4, 2], \
+[2, 4, 0]\
+]);\n"
 }
 
 GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
@@ -218,6 +274,6 @@ GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
 	var ele = parseFloat(gpxpt.getElementsByTagName('ele')[0].innerHTML);
 	// Albers Equal Area Conic North America
 	var xy = proj4('+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs', [lon, lat]);
-	return [xy[0], xy[1], ele];
+	return [xy[0], xy[1], 5 * (ele - 255)];
 }
 
