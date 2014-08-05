@@ -36,6 +36,17 @@ function loader(gpxfile) {
 function GpxDiddler(content, output) {
 	this.content = content;
 	this.output = output;
+	
+	this.minx = 0;
+	this.maxx = 0;
+	this.miny = 0;
+	this.maxy = 0;
+	this.minz = 0;
+	this.maxz = 0;
+	
+	this.xextent = 0;
+	this.yextent = 0;
+	this.zextent = 0;
 }
 
 GpxDiddler.prototype.LoadTracks = function() {
@@ -54,93 +65,151 @@ GpxDiddler.prototype.LoadTrack = function(track) {
 
 GpxDiddler.prototype.LoadSegment = function(segment) {
 	
-	var points = segment.getElementsByTagName('trkpt');
+	var trkpts = segment.getElementsByTagName('trkpt');
+	var points = this.ProjectPoints(trkpts);
+	var scad = process_path(points);
+	document.getElementById(this.output).innerHTML = scad;
+}
+
+GpxDiddler.prototype.ProjectPoints = function(trkpts) {
+	
 	var p = [];
 	
 	// Initialize extents using first projected point.
-	var xyz1 = this.LL2XYZ(points[0]);
-	var minx = xyz1[0];
-	var maxx = xyz1[0];
-	var miny = xyz1[1];
-	var maxy = xyz1[1];
-	var minz = xyz1[2];
-	var maxz = xyz1[2];
+	var xyz1 = this.LL2XYZ(trkpts[0]);
+	this.minx = xyz1[0];
+	this.maxx = xyz1[0];
+	this.miny = xyz1[1];
+	this.maxy = xyz1[1];
+	this.minz = xyz1[2];
+	this.maxz = xyz1[2];
 	p.push(xyz1);
 	
 	// Project the rest of the points, updating extents.
-	for (var i = 1; i < points.length; i++) {
-		var xyz = this.LL2XYZ(points[i]);
+	for (var i = 1; i < trkpts.length; i++) {
+		var xyz = this.LL2XYZ(trkpts[i]);
 		
-		if (xyz[0] < minx) {
-			minx = xyz[0];
+		if (xyz[0] < this.minx) {
+			this.minx = xyz[0];
 		}
 		
-		if (xyz[0] > maxx) {
-			maxx = xyz[0];
+		if (xyz[0] > this.maxx) {
+			this.maxx = xyz[0];
 		}
 		
-		if (xyz[1] < miny) {
-			miny = xyz[1];
+		if (xyz[1] < this.miny) {
+			this.miny = xyz[1];
 		}
 		
-		if (xyz[1] > maxy) {
-			maxy = xyz[1];
+		if (xyz[1] > this.maxy) {
+			this.maxy = xyz[1];
 		}
 		
-		if (xyz[2] < minz) {
-			minz = xyz[2];
+		if (xyz[2] < this.minz) {
+			this.minz = xyz[2];
 		}
 		
-		if (xyz[2] > maxz) {
-			maxz = xyz[2];
+		if (xyz[2] > this.maxz) {
+			this.maxz = xyz[2];
 		}
 		
 		p.push(xyz);
 	}
 	
-	var xextent = maxx - minx;
-	var yextent = maxy - miny;
-	var zextent = maxz - minz;
+	this.xextent = this.maxx - this.minx;
+	this.yextent = this.maxy - this.miny;
+	this.zextent = this.maxz - this.minz;
 	
-	var xoffset = -1/2 * (minx + maxx);
-	var yoffset = -1/2 * (miny + maxy);
+	//var xoffset = -1/2 * (minx + maxx);
+	//var yoffset = -1/2 * (miny + maxy);
 	
-	//var scad = "translate([" + xoffset + "," + yoffset + ",0]) union() {\n";
-	var scad = "translate([" + xoffset + "," + yoffset + ",0])";
+	return p;
+}
 
-
-	var polypoints = [];
-	var polyfaces = [];
+/*
+ * Given a point array and index of a point,
+ * return the angle of the vector from that point
+ * to the next. (2D) (If the index is to the last point,
+ * return the preceding segment's angle. Point array
+ * should have at least 2 points!)
+ */
+function segment_angle(p, i) {
 	
-	for (i = 1; i < p.length; i++) {
-	
-		//~ // FIXME should use round down of minz instead of hard-coded 255
-		//~ var post = "translate([" + p[i][0] + "," + p[i][1] + ",0]) cylinder(h=" + (p[i][2] - 255) * 5.0 + ", d=30);\n";
-		//~ var posta = "translate([" + p[i-1][0] + "," + p[i-1][1] + ",0]) cylinder(h=" + (p[i-1][2] - 255) * 5.0 + ", d=30);\n";
-		//~ scad += 'hull() {' + posta + ' ' + post + '};';
-		
-		// individual polyhedrons
-		//scad += 'polyhedron(points=[[' + p[i-1][0] + ',' + p[i-1][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ', 0],[' + p[i][0] + ',' + p[i][1] + ',' + 5*(p[i][2] - 255) + '],[' + p[i-1][0] + ',' + p[i-1][1] + ',' + 5*(p[i-1][2]-255) + ']],faces=[[0, 1, 2, 3],[3, 2, 1, 0]]);';
-		
-		
-		var x0 = p[i-1][0],
-			y0 = p[i-1][1],
-			z0 = 5 * (p[i-1][2] - 255),
-			
-			x1 = p[i][0],
-			y1 = p[i][1],
-			z1 = 5 * (p[i][2] - 255);
-		
-		polypoints.push('[' + x0 + ',' + y0 + ', 0],[' + x1 + ',' + y1 + ', 0],[' + x1 + ',' + y1 + ',' + z1 + '],[' + x0 + ',' + y0 + ',' + z0 + ']');
-		polyfaces.push('[' + (i*4-4) + ',' + (i*4-3) + ',' + (i*4-2) + ',' + (i*4-1) + '],[' + (i*4-1) + ',' + (i*4-2) + ',' + (i*4-3) + ',' + (i*4-4) + ']');
-
+	// in case of final point, repeat last segment angle
+	if (i + 1 == p.length) {
+		return segment_angle(p, i - 1);
 	}
 	
-	scad += ' polyhedron(points=[' + polypoints.join(',') + '], faces=[' + polyfaces.join(',') + ']);';
+	// 2D coordinates of this point and the next
+	var ix = p[i][0],
+		iy = p[i][1],
+		jx = p[i + 1][0],
+		jy = p[i + 1][1],
+		
+	// Vector components of segment from this to next
+		dx = jx - ix,
+		dy = jy - iy,
+		
+	// Angle of segment vector (radians ccw from x-axis)
+		angle = Math.atan2(dy, dx);
 	
-	//scad += "}";
+	return angle;
+}
+
+/*
+ * Return a pair of 2D points representing the joints
+ * where the buffered paths around the actual segment
+ * intersect - segment endpoints offset perpendicular
+ * to segment by buffer distance, adjusted for tidy
+ * intersection with adjacent segment's buffered path.
+ */
+function joint_points(p, i, absa, avga) {
 	
-	document.getElementById(this.output).innerHTML = scad;
+	// the standard segment buffer width
+	var buffer = 1;
+	
+	// distance from endpoint to segment buffer intersection
+	var jointr = buffer/Math.cos(avga - absa),
+	
+	// joint coordinates (endpoint offset at bisect angle by jointr)
+		lx = p[i][0] + jointr * Math.cos(avga + Math.PI/2),
+		ly = p[i][1] + jointr * Math.sin(avga + Math.PI/2),
+		rx = p[i][0] + jointr * Math.cos(avga - Math.PI/2),
+		ry = p[i][1] + jointr * Math.sin(avga - Math.PI/2);
+	
+	return [[lx, ly], [rx, ry]];
+}
+
+/*
+ * Given a point array p with at least two points, loop
+ * through each segment (pair of points). In each iteration
+ * of the for loop, pj and pk are the 2D coordinates of the
+ * corners of the quad representing a buffered path for
+ * that segment; consecutive segments share endpoints.
+ */
+function process_path(p) {
+	
+	var a0 = segment_angle(p, 0),
+		a1,
+		ra = 0,
+		ja = a0,
+		pj = joint_points(p, 0, a0, ja),
+		pk;
+	
+	for (var i = 1; i < p.length; i++) {
+		
+		a1 = segment_angle(p, i);
+		ra = a1 - a0;
+		ja = ra / 2 + a0;
+		pk = joint_points(p, i, a1, ja);
+		
+		console.log(pj.toString(), pk.toString());
+		
+		a0 = a1;
+		pj = pk;
+	}
+	
+	return '';
 }
 
 GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
