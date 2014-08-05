@@ -228,7 +228,7 @@ GpxDiddler.prototype.process_path = function(p) {
 		
 		//console.log(pj.toString(), pk.toString());
 		// use this.xoffset and this.yoffset instead of final 0,0 to hard-translate coords
-		scad += ptstopolyhedron(pj, pk, p[i-1][2], p[i][2], 0, 0);
+		scad += ptstopolyhedron(pj, pk, p[lasti][2], p[i][2], 0, 0);
 		
 		a0 = a1;
 		pj = pk;
