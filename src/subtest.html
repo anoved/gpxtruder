@@ -1,0 +1,166 @@
+<html>
+<head>
+<script type="text/javascript">
+function foo() {
+	
+	var points = [
+		[0, 0, 0],
+		[4, 0, 0],
+		[8, 4, 0],
+		[11, 5, 0]
+	];
+	
+	var p = [];
+	
+	// Initialize extents using first projected point.
+	var xyz1 = points[0];
+	var minx = xyz1[0];
+	var maxx = xyz1[0];
+	var miny = xyz1[1];
+	var maxy = xyz1[1];
+	var minz = xyz1[2];
+	var maxz = xyz1[2];
+	p.push(xyz1);
+	
+	// Project the rest of the points, updating extents.
+	for (var i = 1; i < points.length; i++) {
+		var xyz = points[i];
+		
+		if (xyz[0] < minx) {
+			minx = xyz[0];
+		}
+		
+		if (xyz[0] > maxx) {
+			maxx = xyz[0];
+		}
+		
+		if (xyz[1] < miny) {
+			miny = xyz[1];
+		}
+		
+		if (xyz[1] > maxy) {
+			maxy = xyz[1];
+		}
+		
+		if (xyz[2] < minz) {
+			minz = xyz[2];
+		}
+		
+		if (xyz[2] > maxz) {
+			maxz = xyz[2];
+		}
+		
+		p.push(xyz);
+	}
+	
+	var xextent = maxx - minx;
+	var yextent = maxy - miny;
+	var zextent = maxz - minz;
+	
+	var xoffset = -1/2 * (minx + maxx);
+	var yoffset = -1/2 * (miny + maxy);
+
+	var polypoints = [];
+	var polyfaces = [];
+	
+	// width of buffer on either side of actual path
+	var buffer = 1;
+	var x0, y0, z0, x1, y1, z1, leftphi, rightphi;
+	var lastphi = 0;
+	
+	/*x0 = p[0][0];
+	y0 = p[0][1];
+	z0 = 5 * (p[0][2] - 255);*/	
+	
+	for (i = 1; i < p.length; i++) {
+	
+		// previous point (segment startpoint)
+		x0 = p[i-1][0];
+		y0 = p[i-1][1];
+		z0 = 5 * (p[i-1][2] - 255);
+		
+		// current point (segment endpoint)
+		x1 = p[i][0];
+		y1 = p[i][1];
+		z1 = 5 * (p[i][2] - 255);
+			
+		var tx = x1 - x0,
+			ty = y1 - y0,
+			tz = z1 - z0,
+			r = Math.sqrt(tx*tx + ty*ty),
+			// angle of segment relative to x axis
+			phi = Math.atan2(ty, tx);
+		
+			// angle of segment relative to previous segment
+		var relphi = (i == 1 ? phi : phi - lastphi),
+			
+			// angle of the bisector to fill the gap
+			halfrelphi = relphi / 2,
+			hrp = relphi / 2 + lastphi;
+		
+		leftphi = phi + Math.PI/2;
+		rightphi = phi - Math.PI/2;
+			
+			// angles from start point to joint bisector points;
+			// use to calculate position of joint corner points
+		var lefthalfrp = hrp + Math.PI/2,
+			righthalfrp = hrp - Math.PI/2,
+			
+			// radius from start point to joint points
+			jointr = 1/Math.cos(lefthalfrp-leftphi);
+		
+		// quad abcd borders line segment p0-p1 at a width of 1 on each side
+		var ax = x0 + buffer * Math.cos(leftphi),
+			ay = y0 + buffer * Math.sin(leftphi),
+			bx = x0 + buffer * Math.cos(rightphi),
+			by = y0 + buffer * Math.sin(rightphi),
+			cx = x1 + buffer * Math.cos(rightphi),
+			cy = y1 + buffer * Math.sin(rightphi),
+			dx = x1 + buffer * Math.cos(leftphi),
+			dy = y1 + buffer * Math.sin(leftphi);
+		
+		
+		// each loop iteration we really just generate two joint points -
+		// a2 and b2, the joint points at the start of that iter's segment.
+		// Our method for finding joint points work out perfect for the
+		// first segment - path starts with joints equiv to normal ab points.
+		// To finish, we just need to use the normal c & d points,
+		// assigned after the loop as na & nb. 
+		// It'd be tidier if we we came up w/the starting points sep first,
+		// and did the following (segment endpoint) joints each iter -
+		// then we'd have all the coordinates need for each quad per iter.
+		// Package the computation as a function, then we can call it in
+		// and out the loop more easily.
+		
+		// a b corners, extended to midpoint of joint w/previous line segment
+		var a2x = x0 + jointr * Math.cos(lefthalfrp),
+			a2y = y0 + jointr * Math.sin(lefthalfrp),
+			b2x = x0 + jointr * Math.cos(righthalfrp),
+			b2y = y0 + jointr * Math.sin(righthalfrp);
+			
+		//console.log(ax, ay, bx, by);
+		//console.log(a2x, a2y, b2x, b2y);
+		console.log(dx, dy, cx, cy);
+		
+		lastphi = phi;
+	}
+	
+	// na = final "a" (left) point (or d)
+	// nb = final "b" (right) point (or c)
+	var nax = x1 + buffer * Math.cos(leftphi),
+		nay = y1 + buffer * Math.sin(leftphi),
+		nbx = x1 + buffer * Math.cos(rightphi),
+		nby = y1 + buffer * Math.sin(rightphi);
+	
+	console.log("final:");
+	console.log(nax, nay, nbx, nby);
+	
+	return 1;
+}
+
+function deg(rad) {
+	return rad * 180.0/Math.PI;
+}
+</script>
+</head>
+</html>
