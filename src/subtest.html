@@ -192,38 +192,52 @@ function segment_angle(p, i) {
 	return angle;
 }
 
+/*
+ * Return a pair of 2D points representing the joints
+ * where the buffered paths around the actual segment
+ * intersect - segment endpoints offset perpendicular
+ * to segment by buffer distance, adjusted for tidy
+ * intersection with adjacent segment's buffered path.
+ */
 function joint_points(p, i, absa, avga) {
 	
-	var buffer = 1,
-		px = p[i][0],
-		py = p[i][1];
+	// the standard segment buffer width
+	var buffer = 1;
 	
-	var adjbuff = buffer/Math.cos(avga - absa);
-		
-	var lx = px + adjbuff * Math.cos(avga + Math.PI/2),
-		ly = py + adjbuff * Math.sin(avga + Math.PI/2),
-		rx = px + adjbuff * Math.cos(avga - Math.PI/2),
-		ry = py + adjbuff * Math.sin(avga - Math.PI/2);
+	// distance from endpoint to segment buffer intersection
+	var jointr = buffer/Math.cos(avga - absa),
 	
-	return [
-		[lx, ly],
-		[rx, ry]
-	];
+	// joint coordinates (endpoint offset at bisect angle by jointr)
+		lx = p[i][0] + jointr * Math.cos(avga + Math.PI/2),
+		ly = p[i][1] + jointr * Math.sin(avga + Math.PI/2),
+		rx = p[i][0] + jointr * Math.cos(avga - Math.PI/2),
+		ry = p[i][1] + jointr * Math.sin(avga - Math.PI/2);
+	
+	return [[lx, ly], [rx, ry]];
 }
 
+/*
+ * Given a point array p with at least two points, loop
+ * through each segment (pair of points). In each iteration
+ * of the for loop, pj and pk are the 2D coordinates of the
+ * corners of the quad representing a buffered path for
+ * that segment; consecutive segments share endpoints.
+ */
 function process_path(p) {
 
 	var a0 = segment_angle(p, 0),
+		a1,
 		ra = 0,
 		ja = a0,
-		pj = joint_points(p, 0, a0, ja);
+		pj = joint_points(p, 0, a0, ja),
+		pk;
 	
 	for (var i = 1; i < p.length; i++) {
 		
-		var a1 = segment_angle(p, i),
-			ra = a1 - a0, // relative angle to last segment
-			ja = ra / 2 + a0, // absolute of average angle (used for perpendicular joint bisector)
-			pk = joint_points(p, i, a1, ja);
+		a1 = segment_angle(p, i);
+		ra = a1 - a0;
+		ja = ra / 2 + a0;
+		pk = joint_points(p, i, a1, ja);
 		
 		console.log(pj.toString(), pk.toString());
 		
