@@ -167,18 +167,6 @@ function segment_angle(p, i) {
  */
 function joint_points(p, i, absa, avga) {
 	
-	// FIXME: SCAD output compiles to STL successfully with a buffer value
-	//        of 5, but fails with CGAL assertion errors for wider buffers
-	//        like 16 or 20. Makes me worry about some misunderstood thing,
-	//        and OpenSCAD's general flakiness with all but simplest input.
-	
-	// FIXME: Actually, the CGAL assertion errors occur with a buffer width
-	//        of 5 as well for a longer track, meaning it IS one of these
-	//        flaky indeterminate OpenSCAD wimp-ass garbage failures.
-	
-	// My best guess is that there is some minimum distance issue where
-	// we are basically getting coincident points.
-	
 	// the standard segment buffer width
 	var buffer = 20;
 	
@@ -211,7 +199,6 @@ GpxDiddler.prototype.process_path = function(p) {
 		pk,
 		lasti = 0;
 	
-	//var scad = "translate([" + this.xoffset + ", " + this.yoffset + ", 0]) union() {\n";
 	var ppts = [];
 	ppts.push(v2s([pj[0][0], pj[0][1], 0]));
 	ppts.push(v2s([pj[1][0], pj[1][1], 0]));
@@ -235,15 +222,11 @@ GpxDiddler.prototype.process_path = function(p) {
 		pk = joint_points(p, i, a1, ja);
 		
 		// this minimum distance check does not eliminate erratic OpenSCAD internal CGAL errors
-	//	var xydist = Math.sqrt(Math.pow(p[i][0] - p[lasti][0], 2) + Math.pow(p[i][1] - p[lasti][1], 2));
-	//	if (xydist < 15) {
-	//		continue;
-	//	}
-	// as-is, skipping segments will mess up our constant width buffer joints
-		
-		//console.log(pj.toString(), pk.toString());
-		// use this.xoffset and this.yoffset instead of final 0,0 to hard-translate coords
-		//scad += ptstopolyhedron(pj, pk, p[lasti][2], p[i][2], 0, 0);
+		//	var xydist = Math.sqrt(Math.pow(p[i][0] - p[lasti][0], 2) + Math.pow(p[i][1] - p[lasti][1], 2));
+		//	if (xydist < 15) {
+		//		continue;
+		//	}
+		// as-is, skipping segments will mess up our constant width buffer joints
 		
 		ppts.push(v2s([pk[0][0], pk[0][1], 0]));
 		ppts.push(v2s([pk[1][0], pk[1][1], 0]));
@@ -278,43 +261,13 @@ GpxDiddler.prototype.process_path = function(p) {
 	pfac.push(v2s([s + 2, s + 1, s + 3]));
 	pfac.push(v2s([s + 2, s + 0, s + 1]));
 	
-	//scad += '}';
-	
-	var poly = "translate(["+this.xoffset+", "+this.yoffset+", 0]) polyhedron(points=[" + ppts.join(', ') + "], faces=[" + pfac.join(', ') + "]);"
+	var poly = "translate(["+this.xoffset+", "+this.yoffset+", 0])\npolyhedron(points=[\n" + ppts.join(",\n") + "\n],\nfaces=[\n" + pfac.join(",\n") + "\n]);\n"
 		
 	return poly;
 }
 
 function v2s(v) {
 	return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
-}
-
-function ptstopolyhedron(j, k, jz, kz, ox, oy) {
-	return "polyhedron(\
-points = [\
-[" + (j[0][0]+ox) + "," + (j[0][1]+oy) + "," + 0 + "], \
-[" + (j[1][0]+ox) + "," + (j[1][1]+oy) + "," + 0 + "], \
-[" + (k[0][0]+ox) + "," + (k[0][1]+oy) + "," + 0 + "], \
-[" + (k[1][0]+ox) + "," + (k[1][1]+oy) + "," + 0 + "], \
-[" + (j[0][0]+ox) + "," + (j[0][1]+oy) + "," + jz + "], \
-[" + (j[1][0]+ox) + "," + (j[1][1]+oy) + "," + jz + "], \
-[" + (k[0][0]+ox) + "," + (k[0][1]+oy) + "," + kz + "], \
-[" + (k[1][0]+ox) + "," + (k[1][1]+oy) + "," + kz + "]\
-],\
-faces = [\
-[0, 1, 2], \
-[1, 3, 2], \
-[4, 7, 5], \
-[4, 6, 7], \
-[7, 2, 3], \
-[7, 6, 2], \
-[4, 5, 1], \
-[4, 1, 0], \
-[7, 1, 5], \
-[7, 3, 1], \
-[6, 4, 2], \
-[2, 4, 0]\
-]);\n"
 }
 
 GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
