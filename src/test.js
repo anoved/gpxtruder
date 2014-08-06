@@ -180,7 +180,7 @@ function joint_points(p, i, absa, avga) {
 	// we are basically getting coincident points.
 	
 	// the standard segment buffer width
-	var buffer = 5;
+	var buffer = 20;
 	
 	// distance from endpoint to segment buffer intersection
 	var jointr = buffer/Math.cos(avga - absa),
@@ -209,9 +209,23 @@ GpxDiddler.prototype.process_path = function(p) {
 		ja = a0,
 		pj = joint_points(p, 0, a0, ja),
 		pk,
-		scad = "translate([" + this.xoffset + ", " + this.yoffset + ", 0]) union() {\n",
 		lasti = 0;
 	
+	//var scad = "translate([" + this.xoffset + ", " + this.yoffset + ", 0]) union() {\n";
+	var ppts = [];
+	ppts.push(v2s([pj[0][0], pj[0][1], 0]));
+	ppts.push(v2s([pj[1][0], pj[1][1], 0]));
+	ppts.push(v2s([pj[0][0], pj[0][1], p[0][2]]));
+	ppts.push(v2s([pj[1][0], pj[1][1], p[0][2]]));
+
+	var pfac = [];
+	
+	// start cap faces
+	pfac.push(v2s([0, 2, 3]));
+	pfac.push(v2s([3, 1, 0]))
+	
+	// segment counter (separate from i in case we filter-skip input segments)
+	var s = 0;
 	
 	for (var i = 1; i < p.length; i++) {
 		
@@ -221,23 +235,58 @@ GpxDiddler.prototype.process_path = function(p) {
 		pk = joint_points(p, i, a1, ja);
 		
 		// this minimum distance check does not eliminate erratic OpenSCAD internal CGAL errors
-		var xydist = Math.sqrt(Math.pow(p[i][0] - p[lasti][0], 2) + Math.pow(p[i][1] - p[lasti][1], 2));
-		if (xydist < 5) {
-			continue;
-		}
+	//	var xydist = Math.sqrt(Math.pow(p[i][0] - p[lasti][0], 2) + Math.pow(p[i][1] - p[lasti][1], 2));
+	//	if (xydist < 15) {
+	//		continue;
+	//	}
+	// as-is, skipping segments will mess up our constant width buffer joints
 		
 		//console.log(pj.toString(), pk.toString());
 		// use this.xoffset and this.yoffset instead of final 0,0 to hard-translate coords
-		scad += ptstopolyhedron(pj, pk, p[lasti][2], p[i][2], 0, 0);
+		//scad += ptstopolyhedron(pj, pk, p[lasti][2], p[i][2], 0, 0);
 		
+		ppts.push(v2s([pk[0][0], pk[0][1], 0]));
+		ppts.push(v2s([pk[1][0], pk[1][1], 0]));
+		ppts.push(v2s([pk[0][0], pk[0][1], p[i][2]]));
+		ppts.push(v2s([pk[1][0], pk[1][1], p[i][2]]));
+		
+		// trying to fill in face indices for building one big polyhedron
+
+		// top
+		pfac.push(v2s([s + 2, s + 6, s + 3]));
+		pfac.push(v2s([s + 3, s + 6, s + 7]));
+		
+		// left
+		pfac.push(v2s([s + 3, s + 7, s + 5]));
+		pfac.push(v2s([s + 3, s + 5, s + 1]));
+		
+		// right
+		pfac.push(v2s([s + 6, s + 2, s + 0]));
+		pfac.push(v2s([s + 6, s + 0, s + 4]));
+		
+		// bottom
+		pfac.push(v2s([s + 0, s + 5, s + 4]));
+		pfac.push(v2s([s + 0, s + 1, s + 5]));
+				
 		a0 = a1;
 		pj = pk;
 		lasti = i;
+		s += 4;
 	}
 	
-	scad += '}';
+	// end cap faces
+	pfac.push(v2s([s + 2, s + 1, s + 3]));
+	pfac.push(v2s([s + 2, s + 0, s + 1]));
 	
-	return scad;
+	//scad += '}';
+	
+	var poly = "translate(["+this.xoffset+", "+this.yoffset+", 0]) polyhedron(points=[" + ppts.join(', ') + "], faces=[" + pfac.join(', ') + "]);"
+		
+	return poly;
+}
+
+function v2s(v) {
+	return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 }
 
 function ptstopolyhedron(j, k, jz, kz, ox, oy) {
