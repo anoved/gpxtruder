@@ -199,23 +199,19 @@ GpxDiddler.prototype.process_path = function(p) {
 		ra = 0,
 		ja = a0,
 		pj = joint_points(p, 0, a0, ja),
-		pk,
-		lasti = 0;
+		pk;
 	
+	// first four points of segment polyhedron
 	var ppts = [];
-	ppts.push([pj[0][0], pj[0][1], 0]);
-	ppts.push([pj[1][0], pj[1][1], 0]);
-	ppts.push([pj[0][0], pj[0][1], p[0][2]]);
-	ppts.push([pj[1][0], pj[1][1], p[0][2]]);
+	ppts.push([pj[0][0], pj[0][1], 0]);			// lower left
+	ppts.push([pj[1][0], pj[1][1], 0]);			// lower right
+	ppts.push([pj[0][0], pj[0][1], p[0][2]]);	// upper left
+	ppts.push([pj[1][0], pj[1][1], p[0][2]]);	// upper right
 
+	// initial endcap face
 	var pfac = [];
-	
-	// start cap faces
 	pfac.push([0, 2, 3]);
 	pfac.push([3, 1, 0])
-	
-	// segment counter (separate from i in case we filter-skip input segments)
-	var s = 0;
 	
 	for (var i = 1; i < p.length; i++) {
 		
@@ -224,49 +220,45 @@ GpxDiddler.prototype.process_path = function(p) {
 		ja = ra / 2 + a0;
 		pk = joint_points(p, i, a1, ja);
 		
-		// this minimum distance check does not eliminate erratic OpenSCAD internal CGAL errors
-		//	var xydist = Math.sqrt(Math.pow(p[i][0] - p[lasti][0], 2) + Math.pow(p[i][1] - p[lasti][1], 2));
-		//	if (xydist < 15) {
-		//		continue;
-		//	}
-		// as-is, skipping segments will mess up our constant width buffer joints
+		// last four points of segment polyhedron
+		ppts.push([pk[0][0], pk[0][1], 0]);			// lower left
+		ppts.push([pk[1][0], pk[1][1], 0]);			// lower right
+		ppts.push([pk[0][0], pk[0][1], p[i][2]]);	// upper left
+		ppts.push([pk[1][0], pk[1][1], p[i][2]]);	// upper right
 		
-		ppts.push([pk[0][0], pk[0][1], 0]);
-		ppts.push([pk[1][0], pk[1][1], 0]);
-		ppts.push([pk[0][0], pk[0][1], p[i][2]]);
-		ppts.push([pk[1][0], pk[1][1], p[i][2]]);
+		// faces of segment based on index of first involved point
+		segment_faces(pfac, (i - 1) * 4);
 		
-		// trying to fill in face indices for building one big polyhedron
-
-		// top
-		pfac.push([s + 2, s + 6, s + 3]);
-		pfac.push([s + 3, s + 6, s + 7]);
-		
-		// left
-		pfac.push([s + 3, s + 7, s + 5]);
-		pfac.push([s + 3, s + 5, s + 1]);
-		
-		// right
-		pfac.push([s + 6, s + 2, s + 0]);
-		pfac.push([s + 6, s + 0, s + 4]);
-		
-		// bottom
-		pfac.push([s + 0, s + 5, s + 4]);
-		pfac.push([s + 0, s + 1, s + 5]);
-				
 		a0 = a1;
 		pj = pk;
-		lasti = i;
-		s += 4;
 	}
 	
-	// end cap faces
-	pfac.push([s + 2, s + 1, s + 3]);
-	pfac.push([s + 2, s + 0, s + 1]);
+	// final endcap face
+	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 1, (i - 1) * 4 + 3]);
+	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 0, (i - 1) * 4 + 1]);
 	
-	var poly = "translate(["+this.xoffset+", "+this.yoffset+", 0])\npolyhedron(points=[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces=[\n" + pfac.map(v2s).join(",\n") + "\n]);\n"
-		
-	return poly;
+	return "translate([" + this.xoffset + ", " + this.yoffset + ", 0])\npolyhedron(points=[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces=[\n" + pfac.map(v2s).join(",\n") + "\n]);\n";
+}
+
+// a is face array
+// s is index of first corner point comprising this segment
+function segment_faces(a, s) {
+	
+	// top face
+	a.push([s + 2, s + 6, s + 3]);
+	a.push([s + 3, s + 6, s + 7]);
+	
+	// left face
+	a.push([s + 3, s + 7, s + 5]);
+	a.push([s + 3, s + 5, s + 1]);
+	
+	// right face
+	a.push([s + 6, s + 2, s + 0]);
+	a.push([s + 6, s + 0, s + 4]);
+	
+	// bottom face
+	a.push([s + 0, s + 5, s + 4]);
+	a.push([s + 0, s + 1, s + 5]);
 }
 
 function v2s(v) {
