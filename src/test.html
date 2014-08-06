@@ -8,10 +8,13 @@
 	<body onLoad="setup();">
 		
 		<form enctype="multipart/form-data" method="post" name="gpxform">
-			<input type="file" id="gpxfile" required></input>
-			<input type="submit" value="Convert"></input>
+			<p>GPX file with elevation: </p><input type="file" id="gpxfile" required></input></p>
+			<p>Buffer width: </p><input type="text" id="buffer" required value="20"></input></p>
+			<p>Vertical exaggeration: </p><input type="text" id="vertical" required value="5"></input></p>
+			<p></p><input type="submit" value="Convert"></input></p>
 		</form>
 		
 		<textarea id="output" cols="80" rows="20"></textarea>
+
 	</body>
 </html>

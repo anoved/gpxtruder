@@ -1,6 +1,4 @@
 
-var qq = [];
-
 /*
  * Called onLoad. Intercept form submission; handle file locally.
  */
@@ -25,7 +23,11 @@ function loader(gpxfile) {
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if (req.readyState === 4) {
-			var gd = new GpxDiddler(req.responseXML, 'output');
+			var gd = new GpxDiddler(
+					req.responseXML,
+					'output',
+					document.getElementById('buffer').value,
+					document.getElementById('vertical').value);
 			gd.LoadTracks();
 		}
 	}
@@ -36,9 +38,11 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, output) {
+function GpxDiddler(content, output, buffer, vertical) {
 	this.content = content;
 	this.output = output;
+	this.buffer = buffer;
+	this.vertical = vertical;
 	
 	this.minx = 0;
 	this.maxx = 0;
@@ -127,7 +131,7 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	
 	this.xoffset = -1/2 * (this.minx + this.maxx);
 	this.yoffset = -1/2 * (this.miny + this.maxy);
-	qq = p;
+
 	return p;
 }
 
@@ -167,14 +171,14 @@ function segment_angle(p, i) {
  * intersect - segment endpoints offset perpendicular
  * to segment by buffer distance, adjusted for tidy
  * intersection with adjacent segment's buffered path.
+ * absa is absolute angle of this segment; avga is the
+ * average angle between this segment and the next.
+ * (p could be kept as a GpxDiddler property.)
  */
-function joint_points(p, i, absa, avga) {
-	
-	// the standard segment buffer width
-	var buffer = 20;
+GpxDiddler.prototype.joint_points = function(p, i, absa, avga) {
 	
 	// distance from endpoint to segment buffer intersection
-	var jointr = buffer/Math.cos(avga - absa),
+	var jointr = this.buffer/Math.cos(avga - absa),
 	
 	// joint coordinates (endpoint offset at bisect angle by jointr)
 		lx = p[i][0] + jointr * Math.cos(avga + Math.PI/2),
@@ -198,7 +202,7 @@ GpxDiddler.prototype.process_path = function(p) {
 		a1,
 		ra = 0,
 		ja = a0,
-		pj = joint_points(p, 0, a0, ja),
+		pj = this.joint_points(p, 0, a0, ja),
 		pk;
 	
 	// first four points of segment polyhedron
@@ -218,7 +222,7 @@ GpxDiddler.prototype.process_path = function(p) {
 		a1 = segment_angle(p, i);
 		ra = a1 - a0;
 		ja = ra / 2 + a0;
-		pk = joint_points(p, i, a1, ja);
+		pk = this.joint_points(p, i, a1, ja);
 		
 		// last four points of segment polyhedron
 		ppts.push([pk[0][0], pk[0][1], 0]);			// lower left
@@ -271,6 +275,6 @@ GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
 	var ele = parseFloat(gpxpt.getElementsByTagName('ele')[0].innerHTML);
 	// Albers Equal Area Conic North America
 	var xy = proj4('+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs', [lon, lat]);
-	return [xy[0], xy[1], 5 * (ele - 255)];
+	return [xy[0], xy[1], this.vertical * (ele - 255)];
 }
 
