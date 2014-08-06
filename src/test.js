@@ -1,3 +1,6 @@
+
+var qq = [];
+
 /*
  * Called onLoad. Intercept form submission; handle file locally.
  */
@@ -124,7 +127,7 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	
 	this.xoffset = -1/2 * (this.minx + this.maxx);
 	this.yoffset = -1/2 * (this.miny + this.maxy);
-	
+	qq = p;
 	return p;
 }
 
@@ -200,16 +203,16 @@ GpxDiddler.prototype.process_path = function(p) {
 		lasti = 0;
 	
 	var ppts = [];
-	ppts.push(v2s([pj[0][0], pj[0][1], 0]));
-	ppts.push(v2s([pj[1][0], pj[1][1], 0]));
-	ppts.push(v2s([pj[0][0], pj[0][1], p[0][2]]));
-	ppts.push(v2s([pj[1][0], pj[1][1], p[0][2]]));
+	ppts.push([pj[0][0], pj[0][1], 0]);
+	ppts.push([pj[1][0], pj[1][1], 0]);
+	ppts.push([pj[0][0], pj[0][1], p[0][2]]);
+	ppts.push([pj[1][0], pj[1][1], p[0][2]]);
 
 	var pfac = [];
 	
 	// start cap faces
-	pfac.push(v2s([0, 2, 3]));
-	pfac.push(v2s([3, 1, 0]))
+	pfac.push([0, 2, 3]);
+	pfac.push([3, 1, 0])
 	
 	// segment counter (separate from i in case we filter-skip input segments)
 	var s = 0;
@@ -228,28 +231,28 @@ GpxDiddler.prototype.process_path = function(p) {
 		//	}
 		// as-is, skipping segments will mess up our constant width buffer joints
 		
-		ppts.push(v2s([pk[0][0], pk[0][1], 0]));
-		ppts.push(v2s([pk[1][0], pk[1][1], 0]));
-		ppts.push(v2s([pk[0][0], pk[0][1], p[i][2]]));
-		ppts.push(v2s([pk[1][0], pk[1][1], p[i][2]]));
+		ppts.push([pk[0][0], pk[0][1], 0]);
+		ppts.push([pk[1][0], pk[1][1], 0]);
+		ppts.push([pk[0][0], pk[0][1], p[i][2]]);
+		ppts.push([pk[1][0], pk[1][1], p[i][2]]);
 		
 		// trying to fill in face indices for building one big polyhedron
 
 		// top
-		pfac.push(v2s([s + 2, s + 6, s + 3]));
-		pfac.push(v2s([s + 3, s + 6, s + 7]));
+		pfac.push([s + 2, s + 6, s + 3]);
+		pfac.push([s + 3, s + 6, s + 7]);
 		
 		// left
-		pfac.push(v2s([s + 3, s + 7, s + 5]));
-		pfac.push(v2s([s + 3, s + 5, s + 1]));
+		pfac.push([s + 3, s + 7, s + 5]);
+		pfac.push([s + 3, s + 5, s + 1]);
 		
 		// right
-		pfac.push(v2s([s + 6, s + 2, s + 0]));
-		pfac.push(v2s([s + 6, s + 0, s + 4]));
+		pfac.push([s + 6, s + 2, s + 0]);
+		pfac.push([s + 6, s + 0, s + 4]);
 		
 		// bottom
-		pfac.push(v2s([s + 0, s + 5, s + 4]));
-		pfac.push(v2s([s + 0, s + 1, s + 5]));
+		pfac.push([s + 0, s + 5, s + 4]);
+		pfac.push([s + 0, s + 1, s + 5]);
 				
 		a0 = a1;
 		pj = pk;
@@ -258,10 +261,10 @@ GpxDiddler.prototype.process_path = function(p) {
 	}
 	
 	// end cap faces
-	pfac.push(v2s([s + 2, s + 1, s + 3]));
-	pfac.push(v2s([s + 2, s + 0, s + 1]));
+	pfac.push([s + 2, s + 1, s + 3]);
+	pfac.push([s + 2, s + 0, s + 1]);
 	
-	var poly = "translate(["+this.xoffset+", "+this.yoffset+", 0])\npolyhedron(points=[\n" + ppts.join(",\n") + "\n],\nfaces=[\n" + pfac.join(",\n") + "\n]);\n"
+	var poly = "translate(["+this.xoffset+", "+this.yoffset+", 0])\npolyhedron(points=[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces=[\n" + pfac.map(v2s).join(",\n") + "\n]);\n"
 		
 	return poly;
 }
