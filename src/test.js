@@ -57,6 +57,7 @@ function GpxDiddler(content, output, buffer, vertical) {
 	
 	this.xoffset = 0;
 	this.yoffset = 0;
+	this.zoffset = 0;
 }
 
 GpxDiddler.prototype.LoadTracks = function() {
@@ -76,7 +77,7 @@ GpxDiddler.prototype.LoadTrack = function(track) {
 GpxDiddler.prototype.LoadSegment = function(segment) {
 	var trkpts = segment.getElementsByTagName('trkpt');
 	var points = this.ProjectPoints(trkpts);
-	var scad = this.process_path(points);
+	var scad = this.process_path(points.map(this.pxyz, this));
 	document.getElementById(this.output).innerHTML = scad;
 }
 
@@ -129,9 +130,13 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	this.yextent = this.maxy - this.miny;
 	this.zextent = this.maxz - this.minz;
 	
+	// xy offset currently used to translate full-scale model to origin
 	this.xoffset = -1/2 * (this.minx + this.maxx);
 	this.yoffset = -1/2 * (this.miny + this.maxy);
-
+	
+	// z offset used to set lowest point of course at or just above zero
+	this.zoffset = Math.floor(this.minz - 1);
+	
 	return p;
 }
 
@@ -269,12 +274,18 @@ function v2s(v) {
 	return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 }
 
+// convert an xyz position vector v to final form
+// as yet only performs z cut and scaling, but may later scale xy
+GpxDiddler.prototype.pxyz = function(v) {
+	return [v[0], v[1], this.vertical * (v[2] - this.zoffset)];
+}
+
 GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
 	var lon = parseFloat(gpxpt.getAttribute('lon'));
 	var lat = parseFloat(gpxpt.getAttribute('lat'));
 	var ele = parseFloat(gpxpt.getElementsByTagName('ele')[0].innerHTML);
 	// Albers Equal Area Conic North America
 	var xy = proj4('+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs', [lon, lat]);
-	return [xy[0], xy[1], this.vertical * (ele - 255)];
+	return [xy[0], xy[1], ele];
 }
 
