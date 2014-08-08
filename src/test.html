@@ -8,10 +8,11 @@
 	<body onLoad="setup();">
 		
 		<form enctype="multipart/form-data" method="post" name="gpxform">
-			<p>GPX file with elevation: </p><input type="file" id="gpxfile" required></input></p>
-			<p>Buffer width: </p><input type="text" id="buffer" required value="20"></input></p>
-			<p>Vertical exaggeration: </p><input type="text" id="vertical" required value="5"></input></p>
-			<p></p><input type="submit" value="Convert"></input></p>
+			<p>GPX file with elevation: <input type="file" id="gpxfile" required></input></p>
+			<p>Buffer width: <input type="text" size="10" id="buffer" required value="20"></input></p>
+			<p>Vertical exaggeration: <input type="text" size="10" id="vertical" required value="5"></input></p>
+			<p>Bed width: <input type="text" size="10" id="width" required value="180"></input> Depth: <input type="text" size="10" id="depth" required value="90"></input></p>
+			<p><input type="submit" value="Convert"></input></p>
 		</form>
 		
 		<textarea id="output" cols="80" rows="20"></textarea>

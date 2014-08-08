@@ -27,7 +27,9 @@ function loader(gpxfile) {
 					req.responseXML,
 					'output',
 					document.getElementById('buffer').value,
-					document.getElementById('vertical').value);
+					document.getElementById('vertical').value,
+					document.getElementById('width').value,
+					document.getElementById('depth').value);
 			gd.LoadTracks();
 		}
 	}
@@ -38,11 +40,13 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, output, buffer, vertical) {
+function GpxDiddler(content, output, buffer, vertical, bedx, bedy) {
 	this.content = content;
 	this.output = output;
 	this.buffer = buffer;
 	this.vertical = vertical;
+	this.bedx = bedx;
+	this.bedy = bedy;
 	
 	this.minx = 0;
 	this.maxx = 0;
@@ -130,9 +134,9 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	this.yextent = this.maxy - this.miny;
 	this.zextent = this.maxz - this.minz;
 	
-	// xy offset currently used to translate full-scale model to origin
-	this.xoffset = -1/2 * (this.minx + this.maxx);
-	this.yoffset = -1/2 * (this.miny + this.maxy);
+	// xy offset used center course map around origin
+	this.xoffset = (this.minx + this.maxx) / 2;
+	this.yoffset = (this.miny + this.maxy) / 2;
 	
 	// z offset used to set lowest point of course at or just above zero
 	this.zoffset = Math.floor(this.minz - 1);
@@ -246,7 +250,7 @@ GpxDiddler.prototype.process_path = function(p) {
 	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 1, (i - 1) * 4 + 3]);
 	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 0, (i - 1) * 4 + 1]);
 	
-	return "translate([" + this.xoffset + ", " + this.yoffset + ", 0])\npolyhedron(points=[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces=[\n" + pfac.map(v2s).join(",\n") + "\n]);\n";
+	return "polyhedron(points=[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces=[\n" + pfac.map(v2s).join(",\n") + "\n]);\n";
 }
 
 // a is face array
@@ -277,7 +281,11 @@ function v2s(v) {
 // convert an xyz position vector v to final form
 // as yet only performs z cut and scaling, but may later scale xy
 GpxDiddler.prototype.pxyz = function(v) {
-	return [v[0], v[1], this.vertical * (v[2] - this.zoffset)];
+	return [
+			(v[0] - this.xoffset),
+			(v[1] - this.yoffset),
+			this.vertical * (v[2] - this.zoffset)
+	];
 }
 
 GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
