@@ -62,6 +62,8 @@ function GpxDiddler(content, output, buffer, vertical, bedx, bedy) {
 	this.xoffset = 0;
 	this.yoffset = 0;
 	this.zoffset = 0;
+	
+	this.bedscale = 0;
 }
 
 GpxDiddler.prototype.LoadTracks = function() {
@@ -141,7 +143,21 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	// z offset used to set lowest point of course at or just above zero
 	this.zoffset = Math.floor(this.minz - 1);
 	
+	this.bedscale = bedscale(this.xextent, this.yextent, this.bedx, this.bedy);
+	
 	return p;
+}
+
+// model xy extents, bed xy extents
+function bedscale(mx, my, bx, by) {
+	var mmax = Math.max(mx, my),
+		mmin = Math.min(mx, my),
+		bmax = Math.max(bx, by),
+		bmin = Math.min(bx, by);
+	var fmax = bmax / mmax,
+		fmin = bmin / mmin;
+	var scale = Math.min(fmax, fmin);
+	return scale;
 }
 
 /*
@@ -282,9 +298,9 @@ function v2s(v) {
 // as yet only performs z cut and scaling, but may later scale xy
 GpxDiddler.prototype.pxyz = function(v) {
 	return [
-			(v[0] - this.xoffset),
-			(v[1] - this.yoffset),
-			this.vertical * (v[2] - this.zoffset)
+			this.bedscale * (v[0] - this.xoffset),
+			this.bedscale * (v[1] - this.yoffset),
+			this.bedscale * (v[2] - this.zoffset) * this.vertical
 	];
 }
 
