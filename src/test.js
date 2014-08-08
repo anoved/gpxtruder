@@ -1,8 +1,10 @@
+var oj = null;
 
 /*
  * Called onLoad. Intercept form submission; handle file locally.
  */
 function setup() {
+	oj = new OpenJsCad.Processor(document.getElementById('display'));
 	var form = document.forms.namedItem('gpxform');
 	form.addEventListener('submit', function(ev) {
 		ev.preventDefault();
@@ -84,6 +86,7 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	var trkpts = segment.getElementsByTagName('trkpt');
 	var points = this.ProjectPoints(trkpts);
 	var scad = this.process_path(points.map(this.pxyz, this));
+	oj.setJsCad(scad);
 	document.getElementById(this.output).innerHTML = scad;
 }
 
@@ -266,7 +269,7 @@ GpxDiddler.prototype.process_path = function(p) {
 	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 1, (i - 1) * 4 + 3]);
 	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 0, (i - 1) * 4 + 1]);
 	
-	return "polyhedron(points=[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces=[\n" + pfac.map(v2s).join(",\n") + "\n]);\n";
+	return "function main() {\nreturn CSG.polyhedron({points:[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces:[\n" + pfac.map(v2s).join(",\n") + "\n]});\n}\n";
 }
 
 // a is face array
