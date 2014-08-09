@@ -27,7 +27,6 @@ function loader(gpxfile) {
 		if (req.readyState === 4) {
 			var gd = new GpxDiddler(
 					req.responseXML,
-					'output',
 					document.getElementById('buffer').value,
 					document.getElementById('vertical').value,
 					document.getElementById('width').value,
@@ -42,9 +41,8 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, output, buffer, vertical, bedx, bedy) {
+function GpxDiddler(content, buffer, vertical, bedx, bedy) {
 	this.content = content;
-	this.output = output;
 	this.buffer = buffer;
 	this.vertical = vertical;
 	this.bedx = bedx;
@@ -87,7 +85,6 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	var points = this.ProjectPoints(trkpts);
 	var scad = this.process_path(points.map(this.pxyz, this));
 	oj.setJsCad(scad);
-	document.getElementById(this.output).innerHTML = scad;
 }
 
 GpxDiddler.prototype.ProjectPoints = function(trkpts) {
