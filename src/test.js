@@ -94,9 +94,11 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	
 	var p = [];
+	var d = [];
 	
 	// Initialize extents using first projected point.
-	var xyz1 = this.LL2XYZ(trkpts[0]);
+	var llz1 = this.llz(trkpts[0]);
+	var xyz1 = this.LL2XYZ(llz1);
 	this.minx = xyz1[0];
 	this.maxx = xyz1[0];
 	this.miny = xyz1[1];
@@ -107,7 +109,8 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	
 	// Project the rest of the points, updating extents.
 	for (var i = 1; i < trkpts.length; i++) {
-		var xyz = this.LL2XYZ(trkpts[i]);
+		var llz = this.llz(trkpts[i]);
+		var xyz = this.LL2XYZ(llz);
 		
 		if (xyz[0] < this.minx) {
 			this.minx = xyz[0];
@@ -134,7 +137,14 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 		}
 		
 		p.push(xyz);
+		d.push(distVincenty(llz[1], llz[0], llz1[1], llz1[0]));
+		
+		llz1 = llz;
 	}
+	
+	/*console.log(d.reduce(function(prev, cur) {
+		return prev + cur;
+	}));*/
 	
 	this.xextent = this.maxx - this.minx;
 	this.yextent = this.maxy - this.miny;
@@ -305,8 +315,7 @@ function v2s(v) {
 	return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 }
 
-// convert an xyz position vector v to final form
-// as yet only performs z cut and scaling, but may later scale xy
+// returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Mercator meter vector
 GpxDiddler.prototype.pxyz = function(v) {
 	return [
 			this.bedscale * (v[0] - this.xoffset),
@@ -315,12 +324,25 @@ GpxDiddler.prototype.pxyz = function(v) {
 	];
 }
 
-GpxDiddler.prototype.LL2XYZ = function(gpxpt) {
-	var lon = parseFloat(gpxpt.getAttribute('lon'));
-	var lat = parseFloat(gpxpt.getAttribute('lat'));
-	var ele = parseFloat(gpxpt.getElementsByTagName('ele')[0].innerHTML);
-	// Mercator projection - for alignment w/popular web mapping displays
-	var xy = proj4('+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs', [lon, lat]);
-	return [xy[0], xy[1], ele];
+// returns numeric [longitude, latitude, elevation] vector from GPX track point
+GpxDiddler.prototype.llz = function(pt) {
+	return [
+			parseFloat(pt.getAttribute('lon')),
+			parseFloat(pt.getAttribute('lat')),
+			parseFloat(pt.getElementsByTagName('ele')[0].innerHTML)
+	];
 }
 
+// returns Mercator projected [x, y, elevation] meter vector from lon/lat/elevation
+GpxDiddler.prototype.LL2XYZ = function(llzv) {
+	// Mercator projection - for alignment w/popular web mapping displays
+	var xy = proj4(
+			'+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs',
+			[llzv[0], llzv[1]]
+	);
+	return [
+			xy[0],
+			xy[1],
+			llzv[2]
+	];
+}
