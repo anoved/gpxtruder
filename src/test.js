@@ -30,7 +30,8 @@ function loader(gpxfile) {
 					document.getElementById('path_width').value / 2.0,
 					document.getElementById('vertical').value,
 					document.getElementById('width').value,
-					document.getElementById('depth').value);
+					document.getElementById('depth').value,
+					document.getElementById('base').value);
 			gd.LoadTracks();
 		}
 	}
@@ -41,12 +42,13 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, buffer, vertical, bedx, bedy) {
+function GpxDiddler(content, buffer, vertical, bedx, bedy, base) {
 	this.content = content;
-	this.buffer = buffer;
-	this.vertical = vertical;
-	this.bedx = bedx;
-	this.bedy = bedy;
+	this.buffer = parseFloat(buffer);
+	this.vertical = parseFloat(vertical);
+	this.bedx = parseFloat(bedx);
+	this.bedy = parseFloat(bedy);
+	this.base = parseFloat(base);
 	
 	this.minx = 0;
 	this.maxx = 0;
@@ -232,10 +234,10 @@ GpxDiddler.prototype.process_path = function(p) {
 	
 	// first four points of segment polyhedron
 	var ppts = [];
-	ppts.push([pj[0][0], pj[0][1], 0]);			// lower left
-	ppts.push([pj[1][0], pj[1][1], 0]);			// lower right
-	ppts.push([pj[0][0], pj[0][1], p[0][2]]);	// upper left
-	ppts.push([pj[1][0], pj[1][1], p[0][2]]);	// upper right
+	ppts.push([pj[0][0], pj[0][1], 0]);						// lower left
+	ppts.push([pj[1][0], pj[1][1], 0]);						// lower right
+	ppts.push([pj[0][0], pj[0][1], p[0][2] + this.base]);	// upper left
+	ppts.push([pj[1][0], pj[1][1], p[0][2] + this.base]);	// upper right
 
 	// initial endcap face
 	var pfac = [];
@@ -250,10 +252,10 @@ GpxDiddler.prototype.process_path = function(p) {
 		pk = this.joint_points(p, i, a1, ja);
 		
 		// last four points of segment polyhedron
-		ppts.push([pk[0][0], pk[0][1], 0]);			// lower left
-		ppts.push([pk[1][0], pk[1][1], 0]);			// lower right
-		ppts.push([pk[0][0], pk[0][1], p[i][2]]);	// upper left
-		ppts.push([pk[1][0], pk[1][1], p[i][2]]);	// upper right
+		ppts.push([pk[0][0], pk[0][1], 0]);						// lower left
+		ppts.push([pk[1][0], pk[1][1], 0]);						// lower right
+		ppts.push([pk[0][0], pk[0][1], p[i][2] + this.base]);	// upper left
+		ppts.push([pk[1][0], pk[1][1], p[i][2] + this.base]);	// upper right
 		
 		// faces of segment based on index of first involved point
 		segment_faces(pfac, (i - 1) * 4);
