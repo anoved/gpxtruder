@@ -27,7 +27,7 @@ function loader(gpxfile) {
 		if (req.readyState === 4) {
 			var gd = new GpxDiddler(
 					req.responseXML,
-					document.getElementById('buffer').value,
+					document.getElementById('path_width').value / 2.0,
 					document.getElementById('vertical').value,
 					document.getElementById('width').value,
 					document.getElementById('depth').value);
