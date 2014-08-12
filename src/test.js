@@ -95,7 +95,7 @@ function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut, shape) {
 	this.yoffset = 0;
 	this.zoffset = 0;
 	
-	this.bedscale = 0;
+	this.scale = 0;
 }
 
 GpxDiddler.prototype.LoadTracks = function() {
@@ -143,16 +143,84 @@ GpxDiddler.prototype.ScanPoints = function(trkpts) {
 	});
 }
 
+// set min/max x/y/z bounds to the given xyz point
+GpxDiddler.prototype.InitBounds = function(xyz) {
+	this.minx = xyz[0];
+	this.maxx = xyz[0];
+	this.miny = xyz[1];
+	this.maxy = xyz[1];
+	this.minz = xyz[2];
+	this.maxz = xyz[2];
+}
+
+// update min/max x/y/z bounds to include the given xyz point
+GpxDiddler.prototype.UpdateBounds = function(xyz) {
+	if (xyz[0] < this.minx) {
+		this.minx = xyz[0];
+	}
+	
+	if (xyz[0] > this.maxx) {
+		this.maxx = xyz[0];
+	}
+	
+	if (xyz[1] < this.miny) {
+		this.miny = xyz[1];
+	}
+	
+	if (xyz[1] > this.maxy) {
+		this.maxy = xyz[1];
+	}
+	
+	if (xyz[2] < this.minz) {
+		this.minz = xyz[2];
+	}
+	
+	if (xyz[2] > this.maxz) {
+		this.maxz = xyz[2];
+	}
+}
+
+// calculate extents (model size in each dimension) from bounds
+GpxDiddler.prototype.UpdateExtent = function() {
+	this.xextent = this.maxx - this.minx;
+	this.yextent = this.maxy - this.miny;
+	this.zextent = this.maxz - this.minz;
+}
+
+// calculate offsets used to translate model to output origin
+GpxDiddler.prototype.UpdateOffset = function() {
+	
+	// xy offset used to center model around origin
+	this.xoffset = (this.minx + this.maxx) / 2;
+	this.yoffset = (this.miny + this.maxy) / 2;
+	
+	// zero z offset uses full height above sea level
+	// disabled if minimum elevation is at or below 0
+	if (this.zcut == false && this.minz > 0) {
+		this.zoffset = 0;
+	} else {
+		// by default, z offset is calculated to cut
+		// the elevation profile just below minimum
+		this.zoffset = Math.floor(this.minz - 1);
+	}
+}
+
+// calculate scale used to fit model on output bed
+GpxDiddler.prototype.UpdateScale = function() {
+	this.scale = bedscale(this.xextent, this.yextent, this.bedx, this.bedy);
+}
+
 GpxDiddler.prototype.ProjectPoints = function() {
 	
 	var xyz;
 	
-	// ring radius and cumulative distance
+	// ring radius (used by ring shape)
 	var rr = this.distance / (Math.PI * 2);
+	
+	// cumulative distance (used ring ring and linear shape)
 	var cd = 0;
 	
 	// Initialize extents using first projected point.
-	
 	if (this.shape == 1) {
 		// linear
 		xyz = [0, 0, this.ll[0][2]];
@@ -160,28 +228,24 @@ GpxDiddler.prototype.ProjectPoints = function() {
 		// ring
 		xyz = [rr, 0, this.ll[0][2]]
 	} else {
-		// actual track projection
-		xyz = this.LL2XYZ(this.ll[0]);
+		// track
+		//xyz = this.LL2XYZ(this.ll[0]);
+		xyz = this.ll[0].proj();
 	}
 	
-	this.minx = xyz[0];
-	this.maxx = xyz[0];
-	this.miny = xyz[1];
-	this.maxy = xyz[1];
-	this.minz = xyz[2];
-	this.maxz = xyz[2];
-	
+	this.InitBounds(xyz);
 	this.pp.push(xyz);
 	
 	// Project the rest of the points, updating extents.
 	for (var i = 1; i < this.ll.length; i++) {
 		
+		cd += this.d[i-1];
+		
 		if (this.shape == 1) {
 			// linear
-			xyz = [0, this.pp[i-1][1] + this.d[i-1], this.ll[i][2]];
+			xyz = [0, cd, this.ll[i][2]];
 		} else if (this.shape == 2) {
 			// ring
-			cd += this.d[i-1];
 			xyz = [
 				rr * Math.cos( (2 * Math.PI) * (cd/this.distance) ),
 				rr * Math.sin( (2 * Math.PI) * (cd/this.distance) ),
@@ -189,58 +253,21 @@ GpxDiddler.prototype.ProjectPoints = function() {
 			];
 		} else {
 			// track
-			xyz = this.LL2XYZ(this.ll[i]);
+			xyz = this.ll[i].proj();
 		}
 		
-		if (xyz[0] < this.minx) {
-			this.minx = xyz[0];
-		}
-		
-		if (xyz[0] > this.maxx) {
-			this.maxx = xyz[0];
-		}
-		
-		if (xyz[1] < this.miny) {
-			this.miny = xyz[1];
-		}
-		
-		if (xyz[1] > this.maxy) {
-			this.maxy = xyz[1];
-		}
-		
-		if (xyz[2] < this.minz) {
-			this.minz = xyz[2];
-		}
-		
-		if (xyz[2] > this.maxz) {
-			this.maxz = xyz[2];
-		}
-		
+		this.UpdateBounds(xyz);
 		this.pp.push(xyz);
 	}
 	
-	this.xextent = this.maxx - this.minx;
-	this.yextent = this.maxy - this.miny;
-	this.zextent = this.maxz - this.minz;
-	
-	// xy offset used center course map around origin
-	this.xoffset = (this.minx + this.maxx) / 2;
-	this.yoffset = (this.miny + this.maxy) / 2;
-	
-	// z offset used to set lowest point of course at or just above zero
-	if (this.zcut == false && this.minz > 0) {
-		// use true height from sea level if requested
-		// (and if min elevation is also above sea level)
-		this.zoffset = 0;
-	} else {
-		// otherwise, use the minimum elevation
-		this.zoffset = Math.floor(this.minz - 1);
-	}
-	
-	this.bedscale = bedscale(this.xextent, this.yextent, this.bedx, this.bedy);
+	this.UpdateExtent();
+	this.UpdateOffset();
+	this.UpdateScale();
 }
 
-// model xy extents, bed xy extents
+// params: model xy extents, bed xy extents
+// returns scale factor that can be used to fit model on bed
+// (rotation may be required)
 function bedscale(mx, my, bx, by) {
 	var mmax = Math.max(mx, my),
 		mmin = Math.min(mx, my),
@@ -389,9 +416,9 @@ function v2s(v) {
 // returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Mercator meter vector
 GpxDiddler.prototype.pxyz = function(v) {
 	return [
-			this.bedscale * (v[0] - this.xoffset),
-			this.bedscale * (v[1] - this.yoffset),
-			this.bedscale * (v[2] - this.zoffset) * this.vertical
+			this.scale * (v[0] - this.xoffset),
+			this.scale * (v[1] - this.yoffset),
+			this.scale * (v[2] - this.zoffset) * this.vertical
 	];
 }
 
@@ -404,16 +431,13 @@ GpxDiddler.prototype.llz = function(pt) {
 	];
 }
 
-// returns Mercator projected [x, y, elevation] meter vector from lon/lat/elevation
-GpxDiddler.prototype.LL2XYZ = function(llzv) {
-	// Mercator projection - for alignment w/popular web mapping displays
-	var xy = proj4(
+// assumes first element of array is longitude and second is latitude
+// projects these coordinates to Mercator, and returns a new array
+// beginning with projected x and y meter coordinates. (Any remaining
+// elements are retained in the result unmodified.)
+Array.prototype.proj = function() {
+	return proj4(
 			'+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs',
-			[llzv[0], llzv[1]]
-	);
-	return [
-			xy[0],
-			xy[1],
-			llzv[2]
-	];
+			[this[0], this[1]]
+	).concat(this.slice(2));
 }
