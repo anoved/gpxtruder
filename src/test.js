@@ -32,7 +32,8 @@ function loader(gpxfile) {
 					document.getElementById('width').value,
 					document.getElementById('depth').value,
 					document.getElementById('base').value,
-					document.getElementById('zcut').checked);
+					document.getElementById('zcut').checked,
+					document.getElementById('linear').checked);
 			gd.LoadTracks();
 		}
 	}
@@ -43,7 +44,7 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut) {
+function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut, linear) {
 	this.content = content;
 	this.buffer = parseFloat(buffer);
 	this.vertical = parseFloat(vertical);
@@ -51,6 +52,7 @@ function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut) {
 	this.bedy = parseFloat(bedy);
 	this.base = parseFloat(base);
 	this.zcut = zcut;
+	this.linear = linear;
 	
 	this.minx = 0;
 	this.maxx = 0;
@@ -95,22 +97,36 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	
 	var p = [];
 	var d = [];
+	var xyz;
 	
 	// Initialize extents using first projected point.
 	var llz1 = this.llz(trkpts[0]);
-	var xyz1 = this.LL2XYZ(llz1);
-	this.minx = xyz1[0];
-	this.maxx = xyz1[0];
-	this.miny = xyz1[1];
-	this.maxy = xyz1[1];
-	this.minz = xyz1[2];
-	this.maxz = xyz1[2];
-	p.push(xyz1);
+	if (this.linear) {
+		xyz = [0, 0, llz1[2]];
+	} else {
+		xyz = this.LL2XYZ(llz1);
+	}
+	this.minx = xyz[0];
+	this.maxx = xyz[0];
+	this.miny = xyz[1];
+	this.maxy = xyz[1];
+	this.minz = xyz[2];
+	this.maxz = xyz[2];
+	p.push(xyz);
 	
 	// Project the rest of the points, updating extents.
 	for (var i = 1; i < trkpts.length; i++) {
 		var llz = this.llz(trkpts[i]);
-		var xyz = this.LL2XYZ(llz);
+		var dst = distVincenty(llz[1], llz[0], llz1[1], llz1[0]);
+		
+		// for other shapes besides actual and linear (such as a ring or spiral),
+		// we may want to know the total distance first. Either re-process xyz p
+		// afterwards for other shapes, or perhaps better, figure llz & dst first.
+		if (this.linear) {
+			xyz = [p[i-1][0] + dst, 0, llz1[2]];
+		} else {
+			xyz = this.LL2XYZ(llz);
+		}
 		
 		if (xyz[0] < this.minx) {
 			this.minx = xyz[0];
@@ -137,14 +153,9 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 		}
 		
 		p.push(xyz);
-		d.push(distVincenty(llz[1], llz[0], llz1[1], llz1[0]));
-		
+		d.push(dst);
 		llz1 = llz;
 	}
-	
-	/*console.log(d.reduce(function(prev, cur) {
-		return prev + cur;
-	}));*/
 	
 	this.xextent = this.maxx - this.minx;
 	this.yextent = this.maxy - this.miny;
