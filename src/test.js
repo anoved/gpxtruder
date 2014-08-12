@@ -31,7 +31,8 @@ function loader(gpxfile) {
 					document.getElementById('vertical').value,
 					document.getElementById('width').value,
 					document.getElementById('depth').value,
-					document.getElementById('base').value);
+					document.getElementById('base').value,
+					document.getElementById('zcut').checked);
 			gd.LoadTracks();
 		}
 	}
@@ -42,13 +43,14 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, buffer, vertical, bedx, bedy, base) {
+function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut) {
 	this.content = content;
 	this.buffer = parseFloat(buffer);
 	this.vertical = parseFloat(vertical);
 	this.bedx = parseFloat(bedx);
 	this.bedy = parseFloat(bedy);
 	this.base = parseFloat(base);
+	this.zcut = zcut;
 	
 	this.minx = 0;
 	this.maxx = 0;
@@ -143,7 +145,14 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	this.yoffset = (this.miny + this.maxy) / 2;
 	
 	// z offset used to set lowest point of course at or just above zero
-	this.zoffset = Math.floor(this.minz - 1);
+	if (this.zcut == false && this.minz > 0) {
+		// use true height from sea level if requested
+		// (and if min elevation is also above sea level)
+		this.zoffset = 0;
+	} else {
+		// otherwise, use the minimum elevation
+		this.zoffset = Math.floor(this.minz - 1);
+	}
 	
 	this.bedscale = bedscale(this.xextent, this.yextent, this.bedx, this.bedy);
 	
