@@ -12,6 +12,16 @@ function setup() {
 	}, false);
 }
 
+function radioValue(radios) {
+	for (var i = 0, len = radios.length; i < len; i++) {
+		if (radios[i].checked) {
+			return parseInt(radios[i].value);
+			break;
+		}
+	}
+	return undefined;
+}
+
 /*
  * Get a File object URL from form input or drag and drop.
  * Use XMLHttpRequest to retrieve the file content, and
@@ -33,7 +43,7 @@ function loader(gpxfile) {
 					document.getElementById('depth').value,
 					document.getElementById('base').value,
 					document.getElementById('zcut').checked,
-					document.getElementById('linear').checked);
+					radioValue(document.getElementsByName('shape')));
 			gd.LoadTracks();
 		}
 	}
@@ -44,7 +54,7 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut, linear) {
+function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut, shape) {
 	this.content = content;
 	this.buffer = parseFloat(buffer);
 	this.vertical = parseFloat(vertical);
@@ -52,7 +62,7 @@ function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut, linear) {
 	this.bedy = parseFloat(bedy);
 	this.base = parseFloat(base);
 	this.zcut = zcut;
-	this.linear = linear;
+	this.shape = shape;
 	
 	// array of lon/lat/ele vectors (deg-ew/deg-ns/meters)
 	this.ll = [];
@@ -137,10 +147,20 @@ GpxDiddler.prototype.ProjectPoints = function() {
 	
 	var xyz;
 	
+	// ring radius and cumulative distance
+	var rr = this.distance / (Math.PI * 2);
+	var cd = 0;
+	
 	// Initialize extents using first projected point.
-	if (this.linear) {
+	
+	if (this.shape == 1) {
+		// linear
 		xyz = [0, 0, this.ll[0][2]];
+	} else if (this.shape == 2) {
+		// ring
+		xyz = [rr, 0, this.ll[0][2]]
 	} else {
+		// actual track projection
 		xyz = this.LL2XYZ(this.ll[0]);
 	}
 	
@@ -156,9 +176,19 @@ GpxDiddler.prototype.ProjectPoints = function() {
 	// Project the rest of the points, updating extents.
 	for (var i = 1; i < this.ll.length; i++) {
 		
-		if (this.linear) {
-			xyz = [this.pp[i-1][0] + this.d[i-1], 0, this.ll[i][2]];
+		if (this.shape == 1) {
+			// linear
+			xyz = [0, this.pp[i-1][1] + this.d[i-1], this.ll[i][2]];
+		} else if (this.shape == 2) {
+			// ring
+			cd += this.d[i-1];
+			xyz = [
+				rr * Math.cos( (2 * Math.PI) * (cd/this.distance) ),
+				rr * Math.sin( (2 * Math.PI) * (cd/this.distance) ),
+				this.ll[i][2]
+			];
 		} else {
+			// track
 			xyz = this.LL2XYZ(this.ll[i]);
 		}
 		
