@@ -54,6 +54,22 @@ function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut, linear) {
 	this.zcut = zcut;
 	this.linear = linear;
 	
+	// array of lon/lat/ele vectors (deg-ew/deg-ns/meters)
+	this.ll = [];
+	
+	// array of segment distances
+	// (Vincenty method applied to WGS84 input lat/lon coordinates)
+	this.d = [];
+	
+	// total distance of route (sum of segment distances)
+	this.distance = 0;
+	
+	// array of projected x/y/z vectors (meters)
+	this.pp = [];
+	
+	// array of scaled/centered/z-cut x/y/z vectors
+	this.fp = [];
+	
 	this.minx = 0;
 	this.maxx = 0;
 	this.miny = 0;
@@ -87,45 +103,63 @@ GpxDiddler.prototype.LoadTrack = function(track) {
 }
 
 GpxDiddler.prototype.LoadSegment = function(segment) {
-	var trkpts = segment.getElementsByTagName('trkpt');
-	var points = this.ProjectPoints(trkpts);
-	var scad = this.process_path(points.map(this.pxyz, this));
+	
+	// populates this.ll (lat/lon vectors)
+	this.ScanPoints(segment.getElementsByTagName('trkpt'));
+	
+	// populates this.pp (projected point vectors)
+	this.ProjectPoints();
+	
+	// scale/center projected point vectors
+	this.fp = this.pp.map(this.pxyz, this);
+	
+	var scad = this.process_path();
 	oj.setJsCad(scad);
 }
 
-GpxDiddler.prototype.ProjectPoints = function(trkpts) {
+// Converts GPX trkpt nodelist to array of lon/lat/elevation vectors.
+// Also assembles array of segment distances (n - 1 where n = point count)
+GpxDiddler.prototype.ScanPoints = function(trkpts) {
 	
-	var p = [];
-	var d = [];
+	this.ll.push(this.llz(trkpts[0]));
+	
+	for (var i = 1; i < trkpts.length; i++) {
+		this.ll.push(this.llz(trkpts[i]));
+		this.d.push(distVincenty(this.ll[i][1], this.ll[i][0], this.ll[i-1][1], this.ll[i-1][0]));
+	}
+	
+	this.distance = this.d.reduce(function(prev, cur) {
+		return prev + cur;
+	});
+}
+
+GpxDiddler.prototype.ProjectPoints = function() {
+	
 	var xyz;
 	
 	// Initialize extents using first projected point.
-	var llz1 = this.llz(trkpts[0]);
 	if (this.linear) {
-		xyz = [0, 0, llz1[2]];
+		xyz = [0, 0, this.ll[0][2]];
 	} else {
-		xyz = this.LL2XYZ(llz1);
+		xyz = this.LL2XYZ(this.ll[0]);
 	}
+	
 	this.minx = xyz[0];
 	this.maxx = xyz[0];
 	this.miny = xyz[1];
 	this.maxy = xyz[1];
 	this.minz = xyz[2];
 	this.maxz = xyz[2];
-	p.push(xyz);
+	
+	this.pp.push(xyz);
 	
 	// Project the rest of the points, updating extents.
-	for (var i = 1; i < trkpts.length; i++) {
-		var llz = this.llz(trkpts[i]);
-		var dst = distVincenty(llz[1], llz[0], llz1[1], llz1[0]);
+	for (var i = 1; i < this.ll.length; i++) {
 		
-		// for other shapes besides actual and linear (such as a ring or spiral),
-		// we may want to know the total distance first. Either re-process xyz p
-		// afterwards for other shapes, or perhaps better, figure llz & dst first.
 		if (this.linear) {
-			xyz = [p[i-1][0] + dst, 0, llz1[2]];
+			xyz = [this.pp[i-1][0] + this.d[i-1], 0, this.ll[i][2]];
 		} else {
-			xyz = this.LL2XYZ(llz);
+			xyz = this.LL2XYZ(this.ll[i]);
 		}
 		
 		if (xyz[0] < this.minx) {
@@ -152,9 +186,7 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 			this.maxz = xyz[2];
 		}
 		
-		p.push(xyz);
-		d.push(dst);
-		llz1 = llz;
+		this.pp.push(xyz);
 	}
 	
 	this.xextent = this.maxx - this.minx;
@@ -176,8 +208,6 @@ GpxDiddler.prototype.ProjectPoints = function(trkpts) {
 	}
 	
 	this.bedscale = bedscale(this.xextent, this.yextent, this.bedx, this.bedy);
-	
-	return p;
 }
 
 // model xy extents, bed xy extents
@@ -247,45 +277,45 @@ GpxDiddler.prototype.joint_points = function(p, i, absa, avga) {
 }
 
 /*
- * Given a point array p with at least two points, loop
+ * Given a point array fp with at least two points, loop
  * through each segment (pair of points). In each iteration
  * of the for loop, pj and pk are the 2D coordinates of the
  * corners of the quad representing a buffered path for
  * that segment; consecutive segments share endpoints.
  */
-GpxDiddler.prototype.process_path = function(p) {
+GpxDiddler.prototype.process_path = function() {
 	
-	var a0 = segment_angle(p, 0),
+	var a0 = segment_angle(this.fp, 0),
 		a1,
 		ra = 0,
 		ja = a0,
-		pj = this.joint_points(p, 0, a0, ja),
+		pj = this.joint_points(this.fp, 0, a0, ja),
 		pk;
 	
 	// first four points of segment polyhedron
 	var ppts = [];
 	ppts.push([pj[0][0], pj[0][1], 0]);						// lower left
 	ppts.push([pj[1][0], pj[1][1], 0]);						// lower right
-	ppts.push([pj[0][0], pj[0][1], p[0][2] + this.base]);	// upper left
-	ppts.push([pj[1][0], pj[1][1], p[0][2] + this.base]);	// upper right
+	ppts.push([pj[0][0], pj[0][1], this.fp[0][2] + this.base]);	// upper left
+	ppts.push([pj[1][0], pj[1][1], this.fp[0][2] + this.base]);	// upper right
 
 	// initial endcap face
 	var pfac = [];
 	pfac.push([0, 2, 3]);
 	pfac.push([3, 1, 0])
 	
-	for (var i = 1; i < p.length; i++) {
+	for (var i = 1; i < this.fp.length; i++) {
 		
-		a1 = segment_angle(p, i);
+		a1 = segment_angle(this.fp, i);
 		ra = a1 - a0;
 		ja = ra / 2 + a0;
-		pk = this.joint_points(p, i, a1, ja);
+		pk = this.joint_points(this.fp, i, a1, ja);
 		
 		// last four points of segment polyhedron
 		ppts.push([pk[0][0], pk[0][1], 0]);						// lower left
 		ppts.push([pk[1][0], pk[1][1], 0]);						// lower right
-		ppts.push([pk[0][0], pk[0][1], p[i][2] + this.base]);	// upper left
-		ppts.push([pk[1][0], pk[1][1], p[i][2] + this.base]);	// upper right
+		ppts.push([pk[0][0], pk[0][1], this.fp[i][2] + this.base]);	// upper left
+		ppts.push([pk[1][0], pk[1][1], this.fp[i][2] + this.base]);	// upper right
 		
 		// faces of segment based on index of first involved point
 		segment_faces(pfac, (i - 1) * 4);
