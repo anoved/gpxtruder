@@ -217,20 +217,16 @@ GpxDiddler.prototype.ProjectPoints = function() {
 	// ring radius (used by ring shape)
 	var rr = this.distance / (Math.PI * 2);
 	
-	// cumulative distance (used ring ring and linear shape)
+	// cumulative distance (used by ring and linear shape)
 	var cd = 0;
 	
 	// Initialize extents using first projected point.
 	if (this.shape == 1) {
-		// linear
-		xyz = [0, 0, this.ll[0][2]];
+		xyz = this.ll[0].projLinear(0);
 	} else if (this.shape == 2) {
-		// ring
-		xyz = [rr, 0, this.ll[0][2]]
+		xyz = this.ll[0].projRing(0, rr);
 	} else {
-		// track
-		//xyz = this.LL2XYZ(this.ll[0]);
-		xyz = this.ll[0].proj();
+		xyz = this.ll[0].projMerc();
 	}
 	
 	this.InitBounds(xyz);
@@ -242,18 +238,11 @@ GpxDiddler.prototype.ProjectPoints = function() {
 		cd += this.d[i-1];
 		
 		if (this.shape == 1) {
-			// linear
-			xyz = [0, cd, this.ll[i][2]];
+			xyz = this.ll[i].projLinear(cd);
 		} else if (this.shape == 2) {
-			// ring
-			xyz = [
-				rr * Math.cos( (2 * Math.PI) * (cd/this.distance) ),
-				rr * Math.sin( (2 * Math.PI) * (cd/this.distance) ),
-				this.ll[i][2]
-			];
+			xyz = this.ll[i].projRing(cd/this.distance, rr);
 		} else {
-			// track
-			xyz = this.ll[i].proj();
+			xyz = this.ll[i].projMerc();
 		}
 		
 		this.UpdateBounds(xyz);
@@ -435,9 +424,22 @@ GpxDiddler.prototype.llz = function(pt) {
 // projects these coordinates to Mercator, and returns a new array
 // beginning with projected x and y meter coordinates. (Any remaining
 // elements are retained in the result unmodified.)
-Array.prototype.proj = function() {
+Array.prototype.projMerc = function() {
 	return proj4(
 			'+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs',
 			[this[0], this[1]]
 	).concat(this.slice(2));
+}
+
+// param cd = cumulative distance
+Array.prototype.projLinear = function(cd) {
+	return [0, cd].concat(this.slice(2));
+}
+
+// param dr = distance ratio (cumulative distance / total distance)
+Array.prototype.projRing = function(d, r) {
+	return [
+		r * Math.cos(2 * Math.PI * d),
+		r * Math.sin(2 * Math.PI * d)
+	].concat(this.slice(2));	
 }
