@@ -75,6 +75,9 @@ function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, sh
 	// total distance of route (sum of segment distances)
 	this.distance = 0;
 	
+	// used for ring shape only; ring circumference = this.distance
+	this.ringRadius = 0;
+	
 	// array of projected x/y/z vectors (meters)
 	this.pp = [];
 	
@@ -151,6 +154,8 @@ GpxDiddler.prototype.ScanPoints = function(trkpts) {
 	this.distance = this.d.reduce(function(prev, cur) {
 		return prev + cur;
 	});
+	
+	this.ringRadius = this.distance / (Math.PI * 2);
 }
 
 // set min/max x/y/z bounds to the given xyz point
@@ -226,65 +231,67 @@ GpxDiddler.prototype.UpdateScale = function() {
 	this.scale = Math.min(fmax, fmin);
 }
 
+// point to project and cumulative distance along path
+GpxDiddler.prototype.ProjectPoint = function(point, cd) {
+	var xyz;
+	if (this.shape == 1) {
+		xyz = point.projLinear(cd);
+	} else if (this.shape == 2) {
+		xyz = point.projRing(cd/this.distance, this.ringRadius);
+	} else {
+		xyz = point.projMerc();
+	}
+	return xyz;
+}
+
 GpxDiddler.prototype.ProjectPoints = function() {
 	
-	var xyz;
-	
-	// ring radius (used by ring shape)
-	var rr = this.distance / (Math.PI * 2);
-	
-	// cumulative distance (used by ring and linear shape)
+	// cumulative distance
 	var cd = 0;
 	
 	// distance since last marker
-	var md = 0;
-	
-	// marker counter
-	var mc = 0;
+	var md = 0, lastmd = 0;
 	
 	// Initialize extents using first projected point.
-	if (this.shape == 1) {
-		xyz = this.ll[0].projLinear(0);
-	} else if (this.shape == 2) {
-		xyz = this.ll[0].projRing(0, rr);
-	} else {
-		xyz = this.ll[0].projMerc();
-	}
-	
+	var xyz = this.ProjectPoint(this.ll[0], 0);
 	this.InitBounds(xyz);
 	this.pp.push(xyz);
 	
 	// Project the rest of the points, updating extents.
 	for (var i = 1; i < this.ll.length; i++) {
 		
+		lastmd = md;
+		md += this.d[i-1];
 		cd += this.d[i-1];
 		
-		if (this.shape == 1) {
-			xyz = this.ll[i].projLinear(cd);
-		} else if (this.shape == 2) {
-			xyz = this.ll[i].projRing(cd/this.distance, rr);
-		} else {
-			xyz = this.ll[i].projMerc();
-		}
-		
-		md += this.d[i-1];
-		if (this.mpermark > 0 && md > this.mpermark) {
-			
-			mc += 1;
-			
-			// as of this point, it's been at least a [mile]
-			// since the last marker. To locate the marker
-			// correctly, interpolate to exact distance along
-			// segment. For now, just use this endpoint.
-			this.markers.push(xyz);
-			//console.log(mc + ": " + cd);
-			
-			// reset marker counter
-			md = 0;
-		}
-		
+		xyz = this.ProjectPoint(this.ll[i], cd);
 		this.UpdateBounds(xyz);
 		this.pp.push(xyz);
+		
+		// If we've met or exceeded distance to next marker,
+		// determine its exact location and add it to list.
+		// (No marker calculations if mpermark is zero)
+		if (this.mpermark > 0 && md >= this.mpermark) {
+			
+			var last_seg = this.mpermark - lastmd;
+			var seg_length = md - lastmd;
+			var next_seg = seg_length - last_seg;
+			var pd = last_seg / seg_length;
+			
+			// marker located along segment between previous and current point
+			// pd is the proportionate distance along that vector
+			var markerpoint = [
+				this.ll[i-1][0] + pd * (this.ll[i][0] - this.ll[i-1][0]),
+				this.ll[i-1][1] + pd * (this.ll[i][1] - this.ll[i-1][1]),
+				this.ll[i-1][2] + pd * (this.ll[i][2] - this.ll[i-1][2])
+			];
+			
+			// store projected marker location			
+			this.markers.push(this.ProjectPoint(markerpoint, cd - next_seg));
+			
+			// reset distance to next marker
+			md = next_seg;
+		}
 	}
 	
 	this.UpdateExtent();
