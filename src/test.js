@@ -12,16 +12,6 @@ function setup() {
 	}, false);
 }
 
-function radioValue(radios) {
-	for (var i = 0, len = radios.length; i < len; i++) {
-		if (radios[i].checked) {
-			return parseInt(radios[i].value);
-			break;
-		}
-	}
-	return undefined;
-}
-
 /*
  * Get a File object URL from form input or drag and drop.
  * Use XMLHttpRequest to retrieve the file content, and
@@ -30,8 +20,17 @@ function radioValue(radios) {
  */
 function loader(gpxfile) {
 	
+	var radioValue = function(radios) {
+		for (var i = 0, len = radios.length; i < len; i++) {
+			if (radios[i].checked) {
+				return parseInt(radios[i].value);
+				break;
+			}
+		}
+	};
+	
 	var gpxurl = window.URL.createObjectURL(gpxfile);
-
+	
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if (req.readyState === 4) {
@@ -207,7 +206,13 @@ GpxDiddler.prototype.UpdateOffset = function() {
 
 // calculate scale used to fit model on output bed
 GpxDiddler.prototype.UpdateScale = function() {
-	this.scale = bedscale(this.xextent, this.yextent, this.bedx, this.bedy);
+	var mmax = Math.max(this.xextent, this.yextent),
+		mmin = Math.min(this.xextent, this.yextent),
+		bmax = Math.max(this.bedx, this.bedy),
+		bmin = Math.min(this.bedx, this.bedy),
+		fmax = bmax / mmax,
+		fmin = bmin / mmin;
+	this.scale = Math.min(fmax, fmin);
 }
 
 GpxDiddler.prototype.ProjectPoints = function() {
@@ -252,20 +257,6 @@ GpxDiddler.prototype.ProjectPoints = function() {
 	this.UpdateExtent();
 	this.UpdateOffset();
 	this.UpdateScale();
-}
-
-// params: model xy extents, bed xy extents
-// returns scale factor that can be used to fit model on bed
-// (rotation may be required)
-function bedscale(mx, my, bx, by) {
-	var mmax = Math.max(mx, my),
-		mmin = Math.min(mx, my),
-		bmax = Math.max(bx, by),
-		bmin = Math.min(bx, by);
-	var fmax = bmax / mmax,
-		fmin = bmin / mmin;
-	var scale = Math.min(fmax, fmin);
-	return scale;
 }
 
 /*
