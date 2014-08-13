@@ -374,6 +374,10 @@ GpxDiddler.prototype.process_path = function() {
 	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 1, (i - 1) * 4 + 3]);
 	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 0, (i - 1) * 4 + 1]);
 	
+	var v2s = function(v) {
+		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
+	}
+	
 	return "function main() {\nreturn CSG.polyhedron({points:[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces:[\n" + pfac.map(v2s).join(",\n") + "\n]});\n}\n";
 }
 
@@ -396,10 +400,6 @@ function segment_faces(a, s) {
 	// bottom face
 	a.push([s + 0, s + 5, s + 4]);
 	a.push([s + 0, s + 1, s + 5]);
-}
-
-function v2s(v) {
-	return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 }
 
 // returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Mercator meter vector
