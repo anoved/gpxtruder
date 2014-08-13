@@ -277,7 +277,7 @@ GpxDiddler.prototype.ProjectPoints = function() {
 			// correctly, interpolate to exact distance along
 			// segment. For now, just use this endpoint.
 			this.markers.push(xyz);
-			console.log(mc + ": " + cd);
+			//console.log(mc + ": " + cd);
 			
 			// reset marker counter
 			md = 0;
@@ -392,22 +392,26 @@ GpxDiddler.prototype.process_path = function() {
 		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 	};
 	
-	return "function main() {\nreturn CSG.polyhedron({points:[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces:[\n" + pfac.map(v2s).join(",\n") + "\n]});\n}\n";
+	var scad = "function main() {\nreturn [{name: 'profile', caption: 'Profile', data: CSG.polyhedron({points:[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces:[\n" + pfac.map(v2s).join(",\n") + "\n]})},\n{name: 'markers', caption: 'Markers', data: " + this.markerscad() + "}];\n}\n";
+	
+	
+	return scad;
 }
 
 GpxDiddler.prototype.markerscad = function() {
 	
-	var cylinders = [];
+	var c = "CSG.cylinder({start: [0, 0, 0], end: [0, 0, 2], radius: 4})" +
+			".translate([" + this.markers[0][0] + ", " + this.markers[0][1] + ", 0])";
 	
-	for (var i = 0; i < this.markers.length; i++) {
+	
+	for (var i = 1; i < this.markers.length; i++) {
 		var x = this.markers[i][0],
 			y = this.markers[i][1];
-		var c = "CSG.cylinder({start: [0, 0, 0], end: [0, 0, 2], radius: 4})" +
-				".translate([" + x + ", " + y + ", 0])";
-		cylinders.push(c);
+		c += ".union(CSG.cylinder({start: [0, 0, 0], end: [0, 0, 2], radius: 4})" +
+				".translate([" + x + ", " + y + ", 0]))";
 	}
 		
-	return cylinders.join(",\n");
+	return c;
 }
 
 Array.prototype.push_vertices = function(v, z) {
