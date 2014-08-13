@@ -237,16 +237,43 @@ OpenJsCad.Viewer.prototype = {
       gl.color(0, 1, 0, 0.8); //positive direction
       gl.vertex(0, 0, 0);
       gl.vertex(0, 100, 0);
-      //Z - black
-      gl.color(0.5, 0.5, 0.5, 0.2); //negative direction is lighter
+      //Z - blue
+      gl.color(0.5, 0.5, 1, 0.2); //negative direction is lighter
       gl.vertex(0, 0, -100);
       gl.vertex(0, 0, 0);
 
-      gl.color(0.2, 0.2, 0.2, 0.8); //positive direction
+      gl.color(0, 0, 1, 0.8); //positive direction
       gl.vertex(0, 0, 0);
       gl.vertex(0, 0, 100);
 
       gl.end();
+      
+      gl.begin(gl.TRIANGLES);
+      
+      // bottom of bed platform
+      gl.color(0.5, 0.5, 0.5, 0.2);
+   
+      gl.vertex(-90, 45, 0);
+      gl.vertex(90, 45, 0);
+      gl.vertex(90, -45, 0);
+     
+      gl.vertex(-90, 45, 0);
+      gl.vertex(90, -45, 0);
+      gl.vertex(-90, -45, 0);
+      
+      // top of bed platform
+      gl.color(0.2, 0.2, 0.2, 0.6);
+      
+      gl.vertex(90, -45, 0);
+      gl.vertex(90, 45, 0);
+      gl.vertex(-90, 45, 0);
+     
+      gl.vertex(-90, 45, 0);
+      gl.vertex(-90, -45, 0);
+      gl.vertex(90, -45, 0);
+      
+      gl.end();
+      
       gl.disable(gl.BLEND);
     }
   }
