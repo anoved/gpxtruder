@@ -388,11 +388,14 @@ GpxDiddler.prototype.process_path = function() {
 	
 	pfac.push_last_faces((i - 1) * 4);
 	
-	var v2s = function(v) {
-		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
-	};
-	
-	return this.AssembleSCAD(ppts.map(v2s), pfac.map(v2s));
+	return this.AssembleSCAD(
+		ppts.map(function(v) {
+			return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
+		}),
+		pfac.map(function(v) {
+			return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
+		})
+	);
 }
 
 GpxDiddler.prototype.AssembleSCAD = function(pathPoints, pathFaces) {
