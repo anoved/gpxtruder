@@ -1,14 +1,13 @@
-var oj = null;
 
 /*
  * Called onLoad. Intercept form submission; handle file locally.
  */
-function setup() {
-	oj = new OpenJsCad.Processor(document.getElementById('display'));
+var setup = function() {
+	var jscad = new OpenJsCad.Processor(document.getElementById('display'));
 	var form = document.forms.namedItem('gpxform');
 	form.addEventListener('submit', function(ev) {
 		ev.preventDefault();
-		loader(document.getElementById('gpxfile').files[0]);
+		loader(document.getElementById('gpxfile').files[0], jscad);
 	}, false);
 }
 
@@ -18,7 +17,7 @@ function setup() {
  * pass the content on to be processed. Basic Javascript GPX
  * parsing based on https://github.com/peplin/gpxviewer/
  */
-function loader(gpxfile) {
+var loader = function(gpxfile, jscad) {
 	
 	var radioValue = function(radios) {
 		for (var i = 0, len = radios.length; i < len; i++) {
@@ -36,6 +35,7 @@ function loader(gpxfile) {
 		if (req.readyState === 4) {
 			var gd = new GpxDiddler(
 					req.responseXML,
+					jscad,
 					document.getElementById('path_width').value / 2.0,
 					document.getElementById('vertical').value,
 					document.getElementById('width').value,
@@ -53,8 +53,9 @@ function loader(gpxfile) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, buffer, vertical, bedx, bedy, base, zcut, shape) {
+function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape) {
 	this.content = content;
+	this.jscad = jscad;
 	this.buffer = parseFloat(buffer);
 	this.vertical = parseFloat(vertical);
 	this.bedx = parseFloat(bedx);
@@ -123,7 +124,7 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	this.fp = this.pp.map(this.pxyz, this);
 	
 	var scad = this.process_path();
-	oj.setJsCad(scad);
+	this.jscad.setJsCad(scad);
 }
 
 // Converts GPX trkpt nodelist to array of lon/lat/elevation vectors.
