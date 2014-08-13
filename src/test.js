@@ -80,6 +80,12 @@ function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, sh
 	// array of scaled/centered/z-cut x/y/z vectors
 	this.fp = [];
 	
+	// array of 2D vectors marking miles/kms
+	this.markers = [];
+	
+	// meters per marker (1000 for kilometer; ~1600 for mile)
+	this.mpermark = 1609;
+	
 	this.minx = 0;
 	this.maxx = 0;
 	this.miny = 0;
@@ -122,6 +128,9 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	
 	// scale/center projected point vectors
 	this.fp = this.pp.map(this.pxyz, this);
+	
+	// scale/center markers (overwriting originals)
+	this.markers = this.markers.map(this.pxyz, this);
 	
 	var scad = this.process_path();
 	this.jscad.setJsCad(scad);
@@ -226,6 +235,12 @@ GpxDiddler.prototype.ProjectPoints = function() {
 	// cumulative distance (used by ring and linear shape)
 	var cd = 0;
 	
+	// distance since last marker
+	var md = 0;
+	
+	// marker counter
+	//var mc = 0;
+	
 	// Initialize extents using first projected point.
 	if (this.shape == 1) {
 		xyz = this.ll[0].projLinear(0);
@@ -249,6 +264,21 @@ GpxDiddler.prototype.ProjectPoints = function() {
 			xyz = this.ll[i].projRing(cd/this.distance, rr);
 		} else {
 			xyz = this.ll[i].projMerc();
+		}
+		
+		md += this.d[i-1];
+		if (md > this.mpermark) {
+			
+			//mc += 1;
+			
+			// as of this point, it's been at least a [mile]
+			// since the last marker. To locate the marker
+			// correctly, interpolate to exact distance along
+			// segment. For now, just use this endpoint.
+			this.markers.push(xyz);
+			
+			// reset marker counter
+			md = 0;
 		}
 		
 		this.UpdateBounds(xyz);
@@ -361,6 +391,21 @@ GpxDiddler.prototype.process_path = function() {
 	};
 	
 	return "function main() {\nreturn CSG.polyhedron({points:[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces:[\n" + pfac.map(v2s).join(",\n") + "\n]});\n}\n";
+}
+
+GpxDiddler.prototype.markerscad = function() {
+	
+	var cylinders = [];
+	
+	for (var i = 0; i < this.markers.length; i++) {
+		var x = this.markers[i][0],
+			y = this.markers[i][1];
+		var c = "CSG.cylinder({start: [0, 0, 0], end: [0, 0, 2], radius: 4})" +
+				".translate([" + x + ", " + y + ", 0])";
+		cylinders.push(c);
+	}
+		
+	return cylinders.join(",\n");
 }
 
 Array.prototype.push_vertices = function(v, z) {
