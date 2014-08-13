@@ -300,16 +300,16 @@ function segment_angle(p, i) {
  * average angle between this segment and the next.
  * (p could be kept as a GpxDiddler property.)
  */
-GpxDiddler.prototype.joint_points = function(p, i, absa, avga) {
+GpxDiddler.prototype.joint_points = function(i, absa, avga) {
 	
 	// distance from endpoint to segment buffer intersection
 	var jointr = this.buffer/Math.cos(avga - absa),
 	
 	// joint coordinates (endpoint offset at bisect angle by jointr)
-		lx = p[i][0] + jointr * Math.cos(avga + Math.PI/2),
-		ly = p[i][1] + jointr * Math.sin(avga + Math.PI/2),
-		rx = p[i][0] + jointr * Math.cos(avga - Math.PI/2),
-		ry = p[i][1] + jointr * Math.sin(avga - Math.PI/2);
+		lx = this.fp[i][0] + jointr * Math.cos(avga + Math.PI/2),
+		ly = this.fp[i][1] + jointr * Math.sin(avga + Math.PI/2),
+		rx = this.fp[i][0] + jointr * Math.cos(avga - Math.PI/2),
+		ry = this.fp[i][1] + jointr * Math.sin(avga - Math.PI/2);
 	
 	return [[lx, ly], [rx, ry]];
 }
@@ -327,7 +327,7 @@ GpxDiddler.prototype.process_path = function() {
 		a1,
 		ra = 0,
 		ja = a0,
-		pj = this.joint_points(this.fp, 0, a0, ja),
+		pj = this.joint_points(0, a0, ja),
 		pk;
 	
 	// first four points of segment polyhedron
@@ -337,17 +337,15 @@ GpxDiddler.prototype.process_path = function() {
 	ppts.push([pj[0][0], pj[0][1], this.fp[0][2] + this.base]);	// upper left
 	ppts.push([pj[1][0], pj[1][1], this.fp[0][2] + this.base]);	// upper right
 
-	// initial endcap face
 	var pfac = [];
-	pfac.push([0, 2, 3]);
-	pfac.push([3, 1, 0])
+	pfac.push_first_faces();
 	
 	for (var i = 1; i < this.fp.length; i++) {
 		
 		a1 = segment_angle(this.fp, i);
 		ra = a1 - a0;
 		ja = ra / 2 + a0;
-		pk = this.joint_points(this.fp, i, a1, ja);
+		pk = this.joint_points(i, a1, ja);
 		
 		// last four points of segment polyhedron
 		ppts.push([pk[0][0], pk[0][1], 0]);						// lower left
@@ -356,42 +354,49 @@ GpxDiddler.prototype.process_path = function() {
 		ppts.push([pk[1][0], pk[1][1], this.fp[i][2] + this.base]);	// upper right
 		
 		// faces of segment based on index of first involved point
-		segment_faces(pfac, (i - 1) * 4);
+		pfac.push_faces((i - 1) * 4);
 		
 		a0 = a1;
 		pj = pk;
 	}
 	
-	// final endcap face
-	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 1, (i - 1) * 4 + 3]);
-	pfac.push([(i - 1) * 4 + 2, (i - 1) * 4 + 0, (i - 1) * 4 + 1]);
+	pfac.push_last_faces((i - 1) * 4);
 	
 	var v2s = function(v) {
 		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
-	}
+	};
 	
 	return "function main() {\nreturn CSG.polyhedron({points:[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces:[\n" + pfac.map(v2s).join(",\n") + "\n]});\n}\n";
 }
 
-// a is face array
+Array.prototype.push_first_faces = function() {
+	this.push([0, 2, 3]);
+	this.push([3, 1, 0]);
+}
+
 // s is index of first corner point comprising this segment
-function segment_faces(a, s) {
+Array.prototype.push_faces = function(s) {
 	
 	// top face
-	a.push([s + 2, s + 6, s + 3]);
-	a.push([s + 3, s + 6, s + 7]);
+	this.push([s + 2, s + 6, s + 3]);
+	this.push([s + 3, s + 6, s + 7]);
 	
 	// left face
-	a.push([s + 3, s + 7, s + 5]);
-	a.push([s + 3, s + 5, s + 1]);
+	this.push([s + 3, s + 7, s + 5]);
+	this.push([s + 3, s + 5, s + 1]);
 	
 	// right face
-	a.push([s + 6, s + 2, s + 0]);
-	a.push([s + 6, s + 0, s + 4]);
+	this.push([s + 6, s + 2, s + 0]);
+	this.push([s + 6, s + 0, s + 4]);
 	
 	// bottom face
-	a.push([s + 0, s + 5, s + 4]);
-	a.push([s + 0, s + 1, s + 5]);
+	this.push([s + 0, s + 5, s + 4]);
+	this.push([s + 0, s + 1, s + 5]);
+}
+
+Array.prototype.push_last_faces = function(s) {
+	this.push([s + 2, s + 1, s + 3]);
+	this.push([s + 2, s + 0, s + 1]);
 }
 
 // returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Mercator meter vector
