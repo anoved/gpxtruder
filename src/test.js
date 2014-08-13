@@ -332,10 +332,7 @@ GpxDiddler.prototype.process_path = function() {
 	
 	// first four points of segment polyhedron
 	var ppts = [];
-	ppts.push([pj[0][0], pj[0][1], 0]);						// lower left
-	ppts.push([pj[1][0], pj[1][1], 0]);						// lower right
-	ppts.push([pj[0][0], pj[0][1], this.fp[0][2] + this.base]);	// upper left
-	ppts.push([pj[1][0], pj[1][1], this.fp[0][2] + this.base]);	// upper right
+	ppts.push_vertices(pj, this.fp[0][2] + this.base);
 
 	var pfac = [];
 	pfac.push_first_faces();
@@ -348,10 +345,7 @@ GpxDiddler.prototype.process_path = function() {
 		pk = this.joint_points(i, a1, ja);
 		
 		// last four points of segment polyhedron
-		ppts.push([pk[0][0], pk[0][1], 0]);						// lower left
-		ppts.push([pk[1][0], pk[1][1], 0]);						// lower right
-		ppts.push([pk[0][0], pk[0][1], this.fp[i][2] + this.base]);	// upper left
-		ppts.push([pk[1][0], pk[1][1], this.fp[i][2] + this.base]);	// upper right
+		ppts.push_vertices(pk, this.fp[i][2] + this.base);
 		
 		// faces of segment based on index of first involved point
 		pfac.push_faces((i - 1) * 4);
@@ -367,6 +361,13 @@ GpxDiddler.prototype.process_path = function() {
 	};
 	
 	return "function main() {\nreturn CSG.polyhedron({points:[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces:[\n" + pfac.map(v2s).join(",\n") + "\n]});\n}\n";
+}
+
+Array.prototype.push_vertices = function(v, z) {
+	this.push([v[0][0], v[0][1], 0]);	// lower left
+	this.push([v[1][0], v[1][1], 0]);	// lower right
+	this.push([v[0][0], v[0][1], z]);	// upper left
+	this.push([v[1][0], v[1][1], z]);	// upper right
 }
 
 Array.prototype.push_first_faces = function() {
