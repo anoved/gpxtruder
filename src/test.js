@@ -42,7 +42,8 @@ var loader = function(gpxfile, jscad) {
 					document.getElementById('depth').value,
 					document.getElementById('base').value,
 					document.getElementById('zcut').checked,
-					radioValue(document.getElementsByName('shape')));
+					radioValue(document.getElementsByName('shape')),
+					radioValue(document.getElementsByName('marker')));
 			gd.LoadTracks();
 		}
 	}
@@ -53,7 +54,7 @@ var loader = function(gpxfile, jscad) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape) {
+function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker) {
 	this.content = content;
 	this.jscad = jscad;
 	this.buffer = parseFloat(buffer);
@@ -83,8 +84,8 @@ function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, sh
 	// array of 2D vectors marking miles/kms
 	this.markers = [];
 	
-	// meters per marker (1000 for kilometer; ~1600 for mile)
-	this.mpermark = 1609;
+	// meters per marker (0 = no markers)
+	this.mpermark = marker;
 	
 	this.minx = 0;
 	this.maxx = 0;
@@ -239,7 +240,7 @@ GpxDiddler.prototype.ProjectPoints = function() {
 	var md = 0;
 	
 	// marker counter
-	//var mc = 0;
+	var mc = 0;
 	
 	// Initialize extents using first projected point.
 	if (this.shape == 1) {
@@ -267,15 +268,16 @@ GpxDiddler.prototype.ProjectPoints = function() {
 		}
 		
 		md += this.d[i-1];
-		if (md > this.mpermark) {
+		if (this.mpermark > 0 && md > this.mpermark) {
 			
-			//mc += 1;
+			mc += 1;
 			
 			// as of this point, it's been at least a [mile]
 			// since the last marker. To locate the marker
 			// correctly, interpolate to exact distance along
 			// segment. For now, just use this endpoint.
 			this.markers.push(xyz);
+			console.log(mc + ": " + cd);
 			
 			// reset marker counter
 			md = 0;
