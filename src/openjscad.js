@@ -1210,6 +1210,11 @@ OpenJsCad.Processor.prototype = {
     {
       blob=this.currentObject.toDxf();
     }
+    else if(format == "jscad") {
+		blob = new Blob([this.script], {
+			type: "text/plain"
+		});
+	}
     else
     {
       throw new Error("Not supported");
@@ -1219,9 +1224,9 @@ OpenJsCad.Processor.prototype = {
   
   supportedFormatsForCurrentObject: function() {
     if (this.currentObject instanceof CSG) {
-      return ["stl", "x3d"];
+      return ["stl", "x3d", "jscad"];
     } else if (this.currentObject instanceof CAG) {
-      return ["dxf"];
+      return ["dxf", "jscad"];
     } else {
       throw new Error("Not supported");
     }
@@ -1243,7 +1248,12 @@ OpenJsCad.Processor.prototype = {
         displayName: "DXF",
         extension: "dxf",
         mimetype: "application/dxf",
-        }
+        },
+      jscad: {
+		  displayName: "JSCAD",
+		  extension: "jscad",
+		  mimetype: "text/plain"
+	  }
     }[format];
   },
 
