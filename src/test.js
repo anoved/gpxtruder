@@ -267,18 +267,18 @@ GpxDiddler.prototype.ProjectPoints = function() {
  * return the preceding segment's angle. Point array
  * should have at least 2 points!)
  */
-function segment_angle(p, i) {
+GpxDiddler.prototype.segment_angle = function(i) {
 	
 	// in case of final point, repeat last segment angle
-	if (i + 1 == p.length) {
-		return segment_angle(p, i - 1);
+	if (i + 1 == this.fp.length) {
+		return this.segment_angle(i - 1);
 	}
 	
 	// 2D coordinates of this point and the next
-	var ix = p[i][0],
-		iy = p[i][1],
-		jx = p[i + 1][0],
-		jy = p[i + 1][1],
+	var ix = this.fp[i][0],
+		iy = this.fp[i][1],
+		jx = this.fp[i + 1][0],
+		jy = this.fp[i + 1][1],
 		
 	// Vector components of segment from this to next
 		dx = jx - ix,
@@ -323,7 +323,7 @@ GpxDiddler.prototype.joint_points = function(i, absa, avga) {
  */
 GpxDiddler.prototype.process_path = function() {
 	
-	var a0 = segment_angle(this.fp, 0),
+	var a0 = this.segment_angle(0),
 		a1,
 		ra = 0,
 		ja = a0,
@@ -342,7 +342,7 @@ GpxDiddler.prototype.process_path = function() {
 	
 	for (var i = 1; i < this.fp.length; i++) {
 		
-		a1 = segment_angle(this.fp, i);
+		a1 = this.segment_angle(i);
 		ra = a1 - a0;
 		ja = ra / 2 + a0;
 		pk = this.joint_points(i, a1, ja);
