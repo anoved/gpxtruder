@@ -1259,7 +1259,7 @@ OpenJsCad.Processor.prototype = {
 
   downloadLinkTextForCurrentObject: function() {
     var ext = this.selectedFormatInfo().extension;
-    return "Download "+ext.toUpperCase();
+    return "Download " + this.getFilenameForRenderedObject() + "." + ext;
   },
 
   generateOutputFileBlobUrl: function() {
@@ -1271,7 +1271,7 @@ OpenJsCad.Processor.prototype = {
     this.downloadOutputFileLink.href = this.outputFileBlobUrl;
     this.downloadOutputFileLink.innerHTML = this.downloadLinkTextForCurrentObject();
     var ext = this.selectedFormatInfo().extension;
-    this.downloadOutputFileLink.setAttribute("download", "openjscad."+ext);
+    this.downloadOutputFileLink.setAttribute("download", this.getFilenameForRenderedObject() + "." + ext);
     this.enableItems();
     if(this.onchange) this.onchange();
   },
