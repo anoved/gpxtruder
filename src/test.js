@@ -392,17 +392,25 @@ GpxDiddler.prototype.process_path = function() {
 		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 	};
 	
-	var scad = "function main() {\nreturn [{name: 'profile', caption: 'Profile', data: CSG.polyhedron({points:[\n" + ppts.map(v2s).join(",\n") + "\n],\nfaces:[\n" + pfac.map(v2s).join(",\n") + "\n]})},\n{name: 'markers', caption: 'Markers', data: " + this.markerscad() + "}];\n}\n";
-	
-	
-	return scad;
+	return this.AssembleSCAD(ppts.map(v2s), pfac.map(v2s));
 }
 
+GpxDiddler.prototype.AssembleSCAD = function(pathPoints, pathFaces) {
+	
+	var models = ["{name: 'profile', caption: 'Profile', data: CSG.polyhedron({points:[\n" + pathPoints.join(",\n") + "\n],\nfaces:[\n" + pathFaces.join(",\n") + "\n]})}"];
+	
+	if (this.mpermark > 0) {
+		models.push("{name: 'markers', caption: 'Markers', data: " + this.markerscad() + "}");
+	}
+	
+	return "function main() {\nreturn [" + models.join(',') + "];\n}\n";;
+}
+
+// assumes this.markers.length >= 1
 GpxDiddler.prototype.markerscad = function() {
 	
 	var c = "CSG.cylinder({start: [0, 0, 0], end: [0, 0, 2], radius: 4})" +
 			".translate([" + this.markers[0][0] + ", " + this.markers[0][1] + ", 0])";
-	
 	
 	for (var i = 1; i < this.markers.length; i++) {
 		var x = this.markers[i][0],
