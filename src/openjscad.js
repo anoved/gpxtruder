@@ -149,6 +149,14 @@ OpenJsCad.Viewer.prototype = {
   ZOOM_MAX: 10000,
   ZOOM_MIN: 10,
   onZoomChanged: null,
+  
+  bedWidth: 180,
+  bedDepth: 90,
+
+  setBedSize: function(width, depth) {
+	  this.bedWidth = width;
+	  this.bedDepth = depth;
+  },
 
   setZoom: function(coeff) { //0...1
     coeff=Math.max(coeff, 0);
@@ -188,6 +196,8 @@ OpenJsCad.Viewer.prototype = {
   },
 
   onDraw: function(e) {
+	var bedx = this.bedWidth / 2,
+		bedy = this.bedDepth / 2;
     var gl = this.gl;
     gl.makeCurrent();
 
@@ -253,24 +263,24 @@ OpenJsCad.Viewer.prototype = {
       // bottom of bed platform
       gl.color(0.5, 0.5, 0.5, 0.2);
    
-      gl.vertex(-90, 45, 0);
-      gl.vertex(90, 45, 0);
-      gl.vertex(90, -45, 0);
-     
-      gl.vertex(-90, 45, 0);
-      gl.vertex(90, -45, 0);
-      gl.vertex(-90, -45, 0);
+      gl.vertex(-bedx,  bedy, 0);
+      gl.vertex( bedx,  bedy, 0);
+      gl.vertex( bedx, -bedy, 0);
+      
+      gl.vertex(-bedx,  bedy, 0);
+      gl.vertex( bedx, -bedy, 0);
+      gl.vertex(-bedx, -bedy, 0);
       
       // top of bed platform
       gl.color(0.2, 0.2, 0.2, 0.6);
       
-      gl.vertex(90, -45, 0);
-      gl.vertex(90, 45, 0);
-      gl.vertex(-90, 45, 0);
-     
-      gl.vertex(-90, 45, 0);
-      gl.vertex(-90, -45, 0);
-      gl.vertex(90, -45, 0);
+      gl.vertex( bedx, -bedy, 0);
+      gl.vertex( bedx,  bedy, 0);
+      gl.vertex(-bedx,  bedy, 0);
+      
+      gl.vertex(-bedx,  bedy, 0);
+      gl.vertex(-bedx, -bedy, 0);
+      gl.vertex( bedx, -bedy, 0);
       
       gl.end();
       
