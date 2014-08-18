@@ -139,7 +139,9 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	this.markers = this.markers.map(this.pxyz, this);
 	
 	var scad = this.process_path();
-	this.jscad.viewer.setBedSize(this.bedx, this.bedy);
+	if (this.jscad.viewer) {
+		this.jscad.viewer.setBedSize(this.bedx, this.bedy);
+	}
 	this.jscad.setJsCad(scad);
 }
 
