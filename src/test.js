@@ -3,7 +3,7 @@
  * Called onLoad. Intercept form submission; handle file locally.
  */
 var setup = function() {
-	var jscad = new OpenJsCad.Processor(document.getElementById('display'));
+	var jscad = new OpenJsCad.Processor(document.getElementById('display'), {color: [0, 0.6, 0.1]});
 	var form = document.forms.namedItem('gpxform');
 	form.addEventListener('submit', function(ev) {
 		ev.preventDefault();
