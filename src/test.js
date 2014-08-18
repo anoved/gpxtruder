@@ -106,6 +106,7 @@ function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, sh
 	this.zoffset = 0;
 	
 	this.scale = 0;
+	this.rotate = false;
 }
 
 GpxDiddler.prototype.LoadTracks = function() {
@@ -232,6 +233,14 @@ GpxDiddler.prototype.UpdateScale = function() {
 		fmax = bmax / mmax,
 		fmin = bmin / mmin;
 	this.scale = Math.min(fmax, fmin);
+	
+	// determine whether the model should be rotated to fit
+	if ((xbe > ybe && this.xextent > this.yextent) ||
+		(xbe < ybe && this.xextent < this.yextent)) {
+		this.rotate = false;
+	} else {
+		this.rotate = true;
+	}
 }
 
 // point to project and cumulative distance along path
@@ -410,7 +419,7 @@ GpxDiddler.prototype.process_path = function() {
 
 GpxDiddler.prototype.AssembleSCAD = function(pathPoints, pathFaces) {
 	
-	var models = ["{name: 'profile', caption: 'Profile', data: CSG.polyhedron({points:[\n" + pathPoints.join(",\n") + "\n],\nfaces:[\n" + pathFaces.join(",\n") + "\n]})}"];
+	var models = ["{name: 'profile', caption: 'Profile', data: CSG.polyhedron({points:[\n" + pathPoints.join(",\n") + "\n],\nfaces:[\n" + pathFaces.join(",\n") + "\n]})" + (this.rotate ? ".rotateZ(90)" : "") + "}"];
 	
 	if (this.mpermark > 0) {
 		models.push("{name: 'markers', caption: 'Markers', data: " + this.markerscad() + "}");
