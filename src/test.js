@@ -26,6 +26,7 @@ var loader = function(gpxfile, jscad) {
 				break;
 			}
 		}
+		return undefined;
 	};
 	
 	var gpxurl = window.URL.createObjectURL(gpxfile);
@@ -420,13 +421,15 @@ GpxDiddler.prototype.process_path = function() {
 
 GpxDiddler.prototype.AssembleSCAD = function(pathPoints, pathFaces) {
 	
-	var models = ["{name: 'profile', caption: 'Profile', data: CSG.polyhedron({points:[\n" + pathPoints.join(",\n") + "\n],\nfaces:[\n" + pathFaces.join(",\n") + "\n]})" + (this.rotate ? ".rotateZ(90)" : "") + "}"];
+	var rotate = this.rotate ? ".rotateZ(90)" : "";
+	
+	var models = ["{name: 'profile', caption: 'Profile', data: CSG.polyhedron({points:[\n" + pathPoints.join(",\n") + "\n],\nfaces:[\n" + pathFaces.join(",\n") + "\n]})" + rotate + "}"];
 	
 	if (this.mpermark > 0) {
-		models.push("{name: 'markers', caption: 'Markers', data: " + this.markerscad() + "}");
+		models.push("{name: 'markers', caption: 'Markers', data: " + this.markerscad() + rotate + "}");
 	}
 	
-	return "function main() {\nreturn [" + models.join(',') + "];\n}\n";;
+	return "function main() {\nreturn [" + models.join(',') + "];\n}\n";
 }
 
 // assumes this.markers.length >= 1
