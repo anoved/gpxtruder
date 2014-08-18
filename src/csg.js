@@ -1307,7 +1307,7 @@ CSG.prototype = {
 			// make a copy of the polygons array, since we are going to modify it:
 			var polygons = csg.polygons.slice(0);
 
-			function addSide (vertex0, vertex1, polygonindex) {
+			var addSide = function (vertex0, vertex1, polygonindex) {
 				var starttag = vertex0.getTag();
 				var endtag = vertex1.getTag();
 				if(starttag == endtag) throw new Error("Assertion failed");
@@ -1344,7 +1344,7 @@ CSG.prototype = {
 				return newsidetag;
 			}
 
-			function deleteSide (vertex0, vertex1, polygonindex) {
+			var deleteSide = function (vertex0, vertex1, polygonindex) {
 				var starttag = vertex0.getTag();
 				var endtag = vertex1.getTag();
 				var sidetag = starttag + "/" + endtag;
