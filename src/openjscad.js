@@ -1,4 +1,4 @@
-OpenJsCad = function() {
+var OpenJsCad = function() {
 };
 
 OpenJsCad.log = function(txt) {
