@@ -222,10 +222,13 @@ GpxDiddler.prototype.UpdateOffset = function() {
 
 // calculate scale used to fit model on output bed
 GpxDiddler.prototype.UpdateScale = function() {
+	// indent bed extent to accomodate buffer width
+	var xbe = this.bedx - (2 * this.buffer),
+		ybe = this.bedy - (2 * this.buffer);
 	var mmax = Math.max(this.xextent, this.yextent),
 		mmin = Math.min(this.xextent, this.yextent),
-		bmax = Math.max(this.bedx, this.bedy),
-		bmin = Math.min(this.bedx, this.bedy),
+		bmax = Math.max(xbe, ybe),
+		bmin = Math.min(xbe, ybe),
 		fmax = bmax / mmax,
 		fmin = bmin / mmin;
 	this.scale = Math.min(fmax, fmin);
