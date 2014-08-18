@@ -801,7 +801,8 @@ OpenJsCad.Processor.prototype = {
     // div.style.width = this.viewerwidth * 11 + 'px';
     // FIXME - below doesn't behave as expected if
     // options.viewerwidth not in pixels
-    div.style.width = this.viewerdiv.canvasW * 11 + 'px';
+    // originally used this.viewerdiv.canvasW, which isn't a thing
+    div.style.width = this.viewerdiv.style.width * 11 + 'px';
     div.style.height = '1px';
     this.zoomControl.appendChild(div);
     this.zoomChangedBySlider=false;
