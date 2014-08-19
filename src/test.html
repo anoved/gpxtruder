@@ -15,24 +15,45 @@
 		<script src="test.js" type="text/javascript"></script>
 		
 		<link rel="stylesheet" href="openjscad.css" type="text/css">
+		<link rel="stylesheet" href="gpxtruder.css" type="text/css">
 	</head>
 	<body onLoad="setup();">
 		
 		<form enctype="multipart/form-data" method="post" name="gpxform">
-			<p>GPX file with elevation: <input type="file" id="gpxfile" required></input></p>
-			<p>Path width: <input type="text" size="10" id="path_width" required value="2"></input> (mm)</p>
-			<p>Vertical exaggeration: <input type="text" size="10" id="vertical" required value="5"></input></p>
-			<p>Clip to minimum elevation: <input type="checkbox" id="zcut" value="1" checked></input></p>
-			<p>Bed width: <input type="text" size="10" id="width" required value="180"></input>
-			   Depth: <input type="text" size="10" id="depth" required value="90"></input> (mm)</p>
-			<p>Base height: <input type="text" size="10" id="base" required value="0"></input> (mm)</p>
+			<p>GPX file with elevation: <input type="file" id="gpxfile" required></input><br />
+			   <span class="info">Use <a href="http://www.gpsvisualizer.com/elevation">GPS Visualizer</a> to add elevation data to your GPX file.</span></p>
+			
+			<h2>Route Processing</h2>
+			
+			<p>Vertical exaggeration: <input type="text" size="10" id="vertical" required value="5"></input><br />
+			   <span class="info">Enhance elevation changes by this factor.</span></p>
+			<p>Clip to minimum elevation: <input type="checkbox" id="zcut" value="1" checked></input><br />
+			   <span class="info">Disable to depict full elevation above sea level.</span></p>
+			<p>Minimum distance between points: <input type="text" size="10" id="mindist" required value="0"></input> (meters) <br />
+			   <span class="info">Discard points that are too close together. A nonzero minimum distance will simplify the output model but will alter the exact shape and length of the route.</span></p>
+			
+			<h2>Output Features</h2>
+			
 			<p>Shape: <input type="radio" name="shape" value="0" checked /> Track
 					  <input type="radio" name="shape" value="1" /> Linear
-					  <input type="radio" name="shape" value="2" /> Ring</p>
+					  <input type="radio" name="shape" value="2" /> Ring<br />
+			   <span class="info">Select <em>track</em> for a model of the actual route. Select <em>linear</em> for a straight elevation profile. Select <em>ring</em> for an elevation profile wrapped in a circle.</span></p>
 			<p>Markers: <input type="radio" name="marker" value="0" checked /> None
 						<input type="radio" name="marker" value="1000" /> Kilometers
-						<input type="radio" name="marker" value="1609" /> Miles</p>
-			<p>Minimum distance between points: <input type="text" size="10" id="mindist" required value="0"></input> (meters) Use a nonzero value to omit close points. Omitting points may alter the shape and distance of the route.</p>
+						<input type="radio" name="marker" value="1609" /> Miles<br />
+			   <span class="info">If enabled, a secondary model is generated representing the position of each mile or kilometer marker.</span></p>
+			
+			<h2>Output Size</h2>
+			
+			<p>Bed width (x): <input type="text" size="10" id="width" required value="180"></input> (mm)<br />
+			   Bed depth (y) <input type="text" size="10" id="depth" required value="90"></input> (mm)<br />
+			   <span class="info">Output is scaled to fit within these dimensions.</span></p>
+			<p>Path width: <input type="text" size="10" id="path_width" required value="2"></input> (mm)<br />
+			   <span class="info">Thickness of the output path.</span></p>
+			<p>Base height: <input type="text" size="10" id="base" required value="0"></input> (mm)<br />
+			   <span class="info">Extra height added to the bottom of the route model.</span></p>
+
+			
 			<p><input type="submit" value="Convert"></input></p>
 		</form>
 		
