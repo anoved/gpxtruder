@@ -444,22 +444,22 @@ GpxDiddler.prototype.AssembleSCAD = function(pathPoints, pathFaces) {
 	return "function main() {\nreturn [" + models.join(',') + "];\n}\n";
 }
 
-
+// SCAD for one marker
+GpxDiddler.prototype.MakeMarker = function(i) {
+	var x = this.markers[i][0],
+		y = this.markers[i][1],
+		z = this.markers[i][2],
+		r = this.buffer + 1;
+	return "CSG.cylinder({start: [0, 0, 0], end: [0, 0, " + z + "], radius: " + r + "}).translate([" + x + ", " + y + ", 0])";
+}
 
 // assumes this.markers.length >= 1
 GpxDiddler.prototype.markerscad = function() {
-	
-	var c = "CSG.cylinder({start: [0, 0, 0], end: [0, 0, 2], radius: 4})" +
-			".translate([" + this.markers[0][0] + ", " + this.markers[0][1] + ", 0])";
-	
+	var scad = this.MakeMarker(0);
 	for (var i = 1; i < this.markers.length; i++) {
-		var x = this.markers[i][0],
-			y = this.markers[i][1];
-		c += ".union(CSG.cylinder({start: [0, 0, 0], end: [0, 0, 2], radius: 4})" +
-				".translate([" + x + ", " + y + ", 0]))";
+		scad += ".union(" + this.MakeMarker(i) + ")";
 	}
-		
-	return c;
+	return scad;
 }
 
 Array.prototype.push_vertices = function(v, z) {
