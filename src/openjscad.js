@@ -643,7 +643,7 @@ OpenJsCad.revokeBlobUrl = function(url) {
 };
 
 OpenJsCad.FileSystemApiErrorHandler = function(fileError, operation) {
-  var errormap = {
+  /*var errormap = {
     1: 'NOT_FOUND_ERR',
     2: 'SECURITY_ERR',
     3: 'ABORT_ERR',
@@ -665,8 +665,8 @@ OpenJsCad.FileSystemApiErrorHandler = function(fileError, operation) {
   else
   {
     errname = "Error #"+fileError.code;
-  }
-  var errtxt = "FileSystem API error: "+operation+" returned error "+errname;
+  }*/
+  var errtxt = "FileSystem API error: "+operation+" returned error " + fileError.name + " (" + fileError.message + ")";
   throw new Error(errtxt);
 };
 
