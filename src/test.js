@@ -141,6 +141,7 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	this.markers = this.markers.map(this.pxyz, this);
 	
 	var scad = this.process_path();
+	
 	if (this.jscad.viewer) {
 		this.jscad.viewer.setBedSize(this.bedx, this.bedy);
 	}
@@ -396,7 +397,7 @@ GpxDiddler.prototype.process_path = function() {
 	
 	// first four points of segment polyhedron
 	var ppts = [];
-	ppts.push_vertices(pj, this.fp[0][2] + this.base);
+	ppts.push_vertices(pj, this.fp[0][2]);
 
 	var pfac = [];
 	pfac.push_first_faces();
@@ -409,7 +410,7 @@ GpxDiddler.prototype.process_path = function() {
 		pk = this.joint_points(i, a1, ja);
 		
 		// last four points of segment polyhedron
-		ppts.push_vertices(pk, this.fp[i][2] + this.base);
+		ppts.push_vertices(pk, this.fp[i][2]);
 		
 		// faces of segment based on index of first involved point
 		pfac.push_faces((i - 1) * 4);
@@ -442,6 +443,8 @@ GpxDiddler.prototype.AssembleSCAD = function(pathPoints, pathFaces) {
 	
 	return "function main() {\nreturn [" + models.join(',') + "];\n}\n";
 }
+
+
 
 // assumes this.markers.length >= 1
 GpxDiddler.prototype.markerscad = function() {
@@ -501,7 +504,7 @@ GpxDiddler.prototype.pxyz = function(v) {
 	return [
 			this.scale * (v[0] - this.xoffset),
 			this.scale * (v[1] - this.yoffset),
-			this.scale * (v[2] - this.zoffset) * this.vertical
+			this.scale * (v[2] - this.zoffset) * this.vertical + this.base
 	];
 }
 
