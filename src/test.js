@@ -45,7 +45,8 @@ var loader = function(gpxfile, jscad) {
 					document.getElementById('zcut').checked,
 					radioValue(document.getElementsByName('shape')),
 					radioValue(document.getElementsByName('marker')),
-					document.getElementById('mindist').value);
+					document.getElementById('mindist').value,
+					document.getElementById('code_jscad'));
 			gd.LoadTracks();
 		}
 	}
@@ -56,7 +57,7 @@ var loader = function(gpxfile, jscad) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, mindist) {
+function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, mindist, code_jscad) {
 	this.content = content;
 	this.jscad = jscad;
 	this.buffer = parseFloat(buffer);
@@ -67,6 +68,7 @@ function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, sh
 	this.zcut = zcut;
 	this.shape = shape;
 	this.minimumDistance = parseFloat(mindist);
+	this.code_jscad = code_jscad;
 	
 	// array of lon/lat/ele vectors (deg-ew/deg-ns/meters)
 	this.ll = [];
@@ -141,6 +143,8 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	this.markers = this.markers.map(this.pxyz, this);
 	
 	var scad = this.process_path();
+	
+	this.code_jscad.innerHTML = scad;
 	
 	if (this.jscad.viewer) {
 		this.jscad.viewer.setBedSize(this.bedx, this.bedy);

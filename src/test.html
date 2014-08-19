@@ -19,6 +19,8 @@
 	</head>
 	<body onLoad="setup();">
 		
+		<h1>Setup</h1>
+		
 		<form enctype="multipart/form-data" method="post" name="gpxform">
 			<p>GPX file with elevation: <input type="file" id="gpxfile" required></input><br />
 			   <span class="info">Use <a href="http://www.gpsvisualizer.com/elevation">GPS Visualizer</a> to add elevation data to your GPX file.</span></p>
@@ -57,7 +59,14 @@
 			<p><input type="submit" value="Convert"></input></p>
 		</form>
 		
+		<h1>3D</h1>
+		
 		<div id="display"></div>
+		
+		<h1>Code</h1>
+		
+		<p><span class="info">Paste this code into <a href="http://openjscad.org/">OpenJSCAD.org</a> (may require some editing):</span><br />
+		<textarea id="code_jscad" cols="80" rows="20"></textarea></p>
 		
 	</body>
 </html>
