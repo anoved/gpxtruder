@@ -34,13 +34,13 @@
 			
 			<h2>Output Features</h2>
 			
-			<p>Shape: <input type="radio" name="shape" value="0" checked /> Track
-					  <input type="radio" name="shape" value="1" /> Linear
-					  <input type="radio" name="shape" value="2" /> Ring<br />
+			<p>Shape: <input type="radio" name="shape" value="0" id="shape_track" checked /> <label for="shape_track">Track</label>
+					  <input type="radio" name="shape" value="1" id="shape_linear" /> <label for="shape_linear">Linear</label>
+					  <input type="radio" name="shape" value="2" id="shape_ring" /> <label for="shape_ring">Ring</label><br />
 			   <span class="info">Select <em>track</em> for a model of the actual route. Select <em>linear</em> for a straight elevation profile. Select <em>ring</em> for an elevation profile wrapped in a circle.</span></p>
-			<p>Markers: <input type="radio" name="marker" value="0" checked /> None
-						<input type="radio" name="marker" value="1000" /> Kilometers
-						<input type="radio" name="marker" value="1609" /> Miles<br />
+			<p>Markers: <input type="radio" name="marker" value="0" id="marker_none" checked /> <label for="marker_none">None</label>
+						<input type="radio" name="marker" value="1000" id="marker_km" /> <label for="marker_km">Kilometers</label>
+						<input type="radio" name="marker" value="1609" id="marker_mi" /> <label for="marker_mi">Miles</label><br />
 			   <span class="info">If enabled, a secondary model is generated representing the position of each mile or kilometer marker.</span></p>
 			
 			<h2>Output Size</h2>
