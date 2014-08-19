@@ -142,7 +142,9 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	// scale/center markers (overwriting originals)
 	this.markers = this.markers.map(this.pxyz, this);
 	
-	var scad = this.process_path();
+	this.process_path();
+	
+	var scad = this.AssembleSCAD();
 	
 	this.code_jscad.innerHTML = scad;
 	
@@ -425,20 +427,19 @@ GpxDiddler.prototype.process_path = function() {
 	
 	pfac.push_last_faces((i - 1) * 4);
 	
-	return this.AssembleSCAD(
-		ppts.map(function(v) {
-			return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
-		}),
-		pfac.map(function(v) {
-			return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
-		})
-	);
+	this.model_points = ppts.map(function(v) {
+		return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
+	});
+	
+	this.model_faces = pfac.map(function(v) {
+		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
+	});
 }
 
-GpxDiddler.prototype.AssembleSCAD = function(pathPoints, pathFaces) {
+GpxDiddler.prototype.AssembleSCAD = function() {
 	
 	var rotate = this.rotate ? ".rotateZ(90)" : "",
-		modelscad = "CSG.polyhedron({points:[\n" + pathPoints.join(",\n") + "\n],\nfaces:[\n" + pathFaces.join(",\n") + "\n]})",
+		modelscad = "CSG.polyhedron({points:[\n" + this.model_points.join(",\n") + "\n],\nfaces:[\n" + this.model_faces.join(",\n") + "\n]})",
 		models = ["{name: 'profile', caption: 'Profile', data: " + modelscad + rotate + "}"];
 	
 	if (this.mpermark > 0) {
