@@ -433,12 +433,14 @@ GpxDiddler.prototype.process_path = function() {
 
 GpxDiddler.prototype.AssembleSCAD = function(pathPoints, pathFaces) {
 	
-	var rotate = this.rotate ? ".rotateZ(90)" : "";
-	
-	var models = ["{name: 'profile', caption: 'Profile', data: CSG.polyhedron({points:[\n" + pathPoints.join(",\n") + "\n],\nfaces:[\n" + pathFaces.join(",\n") + "\n]})" + rotate + "}"];
+	var rotate = this.rotate ? ".rotateZ(90)" : "",
+		modelscad = "CSG.polyhedron({points:[\n" + pathPoints.join(",\n") + "\n],\nfaces:[\n" + pathFaces.join(",\n") + "\n]})",
+		models = ["{name: 'profile', caption: 'Profile', data: " + modelscad + rotate + "}"];
 	
 	if (this.mpermark > 0) {
-		models.push("{name: 'markers', caption: 'Markers', data: " + this.markerscad() + rotate + "}");
+		var markscad = this.markerscad();
+		models.push("{name: 'markers', caption: 'Markers', data: " + markscad + rotate + "}");
+		//models.push("{name: 'combined', caption: 'Combined', data: " + modelscad + ".union(" + markscad + ")" + rotate + "}");
 	}
 	
 	return "function main() {\nreturn [" + models.join(',') + "];\n}\n";
