@@ -92,6 +92,10 @@ function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, sh
 	// array of 2D vectors marking miles/kms
 	this.markers = [];
 	
+	// remember indices of projected points bounding each marker
+	// (so that marker segment angles can be computed after scaling)
+	this.markseg = [];
+	
 	// meters per marker (0 = no markers)
 	this.mpermark = marker;
 	
@@ -318,8 +322,9 @@ GpxDiddler.prototype.ProjectPoints = function() {
 				this.ll[i-1][2] + pd * (this.ll[i][2] - this.ll[i-1][2])
 			];
 			
-			// store projected marker location			
+			// store projected marker location
 			this.markers.push(this.ProjectPoint(markerpoint, cd - next_seg));
+			this.markseg.push([i - 1, i]);
 			
 			// reset distance to next marker
 			md = next_seg;
@@ -329,6 +334,12 @@ GpxDiddler.prototype.ProjectPoints = function() {
 	this.UpdateExtent();
 	this.UpdateOffset();
 	this.UpdateScale();
+}
+
+GpxDiddler.prototype.vector_angle = function(a, b) {
+	var dx = b[0] - a[0],
+		dy = b[1] - a[1];
+	return Math.atan2(dy, dx);
 }
 
 /*
@@ -345,20 +356,8 @@ GpxDiddler.prototype.segment_angle = function(i) {
 		return this.segment_angle(i - 1);
 	}
 	
-	// 2D coordinates of this point and the next
-	var ix = this.fp[i][0],
-		iy = this.fp[i][1],
-		jx = this.fp[i + 1][0],
-		jy = this.fp[i + 1][1],
-		
-	// Vector components of segment from this to next
-		dx = jx - ix,
-		dy = jy - iy,
-		
-	// Angle of segment vector (radians ccw from x-axis)
-		angle = Math.atan2(dy, dx);
-	
-	return angle;
+	// angle between this point and the next
+	return this.vector_angle(this.fp[i], this.fp[i + 1]);
 }
 
 /*
@@ -456,8 +455,13 @@ GpxDiddler.prototype.MakeMarker = function(i) {
 	var x = this.markers[i][0],
 		y = this.markers[i][1],
 		z = this.markers[i][2],
-		r = this.buffer + 1;
-	return "CSG.cylinder({start: [0, 0, 0], end: [0, 0, " + z + "], radius: " + r + "}).translate([" + x + ", " + y + ", 0])";
+		r = this.buffer + 1,
+		
+		// angle between this the projected/scaled/centered points comprising the segment
+		// along which this marker lies.
+		t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
+	
+	return "CSG.cube({corner1: [" + (-1 * r/2) + ", " + (-1 * r) + " , 0], corner2: [" + r/2 + ", " + r + ", " + z + "]}).rotateZ(" + (t * 180 / Math.PI) + ").translate([" + x + ", " + y + ", 0])";
 }
 
 // assumes this.markers.length >= 1
@@ -506,7 +510,7 @@ Array.prototype.push_last_faces = function(s) {
 	this.push([s + 2, s + 0, s + 1]);
 }
 
-// returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Mercator meter vector
+// returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Projected vector
 GpxDiddler.prototype.pxyz = function(v) {
 	return [
 			this.scale * (v[0] - this.xoffset),
