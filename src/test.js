@@ -46,7 +46,8 @@ var loader = function(gpxfile, jscad) {
 					radioValue(document.getElementsByName('shape')),
 					radioValue(document.getElementsByName('marker')),
 					document.getElementById('mindist').value,
-					document.getElementById('code_jscad'));
+					document.getElementById('code_jscad'),
+					document.getElementById('code_openscad'));
 			gd.LoadTracks();
 		}
 	}
@@ -57,7 +58,7 @@ var loader = function(gpxfile, jscad) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, mindist, code_jscad) {
+function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, mindist, code_jscad, code_openscad) {
 	this.content = content;
 	this.jscad = jscad;
 	this.buffer = parseFloat(buffer);
@@ -69,6 +70,7 @@ function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, sh
 	this.shape = shape;
 	this.minimumDistance = parseFloat(mindist);
 	this.code_jscad = code_jscad;
+	this.code_openscad = code_openscad;
 	
 	// array of lon/lat/ele vectors (deg-ew/deg-ns/meters)
 	this.ll = [];
@@ -150,12 +152,16 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	
 	var scad = this.AssembleSCAD();
 	
-	this.code_jscad.innerHTML = scad;
-	
 	if (this.jscad.viewer) {
 		this.jscad.viewer.setBedSize(this.bedx, this.bedy);
 	}
 	this.jscad.setJsCad(scad);
+	
+	// use a slightly different jscad variant for cut-n-paste,
+	// since the multiple-model version used for webgl is not compat
+	this.code_jscad.innerHTML = scad;
+	//this.code_jscad.innerHTML = "function main() {\nreturn " + this.markerscad() + ";\n}\n";
+	this.code_openscad.innerHTML = this.AssembleOpenSCAD();
 }
 
 // Converts GPX trkpt nodelist to array of lon/lat/elevation vectors.
@@ -444,10 +450,40 @@ GpxDiddler.prototype.AssembleSCAD = function() {
 	if (this.mpermark > 0) {
 		var markscad = this.markerscad();
 		models.push("{name: 'markers', caption: 'Markers', data: " + markscad + rotate + "}");
-		//models.push("{name: 'combined', caption: 'Combined', data: " + modelscad + ".union(" + markscad + ")" + rotate + "}");
 	}
 	
 	return "function main() {\nreturn [" + models.join(',') + "];\n}\n";
+}
+
+GpxDiddler.prototype.AssembleOpenSCAD = function() {
+	var openscad = "module profile() {\npolyhedron(points=[\n" + this.model_points.join(",\n") + "\n],\nfaces=[\n" + this.model_faces.join(",\n") + "\n]);\n}\n";
+
+	if (this.mpermark > 0) {
+		openscad += this.OSmarkerscad();
+		openscad += "markers();\n";
+	}
+	
+	openscad += "profile();\n";
+	return openscad;
+}
+
+GpxDiddler.prototype.OSmarkerscad = function() {
+	var m = [];
+	for (var i = 0; i < this.markers.length; i++) {
+		m.push(this.OSMakeMarker(i));
+	}
+	return "module markers() {\nunion() {\n" + m.join("\n") + "\n}\n}\n";
+}
+
+GpxDiddler.prototype.OSMakeMarker = function(i) {
+	var x = this.markers[i][0],
+		y = this.markers[i][1],
+		z = this.markers[i][2],
+		r = this.buffer + 1,
+		t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
+	return "translate([" + x + ", " + y + ", " + z/2 + "]) " + 
+		   "rotate([0, 0, " + (t * 180/Math.PI) + "]) " + 
+		   "cube(size=[1, " + (2 * r) + ", " + z + "], center=true);";
 }
 
 // SCAD for one marker
