@@ -153,6 +153,7 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 	if (this.jscad.viewer) {
 		this.jscad.viewer.setBedSize(this.bedx, this.bedy);
 	}
+	
 	this.jscad.setJsCad(this.jscad_assemble(false));
 	
 	// use a slightly different jscad variant for cut-n-paste,
@@ -441,7 +442,10 @@ GpxDiddler.prototype.process_path = function() {
 
 // returns jscad for one marker
 // use oscad-style cube params rather than corner1 and corner2
-GpxDiddler.prototype.jscad_marker = function(i) {
+
+// set these code generators up as objects that can keep track of whether
+// they need to include "CSG.", etc, rather than passing this boolean dl param around
+GpxDiddler.prototype.jscad_marker = function(i, dl) {
 	var x = this.markers[i][0],
 		y = this.markers[i][1],
 		z = this.markers[i][2],
@@ -451,11 +455,21 @@ GpxDiddler.prototype.jscad_marker = function(i) {
 		// along which this marker lies.
 		t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
 	
-	return "CSG.cube({corner1: [" + (-1 * r/2) + ", " + (-1 * r) + " , 0], corner2: [" + r/2 + ", " + r + ", " + z + "]}).rotateZ(" + (t * 180 / Math.PI) + ").translate([" + x + ", " + y + ", 0])";
+	if (dl == true) {
+		var scad = "cube({size: [1, " + (2 * r) + ", " + z + "], center: true})" +
+				".rotateZ(" + (t * 180 / Math.PI) + ")" +
+				".translate([" + x + ", " + y + ", " + z/2 + "])";
+	} else {
+		var scad = "CSG.cube({radius: [1, " + (2 * r) + ", " + z + "], center: [0, 0, " + (z/2) + "]})" +
+				".rotateZ(" + (t * 180 / Math.PI) + ")" +
+				".translate([" + x + ", " + y + ", " + z/2 + "])";
+	}
+		
+	return scad;
 }
 
 // returns jscad function for markers
-GpxDiddler.prototype.jscad_markers = function() {
+GpxDiddler.prototype.jscad_markers = function(dl) {
 	
 	// return empty string if markers are disabled
 	if (this.mpermark <= 0) {
@@ -464,7 +478,7 @@ GpxDiddler.prototype.jscad_markers = function() {
 	
 	var markers = [];
 	for (var i = 0; i < this.markers.length; i++) {
-		markers.push(this.jscad_marker(i));
+		markers.push(this.jscad_marker(i, dl));
 	}
 	
 	var jscad = markers[0] + markers.slice(1).map(function(s) {
@@ -496,7 +510,7 @@ GpxDiddler.prototype.jscad_profile = function(dl) {
 
 // dl = download version (webgl jscad is not openjscad.org compatible)
 GpxDiddler.prototype.jscad_assemble = function(dl) {
-	var jscad = this.jscad_profile(dl) + this.jscad_markers();
+	var jscad = this.jscad_profile(dl) + this.jscad_markers(dl);
 	
 	if (dl == true) {
 		var um = (this.mpermark > 0 ? ".union(markers())" : "");
