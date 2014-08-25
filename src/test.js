@@ -34,7 +34,7 @@ var loader = function(gpxfile, jscad) {
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if (req.readyState === 4) {
-			var gd = new GpxDiddler(
+			var gd = new Gpex(
 					req.responseXML,
 					jscad,
 					document.getElementById('path_width').value / 2.0,
@@ -58,7 +58,7 @@ var loader = function(gpxfile, jscad) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, mindist, code_jscad, code_openscad) {
+function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, mindist, code_jscad, code_openscad) {
 	this.content = content;
 	this.jscad = jscad;
 	this.buffer = parseFloat(buffer);
@@ -120,21 +120,21 @@ function GpxDiddler(content, jscad, buffer, vertical, bedx, bedy, base, zcut, sh
 	this.rotate = false;
 }
 
-GpxDiddler.prototype.LoadTracks = function() {
+Gpex.prototype.LoadTracks = function() {
 	var tracks = this.content.documentElement.getElementsByTagName('trk');
 	for (var i = 0; i < tracks.length; i++) {
 		this.LoadTrack(tracks[i]);
 	}
 }
 
-GpxDiddler.prototype.LoadTrack = function(track) {
+Gpex.prototype.LoadTrack = function(track) {
 	var segments = track.getElementsByTagName('trkseg');
 	for (var i = 0; i < segments.length; i++) {
 		this.LoadSegment(segments[i]);
 	}
 }
 
-GpxDiddler.prototype.LoadSegment = function(segment) {
+Gpex.prototype.LoadSegment = function(segment) {
 	
 	// populates this.ll (lat/lon vectors)
 	this.ScanPoints(segment.getElementsByTagName('trkpt'));
@@ -165,7 +165,7 @@ GpxDiddler.prototype.LoadSegment = function(segment) {
 
 // Converts GPX trkpt nodelist to array of lon/lat/elevation vectors.
 // Also assembles array of segment distances (n - 1 where n = point count)
-GpxDiddler.prototype.ScanPoints = function(trkpts) {
+Gpex.prototype.ScanPoints = function(trkpts) {
 	
 	this.ll.push(this.llz(trkpts[0]));
 	
@@ -189,7 +189,7 @@ GpxDiddler.prototype.ScanPoints = function(trkpts) {
 }
 
 // set min/max x/y/z bounds to the given xyz point
-GpxDiddler.prototype.InitBounds = function(xyz) {
+Gpex.prototype.InitBounds = function(xyz) {
 	this.minx = xyz[0];
 	this.maxx = xyz[0];
 	this.miny = xyz[1];
@@ -199,7 +199,7 @@ GpxDiddler.prototype.InitBounds = function(xyz) {
 }
 
 // update min/max x/y/z bounds to include the given xyz point
-GpxDiddler.prototype.UpdateBounds = function(xyz) {
+Gpex.prototype.UpdateBounds = function(xyz) {
 	if (xyz[0] < this.minx) {
 		this.minx = xyz[0];
 	}
@@ -226,14 +226,14 @@ GpxDiddler.prototype.UpdateBounds = function(xyz) {
 }
 
 // calculate extents (model size in each dimension) from bounds
-GpxDiddler.prototype.UpdateExtent = function() {
+Gpex.prototype.UpdateExtent = function() {
 	this.xextent = this.maxx - this.minx;
 	this.yextent = this.maxy - this.miny;
 	this.zextent = this.maxz - this.minz;
 }
 
 // calculate offsets used to translate model to output origin
-GpxDiddler.prototype.UpdateOffset = function() {
+Gpex.prototype.UpdateOffset = function() {
 	
 	// xy offset used to center model around origin
 	this.xoffset = (this.minx + this.maxx) / 2;
@@ -251,7 +251,7 @@ GpxDiddler.prototype.UpdateOffset = function() {
 }
 
 // calculate scale used to fit model on output bed
-GpxDiddler.prototype.UpdateScale = function() {
+Gpex.prototype.UpdateScale = function() {
 	// indent bed extent to accomodate buffer width
 	var xbe = this.bedx - (2 * this.buffer),
 		ybe = this.bedy - (2 * this.buffer);
@@ -273,7 +273,7 @@ GpxDiddler.prototype.UpdateScale = function() {
 }
 
 // point to project and cumulative distance along path
-GpxDiddler.prototype.ProjectPoint = function(point, cd) {
+Gpex.prototype.ProjectPoint = function(point, cd) {
 	var xyz;
 	if (this.shape == 1) {
 		xyz = point.projLinear(cd);
@@ -285,7 +285,7 @@ GpxDiddler.prototype.ProjectPoint = function(point, cd) {
 	return xyz;
 }
 
-GpxDiddler.prototype.ProjectPoints = function() {
+Gpex.prototype.ProjectPoints = function() {
 	
 	// cumulative distance
 	var cd = 0;
@@ -341,7 +341,7 @@ GpxDiddler.prototype.ProjectPoints = function() {
 	this.UpdateScale();
 }
 
-GpxDiddler.prototype.vector_angle = function(a, b) {
+Gpex.prototype.vector_angle = function(a, b) {
 	var dx = b[0] - a[0],
 		dy = b[1] - a[1];
 	return Math.atan2(dy, dx);
@@ -354,7 +354,7 @@ GpxDiddler.prototype.vector_angle = function(a, b) {
  * return the preceding segment's angle. Point array
  * should have at least 2 points!)
  */
-GpxDiddler.prototype.segment_angle = function(i) {
+Gpex.prototype.segment_angle = function(i) {
 	
 	// in case of final point, repeat last segment angle
 	if (i + 1 == this.fp.length) {
@@ -373,9 +373,9 @@ GpxDiddler.prototype.segment_angle = function(i) {
  * intersection with adjacent segment's buffered path.
  * absa is absolute angle of this segment; avga is the
  * average angle between this segment and the next.
- * (p could be kept as a GpxDiddler property.)
+ * (p could be kept as a Gpex property.)
  */
-GpxDiddler.prototype.joint_points = function(i, absa, avga) {
+Gpex.prototype.joint_points = function(i, absa, avga) {
 	
 	// distance from endpoint to segment buffer intersection
 	var jointr = this.buffer/Math.cos(avga - absa),
@@ -396,7 +396,7 @@ GpxDiddler.prototype.joint_points = function(i, absa, avga) {
  * corners of the quad representing a buffered path for
  * that segment; consecutive segments share endpoints.
  */
-GpxDiddler.prototype.process_path = function() {
+Gpex.prototype.process_path = function() {
 	
 	var a0 = this.segment_angle(0),
 		a1,
@@ -445,7 +445,7 @@ GpxDiddler.prototype.process_path = function() {
 
 // set these code generators up as objects that can keep track of whether
 // they need to include "CSG.", etc, rather than passing this boolean dl param around
-GpxDiddler.prototype.jscad_marker = function(i, dl) {
+Gpex.prototype.jscad_marker = function(i, dl) {
 	var x = this.markers[i][0],
 		y = this.markers[i][1],
 		z = this.markers[i][2],
@@ -469,7 +469,7 @@ GpxDiddler.prototype.jscad_marker = function(i, dl) {
 }
 
 // returns jscad function for markers
-GpxDiddler.prototype.jscad_markers = function(dl) {
+Gpex.prototype.jscad_markers = function(dl) {
 	
 	// return empty string if markers are disabled
 	if (this.mpermark <= 0) {
@@ -495,7 +495,7 @@ GpxDiddler.prototype.jscad_markers = function(dl) {
 }
 
 // returns jscad function for profile
-GpxDiddler.prototype.jscad_profile = function(dl) {
+Gpex.prototype.jscad_profile = function(dl) {
 	var jscad = (dl == true ? "" : "CSG.") + "polyhedron({points:[\n" +
 			this.model_points.join(",\n") + "\n],\n" +
 			(dl == true ? "triangles" : "faces") + ":[\n" +
@@ -509,7 +509,7 @@ GpxDiddler.prototype.jscad_profile = function(dl) {
 }
 
 // dl = download version (webgl jscad is not openjscad.org compatible)
-GpxDiddler.prototype.jscad_assemble = function(dl) {
+Gpex.prototype.jscad_assemble = function(dl) {
 	var jscad = this.jscad_profile(dl) + this.jscad_markers(dl);
 	
 	if (dl == true) {
@@ -528,7 +528,7 @@ GpxDiddler.prototype.jscad_assemble = function(dl) {
 	return jscad + mainf;
 }
 
-GpxDiddler.prototype.oscad_assemble = function() {
+Gpex.prototype.oscad_assemble = function() {
 	var openscad = "module profile() {\npolyhedron(points=[\n" + this.model_points.join(",\n") + "\n],\nfaces=[\n" + this.model_faces.join(",\n") + "\n]);\n}\n";
 
 	if (this.mpermark > 0) {
@@ -540,7 +540,7 @@ GpxDiddler.prototype.oscad_assemble = function() {
 	return openscad;
 }
 
-GpxDiddler.prototype.oscad_markers = function() {
+Gpex.prototype.oscad_markers = function() {
 	var m = [];
 	for (var i = 0; i < this.markers.length; i++) {
 		m.push(this.oscad_marker(i));
@@ -548,7 +548,7 @@ GpxDiddler.prototype.oscad_markers = function() {
 	return "module markers() {\nunion() {\n" + m.join("\n") + "\n}\n}\n";
 }
 
-GpxDiddler.prototype.oscad_marker = function(i) {
+Gpex.prototype.oscad_marker = function(i) {
 	var x = this.markers[i][0],
 		y = this.markers[i][1],
 		z = this.markers[i][2],
@@ -597,7 +597,7 @@ Array.prototype.push_last_faces = function(s) {
 }
 
 // returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Projected vector
-GpxDiddler.prototype.pxyz = function(v) {
+Gpex.prototype.pxyz = function(v) {
 	return [
 			this.scale * (v[0] - this.xoffset),
 			this.scale * (v[1] - this.yoffset),
@@ -606,7 +606,7 @@ GpxDiddler.prototype.pxyz = function(v) {
 }
 
 // returns numeric [longitude, latitude, elevation] vector from GPX track point
-GpxDiddler.prototype.llz = function(pt) {
+Gpex.prototype.llz = function(pt) {
 	return [
 			parseFloat(pt.getAttribute('lon')),
 			parseFloat(pt.getAttribute('lat')),
