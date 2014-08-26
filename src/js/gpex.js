@@ -85,10 +85,10 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	// used for ring shape only; ring circumference = this.distance
 	this.ringRadius = 0;
 	
-	// array of projected x/y/z vectors (meters)
+	// array of projected x/y/z vectors (meters) (pp = projected points)
 	this.pp = [];
 	
-	// array of scaled/centered/z-cut x/y/z vectors
+	// array of scaled/centered/z-cut x/y/z vectors (fp = final points)
 	this.fp = [];
 	
 	// array of 2D vectors marking miles/kms
@@ -155,11 +155,7 @@ Gpex.prototype.LoadSegment = function(segment) {
 	}
 	
 	this.jscad.setJsCad(this.jscad_assemble(false));
-	
-	// use a slightly different jscad variant for cut-n-paste,
-	// since the multiple-model version used for webgl is not compat
-	this.code_jscad.innerHTML = this.jscad_assemble(true);
-	//this.code_jscad.innerHTML = "function main() {\nreturn " + this.markerscad() + ";\n}\n";
+	this.code_jscad.innerHTML = this.jscad_assemble(true);	
 	this.code_openscad.innerHTML = this.oscad_assemble();
 }
 
@@ -398,11 +394,22 @@ Gpex.prototype.joint_points = function(i, absa, avga) {
  */
 Gpex.prototype.process_path = function() {
 	
-	var a0 = this.segment_angle(0),
-		a1,
-		ra = 0,
-		ja = a0,
-		pp = this.joint_points(0, a0, ja);
+		// angle of initial segment (ids 0 - 1)
+	var last_angle = this.segment_angle(0),
+		
+		// angle of next segment
+		angle,
+		
+		// relative angle (angle of this segment relative to last)
+		rel_angle = 0,
+		
+		// joint angle: split the difference between neighboring segments
+		// (initially, same as initial segment)
+		joint_angle = last_angle,
+		
+		// 2d segment corner base points, buffered from point 0 (i),
+		// oriented perpendicular to joint angle ja
+		pp = this.joint_points(0, last_angle, joint_angle);
 	
 	// first four points of segment polyhedron
 	var vertices = [];
@@ -414,10 +421,10 @@ Gpex.prototype.process_path = function() {
 	
 	for (var i = 1; i < this.fp.length; i++) {
 		
-		a1 = this.segment_angle(i);
-		ra = a1 - a0;
-		ja = ra / 2 + a0;
-		pp = this.joint_points(i, a1, ja);
+		angle = this.segment_angle(i);
+		rel_angle = angle - last_angle;
+		joint_angle = rel_angle / 2 + last_angle;
+		pp = this.joint_points(i, angle, joint_angle);
 		
 		// next four points of segment polyhedron
 		PathSegment.points(vertices, pp, this.fp[i][2]);
@@ -425,16 +432,18 @@ Gpex.prototype.process_path = function() {
 		// faces connecting first four points to last four of segment
 		PathSegment.faces(faces, i);
 		
-		a0 = a1;
+		last_angle = angle;
 	}
 	
 	// final endcap
 	PathSegment.last_face(faces, i);
 	
+	// generate array of point vector SCAD strings
 	this.model_points = vertices.map(function(v) {
 		return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
 	});
 	
+	// generate array of face list SCAD strings
 	this.model_faces = faces.map(function(v) {
 		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 	});
