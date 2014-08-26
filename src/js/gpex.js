@@ -276,11 +276,11 @@ Gpex.prototype.UpdateScale = function() {
 Gpex.prototype.ProjectPoint = function(point, cd) {
 	var xyz;
 	if (this.shape == 1) {
-		xyz = point.projLinear(cd);
+		xyz = PointProjector.linear(point, cd);
 	} else if (this.shape == 2) {
-		xyz = point.projRing(cd/this.distance, this.ringRadius);
+		xyz = PointProjector.ring(point, cd/this.distance, this.ringRadius);
 	} else {
-		xyz = point.projMerc();
+		xyz = PointProjector.mercator(point);
 	}
 	return xyz;
 }
@@ -614,26 +614,38 @@ Gpex.prototype.llz = function(pt) {
 	];
 }
 
-// assumes first element of array is longitude and second is latitude
-// projects these coordinates to Mercator, and returns a new array
-// beginning with projected x and y meter coordinates. (Any remaining
-// elements are retained in the result unmodified.)
-Array.prototype.projMerc = function() {
-	return proj4(
-			'+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs',
-			[this[0], this[1]]
-	).concat(this.slice(2));
-}
-
-// param cd = cumulative distance
-Array.prototype.projLinear = function(cd) {
-	return [0, cd].concat(this.slice(2));
-}
-
-// param dr = distance ratio (cumulative distance / total distance)
-Array.prototype.projRing = function(d, r) {
-	return [
-		r * Math.cos(2 * Math.PI * d),
-		r * Math.sin(2 * Math.PI * d)
-	].concat(this.slice(2));	
-}
+/*
+ * Point Projection Methods
+ * 
+ * Parameters:
+ *  v, a 3-element vector [longitude, latitude, elevation]
+ *  dist, position of point along path (meters)
+ *  distRatio, ratio of point position to path length
+ *  radius of ring, supposing circumference is path length
+ * 
+ * Return Value:
+ *  a 3-element vector [x, y, z] (meters)
+ */
+var PointProjector = {
+	
+	linear: function(v, dist) {
+		return [0, dist, v[2]];
+	},
+	
+	ring: function(v, distRatio, radius) {
+		return [
+			radius * Math.cos(2 * Math.PI * distRatio),
+			radius * Math.sin(2 * Math.PI * distRatio),
+			v[2]
+		];
+	},
+	
+	mercator: function(v) {
+		return proj4(
+			'+proj=merc +lon_0=0 +k=1 \
+			+x_0=0 +y_0=0 +ellps=WGS84 \
+			+datum=WGS84 +units=m +no_defs',
+			[v[0], v[1]]
+		).concat(v[2]);
+	}
+};
