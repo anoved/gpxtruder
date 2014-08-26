@@ -402,40 +402,40 @@ Gpex.prototype.process_path = function() {
 		a1,
 		ra = 0,
 		ja = a0,
-		pj = this.joint_points(0, a0, ja),
-		pk;
+		pp = this.joint_points(0, a0, ja);
 	
 	// first four points of segment polyhedron
-	var ppts = [];
-	ppts.push_vertices(pj, this.fp[0][2]);
-
-	var pfac = [];
-	pfac.push_first_faces();
+	var vertices = [];
+	PathSegment.points(vertices, pp, this.fp[0][2]);
+	
+	// initial endcap
+	var faces = [];
+	PathSegment.first_face(faces);
 	
 	for (var i = 1; i < this.fp.length; i++) {
 		
 		a1 = this.segment_angle(i);
 		ra = a1 - a0;
 		ja = ra / 2 + a0;
-		pk = this.joint_points(i, a1, ja);
+		pp = this.joint_points(i, a1, ja);
 		
-		// last four points of segment polyhedron
-		ppts.push_vertices(pk, this.fp[i][2]);
+		// next four points of segment polyhedron
+		PathSegment.points(vertices, pp, this.fp[i][2]);
 		
-		// faces of segment based on index of first involved point
-		pfac.push_faces((i - 1) * 4);
+		// faces connecting first four points to last four of segment
+		PathSegment.faces(faces, i);
 		
 		a0 = a1;
-		pj = pk;
 	}
 	
-	pfac.push_last_faces((i - 1) * 4);
+	// final endcap
+	PathSegment.last_face(faces, i);
 	
-	this.model_points = ppts.map(function(v) {
+	this.model_points = vertices.map(function(v) {
 		return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
 	});
 	
-	this.model_faces = pfac.map(function(v) {
+	this.model_faces = faces.map(function(v) {
 		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 	});
 }
@@ -559,42 +559,64 @@ Gpex.prototype.oscad_marker = function(i) {
 		   "cube(size=[1, " + (2 * r) + ", " + z + "], center=true);";
 }
 
-Array.prototype.push_vertices = function(v, z) {
-	this.push([v[0][0], v[0][1], 0]);	// lower left
-	this.push([v[1][0], v[1][1], 0]);	// lower right
-	this.push([v[0][0], v[0][1], z]);	// upper left
-	this.push([v[1][0], v[1][1], z]);	// upper right
-}
-
-Array.prototype.push_first_faces = function() {
-	this.push([0, 2, 3]);
-	this.push([3, 1, 0]);
-}
-
-// s is index of first corner point comprising this segment
-Array.prototype.push_faces = function(s) {
+var PathSegment = {
 	
-	// top face
-	this.push([s + 2, s + 6, s + 3]);
-	this.push([s + 3, s + 6, s + 7]);
+	// Corner points of quad perpendicular to path 
+	points: function(a, v, z) {
+		
+		// lower left
+		a.push([v[0][0], v[0][1], 0]);
+		
+		// lower right
+		a.push([v[1][0], v[1][1], 0]);
+		
+		// upper left
+		a.push([v[0][0], v[0][1], z]);
+		
+		// upper right
+		a.push([v[1][0], v[1][1], z]);
+	},
 	
-	// left face
-	this.push([s + 3, s + 7, s + 5]);
-	this.push([s + 3, s + 5, s + 1]);
+	// Initial endcap face
+	first_face: function(a) {
+		a.push([0, 2, 3]);
+		a.push([3, 1, 0]);
+	},
 	
-	// right face
-	this.push([s + 6, s + 2, s + 0]);
-	this.push([s + 6, s + 0, s + 4]);
+	// Final endcap face; s is segment index
+	last_face: function(a, s) {
+		
+		// i is index of first corner point of segment
+		var i = (s - 1) * 4;
+		
+		a.push([i + 2, i + 1, i + 3]);
+		a.push([i + 2, i + 0, i + 1]);
+	},
 	
-	// bottom face
-	this.push([s + 0, s + 5, s + 4]);
-	this.push([s + 0, s + 1, s + 5]);
-}
-
-Array.prototype.push_last_faces = function(s) {
-	this.push([s + 2, s + 1, s + 3]);
-	this.push([s + 2, s + 0, s + 1]);
-}
+	// Path segment faces; s is segment index
+	faces: function(a, s) {
+		
+		// i is index of first corner point of segment
+		var i = (s - 1) * 4;
+		
+		// top face
+		a.push([i + 2, i + 6, i + 3]);
+		a.push([i + 3, i + 6, i + 7]);
+		
+		// left face
+		a.push([i + 3, i + 7, i + 5]);
+		a.push([i + 3, i + 5, i + 1]);
+		
+		// right face
+		a.push([i + 6, i + 2, i + 0]);
+		a.push([i + 6, i + 0, i + 4]);
+		
+		// bottom face
+		a.push([i + 0, i + 5, i + 4]);
+		a.push([i + 0, i + 1, i + 5]);
+	}
+	
+};
 
 // returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Projected vector
 Gpex.prototype.pxyz = function(v) {
