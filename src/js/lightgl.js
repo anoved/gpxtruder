@@ -157,18 +157,7 @@ var GL = (function() {
 	// Returns a checkerboard texture that will switch to the correct texture when
 	// it loads.
 	Texture.fromURL = function(url, options) {
-		checkerboardCanvas = checkerboardCanvas || (function() {
-			var c = document.createElement('canvas').getContext('2d');
-			c.canvas.width = c.canvas.height = 128;
-			for(var y = 0; y < c.canvas.height; y += 16) {
-				for(var x = 0; x < c.canvas.width; x += 16) {
-					c.fillStyle = (x ^ y) & 16 ? '#FFF' : '#DDD';
-					c.fillRect(x, y, 16, 16);
-				}
-			}
-			return c.canvas;
-		})();
-		var texture = Texture.fromImage(checkerboardCanvas, options);
+		var texture = Texture.checkerboard(options);
 		var image = new Image();
 		var context = gl;
 		image.onload = function() {
@@ -181,7 +170,22 @@ var GL = (function() {
 		image.src = url;
 		return texture;
 	};
-
+	
+	Texture.checkerboard = function(options) {
+		checkerboardCanvas = checkerboardCanvas || (function() {
+			var c = document.createElement('canvas').getContext('2d');
+			c.canvas.width = c.canvas.height = 128;
+			for(var y = 0; y < c.canvas.height; y += 16) {
+				for(var x = 0; x < c.canvas.width; x += 16) {
+					c.fillStyle = (x ^ y) & 16 ? '#FFF' : '#DDD';
+					c.fillRect(x, y, 16, 16);
+				}
+			}
+			return c.canvas;
+		})();
+		return Texture.fromImage(checkerboardCanvas, options);
+	};
+	
 	// src/mesh.js
 	// Represents indexed triangle geometry with arbitrary additional attributes.
 	// You need a shader to draw a mesh; meshes can't draw themselves.
