@@ -24,6 +24,7 @@ OpenJsCad.log = function(txt) {
 // tumble it around by dragging the mouse.
 OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displayW, displayH, options) {
   options = options || {};
+  that = this;
   this.color = options.color || [0,0,1];
   this.bgColor = options.bgColor || [0.93, 0.93, 0.93, 1];
   var gl = GL.create();
@@ -35,7 +36,10 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
   this.viewpointY = 0;
   this.viewpointZ = initialdepth;
 
-	this.maptexture = GL.Texture.fromURL('2x1-zoom14-2x.png');
+	this.maptexture = GL.Texture.fromURL('2x1-zoom14-2x.png', {callback: function() {
+			that.onDraw();
+		}
+	});
 	this.bedmesh = new GL.Mesh({ coords: true });
 	
 	this.bedmesh.vertices = [[-90, 45, 0], [90, 45, 0], [90, -45, 0], [-90, -45, 0]];
@@ -198,6 +202,28 @@ OpenJsCad.Viewer.prototype = {
   getZoom: function() {
     var coeff = (this.viewpointZ-this.ZOOM_MIN) / (this.ZOOM_MAX - this.ZOOM_MIN);
     return coeff;
+  },
+  
+  resetView: function() {
+	this.setViewVector([-60, 0, -45], [0, 0, 200]);  
+  },
+  
+  setViewTop: function() {
+	this.setViewVector([0, 0, 0]);
+  },
+  
+  setViewVector: function(angle, viewpoint) {
+	this.angleX = angle[0];
+	this.angleY = angle[1];
+	this.angleZ = angle[2];
+	
+	if (viewpoint !== undefined) {
+		this.viewpointX = viewpoint[0];
+		this.viewpointY = viewpoint[1];
+		this.viewpointZ = viewpoint[2];
+	}
+	
+	this.onDraw();
   },
   
   onMouseMove: function(e) {
@@ -901,6 +927,15 @@ OpenJsCad.Processor.prototype = {
     this.statusbuttons.appendChild(this.generateOutputFileButton);
     this.downloadOutputFileLink = document.createElement("a");
     this.statusbuttons.appendChild(this.downloadOutputFileLink);
+    
+    /* view control buttons... */
+    this.resetViewButton = document.createElement("button");
+    this.resetViewButton.onclick = function(e) {
+		that.viewer.setViewTop();
+	}
+	this.resetViewButton.innerHTML = "Reset View";
+	this.statusbuttons.appendChild(this.resetViewButton);
+    
     this.parametersdiv = document.createElement("div");
     this.parametersdiv.className = "parametersdiv";
     var headerdiv = document.createElement("div");

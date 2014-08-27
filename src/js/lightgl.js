@@ -174,6 +174,9 @@ var GL = (function() {
 		image.onload = function() {
 			context.makeCurrent();
 			Texture.fromImage(image, options).swapWith(texture);
+			if (options.callback !== undefined) {
+				options.callback();
+			}
 		};
 		image.src = url;
 		return texture;
