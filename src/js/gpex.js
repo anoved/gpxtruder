@@ -3,7 +3,7 @@
  * Called onLoad. Intercept form submission; handle file locally.
  */
 var setup = function() {
-	var jscad = new OpenJsCad.Processor(document.getElementById('display'), {color: [0, 0.6, 0.1], openJsCadPath: "js/"});
+	var jscad = new OpenJsCad.Processor(document.getElementById('display'), {color: [0, 0.6, 0.1], openJsCadPath: "js/", viewerwidth: "800px", viewerheight: "400px", bgColor: [0.6, 0.6, 1, 1]});
 	var form = document.forms.namedItem('gpxform');
 	form.addEventListener('submit', function(ev) {
 		ev.preventDefault();
@@ -118,6 +118,18 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	
 	this.scale = 0;
 	this.rotate = false;
+}
+
+
+Gpex.prototype.Report = function() {
+//	console.log("X bounds:", this.minx, this.maxx);
+//	console.log("Y bounds:", this.miny, this.maxy);
+//	console.log("Offset XY:", this.xoffset, this.yoffset);
+//	console.log("Extent XY:", this.xextent, this.yextent);
+	
+	console.log("Center", proj4('GOOGLE', 'WGS84', [this.xoffset, this.yoffset]));
+	console.log("Min corner", proj4('GOOGLE', 'WGS84', [this.minx, this.miny]));
+	console.log("max corner", proj4('GOOGLE', 'WGS84', [this.maxx, this.maxy]));
 }
 
 Gpex.prototype.LoadTracks = function() {
@@ -335,6 +347,8 @@ Gpex.prototype.ProjectPoints = function() {
 	this.UpdateExtent();
 	this.UpdateOffset();
 	this.UpdateScale();
+	
+	//this.Report();
 }
 
 Gpex.prototype.vector_angle = function(a, b) {
@@ -469,7 +483,7 @@ Gpex.prototype.jscad_marker = function(i, dl) {
 				".rotateZ(" + (t * 180 / Math.PI) + ")" +
 				".translate([" + x + ", " + y + ", " + z/2 + "])";
 	} else {
-		var scad = "CSG.cube({radius: [1, " + (2 * r) + ", " + z + "], center: [0, 0, " + (z/2) + "]})" +
+		var scad = "CSG.cube({radius: [1, " + (2 * r) + ", " + z/2 + "], center: [0, 0, 0]})" +
 				".rotateZ(" + (t * 180 / Math.PI) + ")" +
 				".translate([" + x + ", " + y + ", " + z/2 + "])";
 	}
@@ -514,7 +528,30 @@ Gpex.prototype.jscad_profile = function(dl) {
 		jscad += ".rotateZ(90)";
 	}
 	
-	return "function profile() {\nreturn " + jscad + ";\n}\n\n";
+	// scale hack; not sure if this is a google maps issue
+	// (viewport, most likely) or a projection issue or what
+	// .scale([1.1, 0.9, 1])
+	// ok; so, the issue is that google gives us the closest zoom level,
+	// which isn't necessarily exactly what we need.
+	// full solution will be:
+	
+	// - accept/expect the map to be of a larger area.
+	// - display whole map, with actual bed size indicated either via
+	//   original line/quad outline, or quad path highlight on image
+	// - key trick is calculating scale to use for bed image. Prefer
+	//   to keep model and conventional bed outline exact as original;
+	//   just need to figure out how much larger the texture is in order
+	//   to scale its quad correctly.
+	
+	// possibly useful:
+	// http://stackoverflow.com/questions/6048975/google-maps-v3-how-to-calculate-the-zoom-level-for-a-given-bounds
+	//
+	// to recap; it's ok to get a map image that covers a larger area
+	// than the desired bounds. We just need to calculate exactly how
+	// much larger it will be, so that we can scale it to fit the desired
+	// part to exactly the right size. 
+	
+	return "function profile() {\nreturn " + jscad + ".scale([0.56, 0.56, 1]);\n}\n\n";
 }
 
 // dl = download version (webgl jscad is not openjscad.org compatible)
@@ -672,11 +709,6 @@ var PointProjector = {
 	},
 	
 	mercator: function(v) {
-		return proj4(
-			'+proj=merc +lon_0=0 +k=1 \
-			+x_0=0 +y_0=0 +ellps=WGS84 \
-			+datum=WGS84 +units=m +no_defs',
-			[v[0], v[1]]
-		).concat(v[2]);
+		return proj4('GOOGLE', [v[0], v[1]]).concat(v[2]);
 	}
 };

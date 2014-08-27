@@ -35,6 +35,17 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
   this.viewpointY = 0;
   this.viewpointZ = initialdepth;
 
+	this.maptexture = GL.Texture.fromURL('2x1-zoom14-2x.png');
+	this.bedmesh = new GL.Mesh({ coords: true });
+	
+	this.bedmesh.vertices = [[-90, 45, 0], [90, 45, 0], [90, -45, 0], [-90, -45, 0]];
+	
+	this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
+	this.bedmesh.triangles = [[3, 1, 0], [3, 2, 1], [0, 1, 3], [1, 2, 3]];
+	this.bedmesh.compile();
+	
+	
+
   // Draw axes flag:
   this.drawAxes = true;
   // Draw triangle lines:
@@ -95,6 +106,21 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
       gl_FragColor = vec4(mix(color * (0.3 + 0.7 * diffuse), vec3(1.0), specular), 1.0);\
     }\
   ');
+
+// Basic texture shader
+this.planeShader = new GL.Shader('\
+varying vec2 coord;\
+void main() {\
+ coord = gl_TexCoord.xy;\
+ gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+}\
+', '\
+uniform sampler2D texture;\
+varying vec2 coord;\
+void main() {\
+ gl_FragColor = texture2D(texture, coord);\
+}\
+');
 
   containerelement.appendChild(gl.canvas);
 
@@ -258,7 +284,7 @@ OpenJsCad.Viewer.prototype = {
 
       gl.end();
       
-      gl.begin(gl.TRIANGLES);
+    /*  gl.begin(gl.TRIANGLES);
       
       // bottom of bed platform
       gl.color(0.5, 0.5, 0.5, 0.2);
@@ -283,8 +309,14 @@ OpenJsCad.Viewer.prototype = {
       gl.vertex( bedx, -bedy, 0);
       
       gl.end();
+      */
+      
+      this.maptexture.bind(0);
+      this.planeShader.uniforms({texture: 0}).draw(this.bedmesh);
+      this.maptexture.unbind(0);
       
       gl.disable(gl.BLEND);
+      
     }
   }
 };
