@@ -41,14 +41,12 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
 		}
 	});
 	this.bedmesh = new GL.Mesh({ coords: true });
-	
-	this.bedmesh.vertices = [[-90, 45, 0], [90, 45, 0], [90, -45, 0], [-90, -45, 0]];
-	
+
+	var mapscale = 1.776438902448839;
+	this.bedmesh.vertices = [[-90 * mapscale, 45 * mapscale, 0], [90 * mapscale, 45 * mapscale, 0], [90 * mapscale, -45 * mapscale, 0], [-90 * mapscale, -45 * mapscale, 0]];
 	this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
 	this.bedmesh.triangles = [[3, 1, 0], [3, 2, 1], [0, 1, 3], [1, 2, 3]];
-	this.bedmesh.compile();
-	
-	
+	this.bedmesh.compile();	
 
   // Draw axes flag:
   this.drawAxes = true;
@@ -308,34 +306,25 @@ OpenJsCad.Viewer.prototype = {
       gl.vertex(0, 0, 0);
       gl.vertex(0, 0, 100);
 
+
+      
+      // bed platform outline
+      gl.color(0.1, 0.1, 0.1, 0.8);
+      
+		gl.vertex(-bedx, -bedy, 0);
+		gl.vertex(-bedx,  bedy, 0);
+		
+		gl.vertex(-bedx,  bedy, 0);
+		gl.vertex( bedx,  bedy, 0);
+		
+		gl.vertex( bedx,  bedy, 0);
+		gl.vertex( bedx, -bedy, 0);
+		
+		gl.vertex( bedx, -bedy, 0);
+		gl.vertex(-bedx, -bedy, 0);
+		
       gl.end();
       
-    /*  gl.begin(gl.TRIANGLES);
-      
-      // bottom of bed platform
-      gl.color(0.5, 0.5, 0.5, 0.2);
-   
-      gl.vertex(-bedx,  bedy, 0);
-      gl.vertex( bedx,  bedy, 0);
-      gl.vertex( bedx, -bedy, 0);
-      
-      gl.vertex(-bedx,  bedy, 0);
-      gl.vertex( bedx, -bedy, 0);
-      gl.vertex(-bedx, -bedy, 0);
-      
-      // top of bed platform
-      gl.color(0.2, 0.2, 0.2, 0.6);
-      
-      gl.vertex( bedx, -bedy, 0);
-      gl.vertex( bedx,  bedy, 0);
-      gl.vertex(-bedx,  bedy, 0);
-      
-      gl.vertex(-bedx,  bedy, 0);
-      gl.vertex(-bedx, -bedy, 0);
-      gl.vertex( bedx, -bedy, 0);
-      
-      gl.end();
-      */
       
       this.maptexture.bind(0);
       this.planeShader.uniforms({texture: 0}).draw(this.bedmesh);

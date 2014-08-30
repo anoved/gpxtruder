@@ -258,6 +258,11 @@ Gpex.prototype.UpdateOffset = function() {
 	}
 }
 
+
+var mapangle = function(zoom, pix) {
+	return (360 * pix) / (256 * Math.exp(zoom * Math.LN2));
+}
+
 // calculate scale used to fit model on output bed
 Gpex.prototype.UpdateScale = function() {
 	// indent bed extent to accomodate buffer width
@@ -270,6 +275,21 @@ Gpex.prototype.UpdateScale = function() {
 		fmax = bmax / mmax,
 		fmin = bmin / mmin;
 	this.scale = Math.min(fmax, fmin);
+	
+	// geographic angular extent of region of interest (model extent)
+	// This is used to predict the zoom level of the map image Google
+	// will return for region. We scale map by ratio between model and image extent.
+	var sw = proj4("GOOGLE", "WGS84", [this.minx, this.miny]);
+	var ne = proj4("GOOGLE", "WGS84", [this.maxx, this.maxy]);
+	var roi_angle = ne[0] - sw[0];
+	
+	// minimum dimension of the map image we're requesting...
+	var pixelconstraint = 320;
+	
+	var zoomlevel = Math.log(pixelconstraint * 360 / roi_angle / 256) / Math.LN2;
+	var actual_angle = mapangle(Math.floor(zoomlevel), pixelconstraint);
+	var map_scale = actual_angle / roi_angle;
+	console.log(zoomlevel, roi_angle, actual_angle, map_scale);
 	
 	// determine whether the model should be rotated to fit
 	if ((xbe > ybe && this.xextent > this.yextent) ||
@@ -528,30 +548,7 @@ Gpex.prototype.jscad_profile = function(dl) {
 		jscad += ".rotateZ(90)";
 	}
 	
-	// scale hack; not sure if this is a google maps issue
-	// (viewport, most likely) or a projection issue or what
-	// .scale([1.1, 0.9, 1])
-	// ok; so, the issue is that google gives us the closest zoom level,
-	// which isn't necessarily exactly what we need.
-	// full solution will be:
-	
-	// - accept/expect the map to be of a larger area.
-	// - display whole map, with actual bed size indicated either via
-	//   original line/quad outline, or quad path highlight on image
-	// - key trick is calculating scale to use for bed image. Prefer
-	//   to keep model and conventional bed outline exact as original;
-	//   just need to figure out how much larger the texture is in order
-	//   to scale its quad correctly.
-	
-	// possibly useful:
-	// http://stackoverflow.com/questions/6048975/google-maps-v3-how-to-calculate-the-zoom-level-for-a-given-bounds
-	//
-	// to recap; it's ok to get a map image that covers a larger area
-	// than the desired bounds. We just need to calculate exactly how
-	// much larger it will be, so that we can scale it to fit the desired
-	// part to exactly the right size. 
-	
-	return "function profile() {\nreturn " + jscad + ".scale([0.56, 0.56, 1]);\n}\n\n";
+	return "function profile() {\nreturn " + jscad + ";\n}\n\n";
 }
 
 // dl = download version (webgl jscad is not openjscad.org compatible)
