@@ -35,15 +35,14 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
   this.viewpointX = 0;
   this.viewpointY = 0;
   this.viewpointZ = initialdepth;
-
-	this.maptexture = GL.Texture.fromURL('2x1-zoom14-2x.png', {callback: function() {
-			that.onDraw();
-		}
-	});
+	
+	this.bedWidth = 180;
+	this.bedDepth = 90;
+	
+	// initial bed texture dimensions set to default bedWidth/Depth
+	this.maptexture = GL.Texture.checkerboard();
 	this.bedmesh = new GL.Mesh({ coords: true });
-
-	var mapscale = 1.776438902448839;
-	this.bedmesh.vertices = [[-90 * mapscale, 45 * mapscale, 0], [90 * mapscale, 45 * mapscale, 0], [90 * mapscale, -45 * mapscale, 0], [-90 * mapscale, -45 * mapscale, 0]];
+	this.bedmesh.vertices = [[-90, 45, 0], [90, 45, 0], [90, -45, 0], [-90, -45, 0]];
 	this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
 	this.bedmesh.triangles = [[3, 1, 0], [3, 2, 1], [0, 1, 3], [1, 2, 3]];
 	this.bedmesh.compile();	
@@ -178,13 +177,28 @@ OpenJsCad.Viewer.prototype = {
   ZOOM_MIN: 10,
   onZoomChanged: null,
   
-  bedWidth: 180,
-  bedDepth: 90,
 
   setBedSize: function(width, depth) {
 	  this.bedWidth = width;
 	  this.bedDepth = depth;
   },
+
+	setBaseMap: function(url, scale) {
+		
+		var bedx = this.bedWidth/2,
+			bedy = this.bedDepth/2;
+		
+		this.bedmesh.vertices = [[-bedx * scale, bedy * scale, 0], [bedx * scale, bedy * scale, 0], [bedx * scale, -bedy * scale, 0], [-bedx * scale, -bedy * scale, 0]];
+		this.bedmesh.compile();
+		
+		var that = this;
+		this.maptexture = GL.Texture.fromURL(url, {callback: function() {
+				that.onDraw();
+			}
+		});
+		
+		
+	},
 
   setZoom: function(coeff) { //0...1
     coeff=Math.max(coeff, 0);
