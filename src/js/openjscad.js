@@ -283,20 +283,20 @@ OpenJsCad.Viewer.prototype = {
       gl.begin(gl.LINES);
       //X - red
       gl.color(1, 0.5, 0.5, 0.2); //negative direction is lighter
-      gl.vertex(-100, 0, 0);
+      gl.vertex(-bedx, 0, 0);
       gl.vertex(0, 0, 0);
 
       gl.color(1, 0, 0, 0.8); //positive direction
       gl.vertex(0, 0, 0);
-      gl.vertex(100, 0, 0);
+      gl.vertex(bedx, 0, 0);
       //Y - green
       gl.color(0.5, 1, 0.5, 0.2); //negative direction is lighter
-      gl.vertex(0, -100, 0);
+      gl.vertex(0, -bedy, 0);
       gl.vertex(0, 0, 0);
 
       gl.color(0, 1, 0, 0.8); //positive direction
       gl.vertex(0, 0, 0);
-      gl.vertex(0, 100, 0);
+      gl.vertex(0, bedy, 0);
       //Z - blue
       gl.color(0.5, 0.5, 1, 0.2); //negative direction is lighter
       gl.vertex(0, 0, -100);
