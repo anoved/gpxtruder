@@ -159,6 +159,7 @@ var GL = (function() {
 	Texture.fromURL = function(url, options) {
 		var texture = Texture.checkerboard(options);
 		var image = new Image();
+		image.crossOrigin = "anonymous"
 		var context = gl;
 		image.onload = function() {
 			context.makeCurrent();
