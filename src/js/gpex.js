@@ -300,7 +300,9 @@ Gpex.prototype.basemap = function() {
 	var zoominfo = getBoundsZoomLevel(ne, sw, mapsize);
 	
 	if (zoominfo.zoom > 21) {
-		console.log("Maximum zoom exceeded; should cancel map texture");
+		// don't bother with base map if zoom level would be too high
+		this.jscad.viewer.clearBaseMap(this.rotate);
+		return;
 	}
 	
 	var mapscale = mapsize[zoominfo.axis] / 256 / Math.exp(zoominfo.zoom * Math.LN2) / zoominfo.span;
