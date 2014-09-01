@@ -186,10 +186,11 @@ OpenJsCad.Viewer.prototype = {
 
 	setBaseMap: function(url, scale, rotate) {
 		
-		if (this.basemapurl === url) {
+		var hash = url + scale + rotate;
+		if (this.basemapurl === hash) {
 			return;
 		} else {
-			this.basemapurl = url;
+			this.basemapurl = hash;
 		}
 		
 		var bedx = this.bedWidth/2,
