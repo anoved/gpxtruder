@@ -6,3 +6,18 @@ body {
 	font-size: x-small;
 	color: gray;
 }
+
+#messages {
+	float: right;
+	padding: 10px;
+}
+
+#messages.errormsg {
+	background: #FFCCCC;
+	border: 1px dashed red;
+}
+
+#messages.statusmsg {
+	background: #CCCCFF;
+	border: 1px dotted blue;
+}

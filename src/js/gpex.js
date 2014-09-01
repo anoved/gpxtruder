@@ -3,6 +3,7 @@
  * Called onLoad. Intercept form submission; handle file locally.
  */
 var setup = function() {
+	Messages.msgdiv = document.getElementById('messages');
 	var jscad = new OpenJsCad.Processor(document.getElementById('display'), {color: [0, 0.6, 0.1], openJsCadPath: "js/", viewerwidth: "800px", viewerheight: "400px", bgColor: [0.6, 0.6, 1, 1]});
 	var form = document.forms.namedItem('gpxform');
 	form.addEventListener('submit', function(ev) {
@@ -11,6 +12,26 @@ var setup = function() {
 	}, false);
 }
 
+var Messages = {
+	msgdiv: null,
+	
+	clear: function() {
+		this.msgdiv.innerHTML = "";
+		this.msgdiv.className = "";
+	},
+	
+	error: function(message) {
+		this.msgdiv.innerHTML = message;
+		this.msgdiv.className = "errormsg";
+		this.msgdiv.scrollIntoView();
+	},
+	
+	status: function(message) {
+		this.msgdiv.innerHTML = message;
+		this.msgdiv.className = "statusmsg";
+	}
+};
+
 /*
  * Get a File object URL from form input or drag and drop.
  * Use XMLHttpRequest to retrieve the file content, and
@@ -18,6 +39,8 @@ var setup = function() {
  * parsing based on https://github.com/peplin/gpxviewer/
  */
 var loader = function(gpxfile, jscad) {
+	
+	Messages.clear();
 	
 	var radioValue = function(radios) {
 		for (var i = 0, len = radios.length; i < len; i++) {
@@ -136,8 +159,15 @@ Gpex.prototype.LoadTrack = function(track) {
 
 Gpex.prototype.LoadSegment = function(segment) {
 	
+	var trkpts = segment.getElementsByTagName('trkpt');
+	if (trkpts[0].getElementsByTagName('ele').length === 0) {
+		Messages.error('This GPX file does not appear to contain any elevation data.<br />' +
+				'Try using <a href="http://www.gpsvisualizer.com/elevation">GPX Visualizer</a> to add elevation data to your route.');
+		return;
+	}
+	
 	// populates this.ll (lat/lon vectors)
-	this.ScanPoints(segment.getElementsByTagName('trkpt'));
+	this.ScanPoints(trkpts);
 	
 	// populates this.pp (projected point vectors)
 	this.ProjectPoints();
@@ -160,11 +190,14 @@ Gpex.prototype.LoadSegment = function(segment) {
 			// reset bed texture to default checkerboard
 			this.jscad.viewer.clearBaseMap(this.rotate);
 		}
+		
 	}
 	
 	this.jscad.setJsCad(this.jscad_assemble(false));
 	this.code_jscad.innerHTML = this.jscad_assemble(true);	
 	this.code_openscad.innerHTML = this.oscad_assemble();
+	
+	this.jscad.containerdiv.scrollIntoView();
 }
 
 // Converts GPX trkpt nodelist to array of lon/lat/elevation vectors.
