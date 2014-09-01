@@ -40,6 +40,7 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
 	this.bedDepth = 90;
 	
 	// initial bed texture dimensions set to default bedWidth/Depth
+	this.basemapurl = "";
 	this.maptexture = GL.Texture.checkerboard();
 	this.bedmesh = new GL.Mesh({ coords: true });
 	this.bedmesh.vertices = [[-90, 45, 0], [90, 45, 0], [90, -45, 0], [-90, -45, 0]];
@@ -184,6 +185,12 @@ OpenJsCad.Viewer.prototype = {
   },
 
 	setBaseMap: function(url, scale, rotate) {
+		
+		if (this.basemapurl === url) {
+			return;
+		} else {
+			this.basemapurl = url;
+		}
 		
 		var bedx = this.bedWidth/2,
 			bedy = this.bedDepth/2;
