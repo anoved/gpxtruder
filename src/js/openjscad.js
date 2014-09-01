@@ -871,6 +871,7 @@ OpenJsCad.Processor.prototype = {
      /* view control buttons... */    
     var viewbuttons = document.createElement("div");
     viewbuttons.className = "viewbuttonsdiv";
+    viewbuttons.style.width = this.viewerwidth;
     
 	this.addViewButton("Reset", viewbuttons, function(e) {
 		that.viewer.resetView();
@@ -964,7 +965,9 @@ OpenJsCad.Processor.prototype = {
     this.errordiv.appendChild(this.errorpre);
     this.statusdiv = document.createElement("div");
     this.statusdiv.className = "statusdiv";
-    //this.statusdiv.style.width = this.viewerwidth + "px";
+    
+    this.statusdiv.style.width = this.viewerwidth;
+    
     this.statusspan = document.createElement("span");
     this.statusbuttons = document.createElement("div");
     this.statusbuttons.style.cssFloat = "right";
