@@ -164,6 +164,10 @@ Gpex.prototype.LoadSegment = function(segment) {
 	
 	if (this.jscad.viewer) {
 		this.jscad.viewer.setBedSize(this.bedx, this.bedy);
+		
+		// basemap only for track shape; otherwise,
+		// use a checkerboard base. (and display it 1st...?)
+		this.basemap();
 	}
 	
 	this.jscad.setJsCad(this.jscad_assemble(false));
@@ -258,9 +262,65 @@ Gpex.prototype.UpdateOffset = function() {
 	}
 }
 
+// jacked from http://stackoverflow.com/a/13274361/339879
+// ne/se: [lng, lat]
+// mapDim: {width: pixels, height: pixels}
+function getBoundsZoomLevel(ne, sw, mapDim) {
+    var WORLD_DIM = { height: 256, width: 256 };
+    //var ZOOM_MAX = 21;
 
-var mapangle = function(zoom, pix) {
-	return (360 * pix) / (256 * Math.exp(zoom * Math.LN2));
+    function latRad(lat) {
+        var sin = Math.sin(lat * Math.PI / 180);
+        var radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
+        return Math.max(Math.min(radX2, Math.PI), -Math.PI) / 2;
+    }
+
+	//Math.floor
+    function zoom(mapPx, worldPx, fraction) {
+        return (Math.log(mapPx / worldPx / fraction) / Math.LN2);
+    }
+
+    var latFraction = (latRad(ne[1]) - latRad(sw[1])) / Math.PI;
+
+    var lngDiff = ne[0] - sw[0];
+    var lngFraction = ((lngDiff < 0) ? (lngDiff + 360) : lngDiff) / 360;
+	
+    var latZoom = zoom(mapDim.height, WORLD_DIM.height, latFraction);
+    var lngZoom = zoom(mapDim.width, WORLD_DIM.width, lngFraction);
+	
+	console.log(latFraction, latZoom);
+	console.log(lngFraction, lngZoom);
+	
+	return {
+		zoom: latZoom < lngZoom ? Math.floor(latZoom) : Math.floor(lngZoom),
+		span: latZoom < lngZoom ? latFraction : lngFraction,
+		axis: latZoom < lngZoom ? "height" : "width"
+	};
+}
+
+Gpex.prototype.basemap = function() {
+	
+	var bedmax = Math.max(this.bedx, this.bedy);
+	var mapsize = {
+		width:  Math.round(640 * (this.rotate ? this.bedy : this.bedx) / bedmax),
+		height: Math.round(640 * (this.rotate ? this.bedx : this.bedy) / bedmax)
+	};
+	
+	var sw = proj4("GOOGLE", "WGS84", [this.minx, this.miny]);
+	var ne = proj4("GOOGLE", "WGS84", [this.maxx, this.maxy]);
+	var zoominfo = getBoundsZoomLevel(ne, sw, mapsize);
+	
+	if (zoominfo.zoom > 21) {
+		console.log("Maximum zoom exceeded; should cancel map texture");
+	}
+	
+	var mapscale = mapsize[zoominfo.axis] / 256 / Math.exp(zoominfo.zoom * Math.LN2) / zoominfo.span;
+	
+	var center = proj4("GOOGLE", "WGS84", [this.xoffset, this.yoffset]);
+
+	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain"; //&scale=2
+	
+	this.jscad.viewer.setBaseMap(mapurl, mapscale, this.rotate);
 }
 
 // calculate scale used to fit model on output bed
@@ -275,24 +335,9 @@ Gpex.prototype.UpdateScale = function() {
 		fmax = bmax / mmax,
 		fmin = bmin / mmin;
 	this.scale = Math.min(fmax, fmin);
-	
-	// geographic angular extent of region of interest (model extent)
-	// This is used to predict the zoom level of the map image Google
-	// will return for region. We scale map by ratio between model and image extent.
-	var sw = proj4("GOOGLE", "WGS84", [this.minx, this.miny]);
-	var ne = proj4("GOOGLE", "WGS84", [this.maxx, this.maxy]);
-	var roi_angle = ne[0] - sw[0];
-	
-	// minimum dimension of the map image we're requesting...
-	var pixelconstraint = 320;
-	
-	var zoomlevel = Math.log(pixelconstraint * 360 / roi_angle / 256) / Math.LN2;
-	var actual_angle = mapangle(Math.floor(zoomlevel), pixelconstraint);
-	var map_scale = actual_angle / roi_angle;
-	console.log(zoomlevel, roi_angle, actual_angle, map_scale);
-	
+
 	// determine whether the model should be rotated to fit
-	if ((xbe > ybe && this.xextent > this.yextent) ||
+	if ((xbe >= ybe && this.xextent >= this.yextent) ||
 		(xbe < ybe && this.xextent < this.yextent)) {
 		this.rotate = false;
 	} else {
