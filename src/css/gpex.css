@@ -2,6 +2,16 @@ body {
 	font-family: sans-serif;
 }
 
+div#input {
+	float: left;
+	width: 50%;
+}
+
+div#output {
+	float: right;
+	width: 50%;
+}
+
 .info {
 	font-size: x-small;
 	color: gray;
