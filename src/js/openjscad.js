@@ -246,14 +246,14 @@ OpenJsCad.Viewer.prototype = {
   },
   
   resetView: function() {
-	this.setViewVector([-60, 0, -45], [0, 0, 200]);  
+	this.setView([-60, 0, -45], [0, 0, 200]);  
   },
   
-  setViewTop: function() {
+ /* setViewTop: function() {
 	this.setViewVector([0, 0, 0]);
-  },
+  },*/
   
-  setViewVector: function(angle, viewpoint) {
+  setView: function(angle, viewpoint) {
 	this.angleX = angle[0];
 	this.angleY = angle[1];
 	this.angleZ = angle[2];
@@ -963,6 +963,26 @@ OpenJsCad.Processor.prototype = {
     /* view control buttons... */
 	this.addViewButton("Reset", function(e) {
 		that.viewer.resetView();
+	});
+	
+	this.addViewButton("Front (-Y)", function(e) {
+		that.viewer.setView([-90, 0, 0], [0, 0, that.viewer.viewpointZ]);
+	});
+
+	this.addViewButton("Rear (+Y)", function(e) {
+		that.viewer.setView([-90, 0, 180], [0, 0, that.viewer.viewpointZ]);
+	});
+	
+	this.addViewButton("Left (-X)", function(e) {
+		that.viewer.setView([-90, 0, 90], [0, 0, that.viewer.viewpointZ]);
+	});
+	
+	this.addViewButton("Right (+X)", function(e) {
+		that.viewer.setView([-90, 0, -90], [0, 0, that.viewer.viewpointZ]);
+	});
+	
+	this.addViewButton("Top (+Z)", function(e) {
+		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
     
     this.parametersdiv = document.createElement("div");
