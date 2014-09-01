@@ -1,15 +1,37 @@
 body {
 	font-family: sans-serif;
+	
+	background-image: url(../img/tile2.png);
+	background-repeat: repeat;
+	background-color: #D7E8A7;
+}
+
+div.panel {
+	
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	
+	width: 800px;
+	
+	padding: 10px;
+	border-radius: 10px;
+	border-width: 4px;
+	border-style: solid;
+	border-color: #c4d994;
+}
+
+div#intro {
+	background: white;
 }
 
 div#input {
-	float: left;
-	width: 50%;
+	background: white;
 }
 
 div#output {
-	float: right;
-	width: 50%;
+	background: white;
 }
 
 .info {
@@ -17,11 +39,15 @@ div#output {
 	color: gray;
 }
 
+div.viewer {
+	border: 1px solid blue;
+}
+
 #messages {
 	position: fixed;
 	top: 0;
 	right: 0;
-	margin: 10px;
+	margin: 18px;
 	padding: 10px;
 }
 
