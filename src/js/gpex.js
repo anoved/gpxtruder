@@ -23,11 +23,19 @@ var Messages = {
 	error: function(message) {
 		this.msgdiv.innerHTML = message;
 		this.msgdiv.className = "errormsg";
+		var that = this;
+		this.msgdiv.onclick = function(e) {
+			that.clear();
+		};
 	},
 	
 	status: function(message) {
 		this.msgdiv.innerHTML = message;
 		this.msgdiv.className = "statusmsg";
+		var that = this;
+		this.msgdiv.onclick = function(e) {
+			that.clear();
+		};
 	}
 };
 
