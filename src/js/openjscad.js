@@ -206,6 +206,28 @@ OpenJsCad.Viewer.prototype = {
 		
 		
 	},
+	
+	clearBaseMap: function(rotate) {
+		var bedx = this.bedWidth/2,
+			bedy = this.bedDepth/2;
+
+		this.bedmesh.vertices = [
+			[-bedx,  bedy, 0],
+			[ bedx,  bedy, 0],
+			[ bedx, -bedy, 0],
+			[-bedx, -bedy, 0]
+		];
+		if (rotate) {
+			this.bedmesh.coords = [[1, 1], [1, 0], [0, 0], [0, 1]];
+		} else {
+			this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
+		}
+		this.bedmesh.compile();
+		
+		this.maptexture = GL.Texture.checkerboard();
+		
+		this.onDraw();
+	},
 
   setZoom: function(coeff) { //0...1
     coeff=Math.max(coeff, 0);

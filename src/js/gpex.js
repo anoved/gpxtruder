@@ -154,8 +154,12 @@ Gpex.prototype.LoadSegment = function(segment) {
 		this.jscad.viewer.setBedSize(this.bedx, this.bedy);
 		
 		// basemap only for track shape; otherwise,
-		// use a checkerboard base. (and display it 1st...?)
-		this.basemap();
+		if (this.shape == 0) {
+			this.basemap();
+		} else {
+			// reset bed texture to default checkerboard
+			this.jscad.viewer.clearBaseMap(this.rotate);
+		}
 	}
 	
 	this.jscad.setJsCad(this.jscad_assemble(false));
