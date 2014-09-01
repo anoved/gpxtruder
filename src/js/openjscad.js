@@ -119,7 +119,7 @@ void main() {\
 uniform sampler2D texture;\
 varying vec2 coord;\
 void main() {\
- gl_FragColor = texture2D(texture, coord);\
+ gl_FragColor = vec4(texture2D(texture, coord).rgb, 0.9);\
 }\
 ');
 
