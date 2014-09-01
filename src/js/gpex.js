@@ -349,7 +349,7 @@ Gpex.prototype.basemap = function() {
 	
 	var center = proj4("GOOGLE", "WGS84", [this.xoffset, this.yoffset]);
 
-	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain"; //&scale=2
+	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg";
 	
 	this.jscad.viewer.setBaseMap(mapurl, mapscale, this.rotate);
 }
