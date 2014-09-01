@@ -176,8 +176,7 @@ OpenJsCad.Viewer.prototype = {
 
   ZOOM_MAX: 10000,
   ZOOM_MIN: 10,
-  onZoomChanged: null,
-  
+  /*onZoomChanged: null,*/  
 
   setBedSize: function(width, depth) {
 	  this.bedWidth = width;
@@ -241,10 +240,10 @@ OpenJsCad.Viewer.prototype = {
     coeff=Math.max(coeff, 0);
     coeff=Math.min(coeff, 1);
     this.viewpointZ = this.ZOOM_MIN + coeff * (this.ZOOM_MAX - this.ZOOM_MIN);
-    if(this.onZoomChanged)
+    /*if(this.onZoomChanged)
     {
       this.onZoomChanged();
-    }
+    }*/
     this.onDraw();
   },
 
@@ -920,7 +919,9 @@ OpenJsCad.Processor.prototype = {
       this.viewerdiv.innerHTML = "<b><br><br>Error: " + e.toString() + "</b><br><br>OpenJsCad requires a WebGL enabled browser. Try a recent version of Chrome of Firefox.";
       //      this.viewerdiv.innerHTML = e.toString();
     }
+    
     //Zoom control
+    /*
     var div = document.createElement("div");
     this.zoomControl = div.cloneNode(false);
     this.zoomControl.style.width = this.viewerwidth;
@@ -959,7 +960,8 @@ OpenJsCad.Processor.prototype = {
     //this.zoomControl.scrollLeft = this.viewer.viewpointZ / this.viewer.ZOOM_MAX * this.zoomControl.offsetWidth;
 
     //end of zoom control
-
+	*/
+	
     this.errordiv = document.createElement("div");
     this.errorpre = document.createElement("pre");
     this.errordiv.appendChild(this.errorpre);
