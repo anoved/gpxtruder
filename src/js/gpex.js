@@ -23,7 +23,6 @@ var Messages = {
 	error: function(message) {
 		this.msgdiv.innerHTML = message;
 		this.msgdiv.className = "errormsg";
-		this.msgdiv.scrollIntoView();
 	},
 	
 	status: function(message) {

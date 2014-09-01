@@ -18,9 +18,11 @@ body {
 #messages.errormsg {
 	background: #FFCCCC;
 	border: 1px dashed red;
+	box-shadow: 2px 2px 6px;
 }
 
 #messages.statusmsg {
 	background: #CCCCFF;
 	border: 1px dotted blue;
+	box-shadow: 2px 2px 6px;
 }
