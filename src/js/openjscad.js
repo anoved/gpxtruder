@@ -961,12 +961,9 @@ OpenJsCad.Processor.prototype = {
     this.statusbuttons.appendChild(this.downloadOutputFileLink);
     
     /* view control buttons... */
-    this.resetViewButton = document.createElement("button");
-    this.resetViewButton.onclick = function(e) {
-		that.viewer.setViewTop();
-	}
-	this.resetViewButton.innerHTML = "Reset View";
-	this.statusbuttons.appendChild(this.resetViewButton);
+	this.addViewButton("Reset", function(e) {
+		that.viewer.resetView();
+	});
     
     this.parametersdiv = document.createElement("div");
     this.parametersdiv.className = "parametersdiv";
@@ -989,7 +986,14 @@ OpenJsCad.Processor.prototype = {
     this.containerdiv.appendChild(this.parametersdiv);
     this.clearViewer();
   },
-
+	
+	addViewButton: function(title, callback) {
+		var button = document.createElement("button");
+		button.onclick = callback;
+		button.innerHTML = title;
+		this.statusbuttons.appendChild(button);
+	},
+	
   getFilenameForRenderedObject: function() {
     var filename = this.filename;
     if(!filename) filename = "openjscad";
