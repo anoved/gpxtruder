@@ -215,6 +215,8 @@ OpenJsCad.Viewer.prototype = {
 	},
 	
 	clearBaseMap: function(rotate) {
+		this.basemapurl = "";
+		
 		var bedx = this.bedWidth/2,
 			bedy = this.bedDepth/2;
 
