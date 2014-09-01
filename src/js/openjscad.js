@@ -860,6 +860,36 @@ OpenJsCad.Processor.prototype = {
       this.containerdiv.removeChild(this.containerdiv.children[0]);
     }
   
+     /* view control buttons... */    
+    var viewbuttons = document.createElement("div");
+    viewbuttons.className = "viewbuttonsdiv";
+    
+	this.addViewButton("Reset", viewbuttons, function(e) {
+		that.viewer.resetView();
+	});
+	
+	this.addViewButton("Front (-Y)", viewbuttons, function(e) {
+		that.viewer.setView([-90, 0, 0], [0, 0, that.viewer.viewpointZ]);
+	});
+
+	this.addViewButton("Rear (+Y)", viewbuttons, function(e) {
+		that.viewer.setView([-90, 0, 180], [0, 0, that.viewer.viewpointZ]);
+	});
+	
+	this.addViewButton("Left (-X)", viewbuttons, function(e) {
+		that.viewer.setView([-90, 0, 90], [0, 0, that.viewer.viewpointZ]);
+	});
+	
+	this.addViewButton("Right (+X)", viewbuttons, function(e) {
+		that.viewer.setView([-90, 0, -90], [0, 0, that.viewer.viewpointZ]);
+	});
+	
+	this.addViewButton("Top (+Z)", viewbuttons, function(e) {
+		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
+	});
+
+	this.containerdiv.appendChild(viewbuttons);
+  
     var viewerdiv = document.createElement("div");
     viewerdiv.className = "viewer";
     viewerdiv.style.width = this.viewerwidth;
@@ -929,7 +959,7 @@ OpenJsCad.Processor.prototype = {
     //this.statusdiv.style.width = this.viewerwidth + "px";
     this.statusspan = document.createElement("span");
     this.statusbuttons = document.createElement("div");
-    this.statusbuttons.style.float = "right";
+    this.statusbuttons.style.cssFloat = "right";
     this.statusdiv.appendChild(this.statusspan);
     this.statusdiv.appendChild(this.statusbuttons);
     this.abortbutton = document.createElement("button");
@@ -958,32 +988,7 @@ OpenJsCad.Processor.prototype = {
     };
     this.statusbuttons.appendChild(this.generateOutputFileButton);
     this.downloadOutputFileLink = document.createElement("a");
-    this.statusbuttons.appendChild(this.downloadOutputFileLink);
-    
-    /* view control buttons... */
-	this.addViewButton("Reset", function(e) {
-		that.viewer.resetView();
-	});
-	
-	this.addViewButton("Front (-Y)", function(e) {
-		that.viewer.setView([-90, 0, 0], [0, 0, that.viewer.viewpointZ]);
-	});
-
-	this.addViewButton("Rear (+Y)", function(e) {
-		that.viewer.setView([-90, 0, 180], [0, 0, that.viewer.viewpointZ]);
-	});
-	
-	this.addViewButton("Left (-X)", function(e) {
-		that.viewer.setView([-90, 0, 90], [0, 0, that.viewer.viewpointZ]);
-	});
-	
-	this.addViewButton("Right (+X)", function(e) {
-		that.viewer.setView([-90, 0, -90], [0, 0, that.viewer.viewpointZ]);
-	});
-	
-	this.addViewButton("Top (+Z)", function(e) {
-		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
-	});
+    this.statusbuttons.appendChild(this.downloadOutputFileLink);    
     
     this.parametersdiv = document.createElement("div");
     this.parametersdiv.className = "parametersdiv";
@@ -1007,11 +1012,11 @@ OpenJsCad.Processor.prototype = {
     this.clearViewer();
   },
 	
-	addViewButton: function(title, callback) {
+	addViewButton: function(title, div, callback) {
 		var button = document.createElement("button");
 		button.onclick = callback;
 		button.innerHTML = title;
-		this.statusbuttons.appendChild(button);
+		div.appendChild(button);
 	},
 	
   getFilenameForRenderedObject: function() {
