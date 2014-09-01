@@ -6,6 +6,22 @@ body {
 	background-color: #D7E8A7;
 }
 
+.config-link {
+	cursor: pointer;
+}
+
+.config-link.inactive {
+	color: gray;
+}
+
+.config-link.active {
+	color: black;
+}
+
+.config-group {
+	display: none;
+}
+
 div.panel {
 	
 	margin-left: auto;
