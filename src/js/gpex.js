@@ -120,18 +120,6 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	this.rotate = false;
 }
 
-
-Gpex.prototype.Report = function() {
-//	console.log("X bounds:", this.minx, this.maxx);
-//	console.log("Y bounds:", this.miny, this.maxy);
-//	console.log("Offset XY:", this.xoffset, this.yoffset);
-//	console.log("Extent XY:", this.xextent, this.yextent);
-	
-	console.log("Center", proj4('GOOGLE', 'WGS84', [this.xoffset, this.yoffset]));
-	console.log("Min corner", proj4('GOOGLE', 'WGS84', [this.minx, this.miny]));
-	console.log("max corner", proj4('GOOGLE', 'WGS84', [this.maxx, this.maxy]));
-}
-
 Gpex.prototype.LoadTracks = function() {
 	var tracks = this.content.documentElement.getElementsByTagName('trk');
 	for (var i = 0; i < tracks.length; i++) {
@@ -288,9 +276,6 @@ function getBoundsZoomLevel(ne, sw, mapDim) {
     var latZoom = zoom(mapDim.height, WORLD_DIM.height, latFraction);
     var lngZoom = zoom(mapDim.width, WORLD_DIM.width, lngFraction);
 	
-	console.log(latFraction, latZoom);
-	console.log(lngFraction, lngZoom);
-	
 	return {
 		zoom: latZoom < lngZoom ? Math.floor(latZoom) : Math.floor(lngZoom),
 		span: latZoom < lngZoom ? latFraction : lngFraction,
@@ -412,8 +397,6 @@ Gpex.prototype.ProjectPoints = function() {
 	this.UpdateExtent();
 	this.UpdateOffset();
 	this.UpdateScale();
-	
-	//this.Report();
 }
 
 Gpex.prototype.vector_angle = function(a, b) {
