@@ -183,12 +183,19 @@ OpenJsCad.Viewer.prototype = {
 	  this.bedDepth = depth;
   },
 
-	setBaseMap: function(url, scale) {
+	setBaseMap: function(url, scale, rotate) {
 		
 		var bedx = this.bedWidth/2,
 			bedy = this.bedDepth/2;
 		
 		this.bedmesh.vertices = [[-bedx * scale, bedy * scale, 0], [bedx * scale, bedy * scale, 0], [bedx * scale, -bedy * scale, 0], [-bedx * scale, -bedy * scale, 0]];
+		
+		if (rotate) {
+			this.bedmesh.coords = [[1, 1], [1, 0], [0, 0], [0, 1]];
+		} else {
+			this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
+		}
+		
 		this.bedmesh.compile();
 		
 		var that = this;
