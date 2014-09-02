@@ -1305,6 +1305,8 @@ OpenJsCad.Processor.prototype = {
     var useSync = this.debugging;
     var options = {};
 
+	var readyMessage = 'Ready. Click <em>Generate STL</em> at right to get a download link.';
+
     if(!useSync)
     {
       this.worker = OpenJsCad.parseJsCadScriptASync(this.script, paramValues, this.options, function(err, obj) {
@@ -1318,7 +1320,7 @@ OpenJsCad.Processor.prototype = {
         else
         {
           that.setRenderedObjects(obj);
-          that.statusspan.innerHTML = "Ready.";
+          that.statusspan.innerHTML = readyMessage;
         }
         that.enableItems();
         if(that.onchange) that.onchange();
@@ -1331,7 +1333,7 @@ OpenJsCad.Processor.prototype = {
         var obj = OpenJsCad.parseJsCadScriptSync(this.script, paramValues, this.debugging);
         that.setRenderedObjects(obj);
         that.processing = false;
-        that.statusspan.innerHTML = "Ready.";
+        that.statusspan.innerHTML = readyMessage;
       }
       catch(e)
       {
