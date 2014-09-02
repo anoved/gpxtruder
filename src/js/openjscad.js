@@ -874,33 +874,32 @@ OpenJsCad.Processor.prototype = {
     viewbuttons.className = "viewbuttonsdiv";
     viewbuttons.style.width = this.viewerwidth;
     
-    var rightviewbuttons = document.createElement('div');
-    rightviewbuttons.style.cssFloat = "right";
-    
-	this.addViewButton("Reset view", 'reset', rightviewbuttons, function(e) {
+	this.addViewButton("Reset view", 'reset', viewbuttons, function(e) {
 		that.viewer.resetView();
 	});
 	
-	this.addViewButton("Front (-Y)", 'front', rightviewbuttons, function(e) {
+	this.addViewButton("Front (-Y)", 'front', viewbuttons, function(e) {
 		that.viewer.setView([-85, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
-	this.addViewButton("Rear (+Y)", 'rear', rightviewbuttons, function(e) {
+	this.addViewButton("Rear (+Y)", 'rear', viewbuttons, function(e) {
 		that.viewer.setView([-85, 0, 180], [0, 0, that.viewer.viewpointZ]);
 	});
 	
-	this.addViewButton("Right (+X)", 'right', rightviewbuttons, function(e) {
+	this.addViewButton("Right (+X)", 'right', viewbuttons, function(e) {
 		that.viewer.setView([-85, 0, -90], [0, 0, that.viewer.viewpointZ]);
 	});
 	
-	this.addViewButton("Left (-X)", 'left', rightviewbuttons, function(e) {
+	this.addViewButton("Left (-X)", 'left', viewbuttons, function(e) {
 		that.viewer.setView([-85, 0, 90], [0, 0, that.viewer.viewpointZ]);
 	});
 	
-	this.addViewButton("Top (+Z)", 'top', rightviewbuttons, function(e) {
+	this.addViewButton("Top (+Z)", 'top', viewbuttons, function(e) {
 		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
+	var rightviewbuttons = document.createElement('div');
+	rightviewbuttons.style.cssFloat = "right";
 	viewbuttons.appendChild(rightviewbuttons);
 
 	this.containerdiv.appendChild(viewbuttons);
@@ -978,6 +977,7 @@ OpenJsCad.Processor.prototype = {
     this.statusdiv.style.width = this.viewerwidth;
     
     this.statusspan = document.createElement("span");
+    this.statusspan.id = "statusspan";
     this.statusbuttons = document.createElement("div");
     this.statusbuttons.style.cssFloat = "right";
     this.statusdiv.appendChild(this.statusspan);
@@ -1002,11 +1002,14 @@ OpenJsCad.Processor.prototype = {
       that.updateDownloadLink();
     };
     this.statusbuttons.appendChild(this.formatDropdown);
+    
     this.generateOutputFileButton = document.createElement("button");
     this.generateOutputFileButton.onclick = function(e) {
       that.generateOutputFile();
     };
     this.statusbuttons.appendChild(this.generateOutputFileButton);
+
+    
     this.downloadOutputFileLink = document.createElement("a");
     this.statusbuttons.appendChild(this.downloadOutputFileLink);    
     
@@ -1181,7 +1184,7 @@ OpenJsCad.Processor.prototype = {
   
   enableItems: function() {
     this.abortbutton.style.display = this.processing? "inline":"none";
-    this.formatDropdown.style.display = ((!this.hasOutputFile)&&(this.hasValidCurrentObject))? "inline":"none";
+    this.formatDropdown.style.display = 'none'; //((!this.hasOutputFile)&&(this.hasValidCurrentObject))? "inline":"none";
     this.generateOutputFileButton.style.display = ((!this.hasOutputFile)&&(this.hasValidCurrentObject))? "inline":"none";
     this.downloadOutputFileLink.style.display = this.hasOutputFile? "inline":"none";
     this.parametersdiv.style.display = (this.paramControls.length > 0)? "block":"none";
@@ -1305,7 +1308,7 @@ OpenJsCad.Processor.prototype = {
     var useSync = this.debugging;
     var options = {};
 
-	var readyMessage = 'Ready. Click <em>Generate STL</em> at right to get a download link.';
+	var readyMessage = 'Ready.';
 
     if(!useSync)
     {
@@ -1417,7 +1420,7 @@ OpenJsCad.Processor.prototype = {
   
   supportedFormatsForCurrentObject: function() {
     if (this.currentObject instanceof CSG) {
-      return ["stl", "x3d"];
+      return ["stl"]; // x3d
     } else if (this.currentObject instanceof CAG) {
       return ["dxf"];
     } else {

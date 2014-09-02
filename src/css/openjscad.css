@@ -27,7 +27,6 @@ canvas {
 
 .viewbuttonsdiv {
 	margin-bottom:5px;
-	height: 42px;
 }
 
 img.viewbutton {
@@ -51,6 +50,8 @@ img.viewbutton {
 }
 
 .statusdiv {
-	width: 800px;
 	margin-top: 10px;
+}
+
+#statusspan {
 }

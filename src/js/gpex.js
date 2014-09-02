@@ -4,7 +4,13 @@
  */
 var setup = function() {
 	Messages.msgdiv = document.getElementById('messages');
-	var jscad = new OpenJsCad.Processor(document.getElementById('display'), {color: [0, 0.6, 0.1], openJsCadPath: "js/", viewerwidth: "800px", viewerheight: "400px", bgColor: [0.6, 0.6, 1, 1]});
+	var jscad = new OpenJsCad.Processor(document.getElementById('display'), {
+		color: [0, 0.6, 0.1],
+		openJsCadPath: "js/",
+		viewerwidth: "800px",
+		viewerheight: "400px",
+		bgColor: [0.6, 0.6, 1, 1]
+	});
 	var form = document.forms.namedItem('gpxform');
 	form.addEventListener('submit', function(ev) {
 		ev.preventDefault();
@@ -204,7 +210,7 @@ Gpex.prototype.LoadSegment = function(segment) {
 	this.code_jscad.innerHTML = this.jscad_assemble(true);	
 	this.code_openscad.innerHTML = this.oscad_assemble();
 	
-	this.jscad.containerdiv.scrollIntoView();
+	document.getElementById('output').scrollIntoView();
 }
 
 // Converts GPX trkpt nodelist to array of lon/lat/elevation vectors.
