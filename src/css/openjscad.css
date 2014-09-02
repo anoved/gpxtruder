@@ -27,6 +27,15 @@ canvas {
 
 .viewbuttonsdiv {
 	margin-bottom:5px;
+	height: 42px;
+}
+
+img.viewbutton {
+	cursor: pointer;
+	border: none;
+	
+	margin-left: 5px;
+	margin-right: 5px;
 }
 
 .parametersdiv {

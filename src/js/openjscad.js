@@ -874,29 +874,34 @@ OpenJsCad.Processor.prototype = {
     viewbuttons.className = "viewbuttonsdiv";
     viewbuttons.style.width = this.viewerwidth;
     
-	this.addViewButton("Reset", viewbuttons, function(e) {
+    var rightviewbuttons = document.createElement('div');
+    rightviewbuttons.style.cssFloat = "right";
+    
+	this.addViewButton("Reset view", 'reset', rightviewbuttons, function(e) {
 		that.viewer.resetView();
 	});
 	
-	this.addViewButton("Front (-Y)", viewbuttons, function(e) {
-		that.viewer.setView([-90, 0, 0], [0, 0, that.viewer.viewpointZ]);
+	this.addViewButton("Front (-Y)", 'front', rightviewbuttons, function(e) {
+		that.viewer.setView([-85, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
-	this.addViewButton("Rear (+Y)", viewbuttons, function(e) {
-		that.viewer.setView([-90, 0, 180], [0, 0, that.viewer.viewpointZ]);
+	this.addViewButton("Rear (+Y)", 'rear', rightviewbuttons, function(e) {
+		that.viewer.setView([-85, 0, 180], [0, 0, that.viewer.viewpointZ]);
 	});
 	
-	this.addViewButton("Left (-X)", viewbuttons, function(e) {
-		that.viewer.setView([-90, 0, 90], [0, 0, that.viewer.viewpointZ]);
+	this.addViewButton("Right (+X)", 'right', rightviewbuttons, function(e) {
+		that.viewer.setView([-85, 0, -90], [0, 0, that.viewer.viewpointZ]);
 	});
 	
-	this.addViewButton("Right (+X)", viewbuttons, function(e) {
-		that.viewer.setView([-90, 0, -90], [0, 0, that.viewer.viewpointZ]);
+	this.addViewButton("Left (-X)", 'left', rightviewbuttons, function(e) {
+		that.viewer.setView([-85, 0, 90], [0, 0, that.viewer.viewpointZ]);
 	});
 	
-	this.addViewButton("Top (+Z)", viewbuttons, function(e) {
+	this.addViewButton("Top (+Z)", 'top', rightviewbuttons, function(e) {
 		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
+
+	viewbuttons.appendChild(rightviewbuttons);
 
 	this.containerdiv.appendChild(viewbuttons);
   
@@ -1027,10 +1032,20 @@ OpenJsCad.Processor.prototype = {
     this.clearViewer();
   },
 	
-	addViewButton: function(title, div, callback) {
-		var button = document.createElement("button");
+	addViewButton: function(title, icon, div, callback) {
+		var button = document.createElement("img");
+		var srcOff = 'img/' + icon + '-inactive.png';
+		var srcOn  = 'img/' + icon + '-active.png';
+		button.src = srcOff;
+		button.onmouseover = function() {
+			this.src = srcOn;
+		};
+		button.onmouseout = function() {
+			this.src = srcOff;
+		};
 		button.onclick = callback;
-		button.innerHTML = title;
+		button.title = title;
+		button.className = "viewbutton";
 		div.appendChild(button);
 	},
 	
