@@ -70,6 +70,12 @@ var loader = function(gpxfile, jscad) {
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
 		if (req.readyState === 4) {
+			
+			if (!req.responseXML) {
+				Messages.error("This doesn't appear to be a GPX file.");
+				return;
+			}
+			
 			var gd = new Gpex(
 					req.responseXML,
 					jscad,
@@ -158,16 +164,22 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 
 Gpex.prototype.LoadTracks = function() {
 	var tracks = this.content.documentElement.getElementsByTagName('trk');
-	for (var i = 0; i < tracks.length; i++) {
-		this.LoadTrack(tracks[i]);
+	if (tracks.length === 0) {
+		Messages.error("This file does not appear to contain any tracks.<br />" +
+				"(Are you sure it is a GPX file?)");
+		return;
 	}
+	this.LoadTrack(tracks[0]);
 }
 
 Gpex.prototype.LoadTrack = function(track) {
 	var segments = track.getElementsByTagName('trkseg');
-	for (var i = 0; i < segments.length; i++) {
-		this.LoadSegment(segments[i]);
+	if (segments.length === 0) {
+		Messages.error("This file does not appear to contain any track segments.<br />" +
+				"(Are you sure it is a valid GPX file?)");
+		return;
 	}
+	this.LoadSegment(segments[0]);
 }
 
 Gpex.prototype.LoadSegment = function(segment) {
