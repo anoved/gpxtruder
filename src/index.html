@@ -2,7 +2,7 @@
 	<head>
 		<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
 		
-		<title>GPXtruder: Make 3D-printable models of GPX tracks</title>
+		<title>GPXtruder: Make 3D-printable elevation models of GPX tracks</title>
 		
 		<script src="js/lightgl.js" type="text/javascript"></script>
 		<script src="js/csg.js" type="text/javascript"></script>
@@ -23,14 +23,12 @@
 		
 		<h1>GPXtruder</h1>
 		
-		<p>Make 3D-printable models of GPX tracks.</p>
+		<p>Make 3D-printable elevation models of GPX tracks.</p>
 		
 		</div>
 		
 		<div id="input" class="panel">
-		
-		<h1>Setup</h1>
-		
+				
 		<form enctype="multipart/form-data" method="post" name="gpxform">
 			<p>GPX file with elevation: <input type="file" id="gpxfile" required></input><br />
 			   <span class="info">Use <a href="http://www.gpsvisualizer.com/elevation">GPS Visualizer</a> to add elevation data to your GPX file.</span></p>
@@ -77,12 +75,12 @@
 		</div>
 		
 		<div id="output" class="panel">
-		
-		<h1>3D</h1>
-		
+				
 		<div id="display"></div>
 		
-		<h1><span onclick="toggleDivDisplay('output-code', 'output-code-link');" id="output-code-link" class="config-link inactive">Code</span></h1>
+		<p></p>
+		
+		<h3><span onclick="toggleDivDisplay('output-code', 'output-code-link');" id="output-code-link" class="config-link inactive">Code</span></h3>
 		
 		<div id="output-code" class="config-group">
 		<p><span class="info">To customize the model, paste this code into <a href="http://openjscad.org/">OpenJSCAD.org</a> (left) or <a href="http://www.openscad.org/">OpenSCAD</a> (right):</span><br />
@@ -91,6 +89,11 @@
 		</div>
 		
 		</div>
+		
+		<div id="footer" class="panel">
+		<p class="info">This is the fine print your mother warned you about.</p>
+		</div>
+		
 		
 	</body>
 </html>
