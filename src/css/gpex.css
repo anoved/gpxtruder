@@ -70,6 +70,10 @@ div#footer {
 	color: gray;
 }
 
+.info a {
+	color: gray;
+}
+
 div.viewer {
 	border: 1px solid blue;
 }
