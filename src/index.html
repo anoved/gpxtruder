@@ -64,14 +64,14 @@
 		
 		<div id="input" class="panel">
 		
-		<p style="float: right;"><img src="img/input.png" /></p>
+		<p class="iolabel"><img src="img/input.png" width="129" height="31" alt="Input" /></p>
 		
 		<!--<div id="ads">
 		</div>-->
 		
 		<form enctype="multipart/form-data" method="post" name="gpxform">
-			<p >GPX file with elevation: <input type="file" id="gpxfile" required></input><br />
-						
+			<p>GPX file: <input type="file" id="gpxfile" required></input></p>
+			
 			<h3><span onclick="toggleDivDisplay('config-route', 'config-route-link');" id="config-route-link" class="config-link inactive">Route</span></h3>
 			
 			<div id="config-route" class="config-group">
@@ -108,14 +108,15 @@
 			   <span class="info">Extra height added to the bottom of the route model.</span></p>
 			</div>
 			
-			<p><input type="submit" value="Convert"></input></p>
+			<p><input type="submit" value="Convert!"></input></p>
+			
 		</form>
 		
 		</div>
 		
 		<div id="output" class="panel">
 		
-		<p style="float: right;"><img src="img/output.png" /></p>
+		<p class="iolabel"><img src="img/output.png" width="166" height="31" alt="Output" /></p>
 				
 		<div id="display"></div>
 		

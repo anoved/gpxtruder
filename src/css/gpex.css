@@ -56,7 +56,6 @@ div#intro {
 }
 
 div#input {
-	min-height: 200px;
 }
 
 div#output {
@@ -72,6 +71,10 @@ div#ads {
 
 div#footer {
 	text-align: center;
+}
+
+p.iolabel {
+	float: right;
 }
 
 .info {
