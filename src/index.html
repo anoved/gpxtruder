@@ -40,7 +40,7 @@
 				
 				<p><img src="img/step2.png" alt="Step 2" /></p>
 				
-				<p>Use this site to convert your route to a 3D elevation map.</p>
+				<p>Use GPXtruder to convert your route to a 3D elevation map.</p>
 				
 				<p class="info">Upload a GPX file. Download an STL file or copy the output code to make a remix of your model.</p>
 				
@@ -57,16 +57,21 @@
 		</tr>
 		</table>
 		
+		<p>GPXtruder is an open-source project. For help, examples, or feedback, please visit <a href="https://github.com/anoved/gpxtruder">the project page</a>.</p>
+
+		
 		</div>
 		
 		<div id="input" class="panel">
-		<div id="ads">
-		</div>
+		
+		<p style="float: right;"><img src="img/input.png" /></p>
+		
+		<!--<div id="ads">
+		</div>-->
 		
 		<form enctype="multipart/form-data" method="post" name="gpxform">
-			<p>GPX file with elevation: <input type="file" id="gpxfile" required></input><br />
-			   <span class="info">Use <a href="http://www.gpsvisualizer.com/elevation">GPS Visualizer</a> to add elevation data to your GPX file.</span></p>
-			
+			<p >GPX file with elevation: <input type="file" id="gpxfile" required></input><br />
+						
 			<h3><span onclick="toggleDivDisplay('config-route', 'config-route-link');" id="config-route-link" class="config-link inactive">Route</span></h3>
 			
 			<div id="config-route" class="config-group">
@@ -109,10 +114,10 @@
 		</div>
 		
 		<div id="output" class="panel">
+		
+		<p style="float: right;"><img src="img/output.png" /></p>
 				
 		<div id="display"></div>
-		
-		<p></p>
 		
 		<h3><span onclick="toggleDivDisplay('output-code', 'output-code-link');" id="output-code-link" class="config-link inactive">Code</span></h3>
 		
@@ -125,7 +130,6 @@
 		</div>
 		
 		<div id="footer" class="panel">
-		<p>For more information, source code, or bug reports, please visit <a href="https://github.com/anoved/gpxtruder">github.com/anoved/gpxtruder</a>.</p>
 		<p class="info">GPXtruder is not affiliated with Strava, MapMyRun, GPS Visualizer, 3D Hubs, Shapeways, Garmin, Printrbot, or any other sites, products, or services. All trademarks and registered trademarks are the property of their respective owners. This is the fine print your mother warned you about.</p>
 		</div>
 		

@@ -898,10 +898,6 @@ OpenJsCad.Processor.prototype = {
 		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
-	var rightviewbuttons = document.createElement('div');
-	rightviewbuttons.style.cssFloat = "right";
-	viewbuttons.appendChild(rightviewbuttons);
-
 	this.containerdiv.appendChild(viewbuttons);
   
     var viewerdiv = document.createElement("div");
