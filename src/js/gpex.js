@@ -9,7 +9,7 @@ var setup = function() {
 		openJsCadPath: "js/",
 		viewerwidth: "800px",
 		viewerheight: "400px",
-		bgColor: [0.745, 0.902, 0.745, 1]// [0.6, 0.6, 1, 1]
+		bgColor: [0.553, 0.686, 0.8, 1]// [0.769, 0.851, 0.58, 1]// [0.745, 0.902, 0.745, 1]// [0.6, 0.6, 1, 1]
 	});
 	var form = document.forms.namedItem('gpxform');
 	form.addEventListener('submit', function(ev) {
