@@ -497,16 +497,25 @@ Gpex.prototype.segment_angle = function(i) {
  * average angle between this segment and the next.
  * (p could be kept as a Gpex property.)
  */
-Gpex.prototype.joint_points = function(i, absa, avga) {
+Gpex.prototype.joint_points = function(i, lasta, avga) {
 	
 	// distance from endpoint to segment buffer intersection
-	var jointr = this.buffer/Math.cos(avga - absa),
+	var jointr = this.buffer/Math.cos(avga - lasta);
+	
+	// arbitrary hack to prevent extremely spiky corner artifacts
+	// on acute angles. Real solution requires an additional corner
+	// point or possibly swapping l/r vertices for successive segs.
+	// (As-is, buffer width will not be maintained on acute corners.)
+	if (Math.abs(jointr) > this.buffer * 2) {
+		jointr = Math.sign(jointr) * this.buffer * 2;
+	}
 	
 	// joint coordinates (endpoint offset at bisect angle by jointr)
-		lx = this.fp[i][0] + jointr * Math.cos(avga + Math.PI/2),
+	var	lx = this.fp[i][0] + jointr * Math.cos(avga + Math.PI/2),
 		ly = this.fp[i][1] + jointr * Math.sin(avga + Math.PI/2),
 		rx = this.fp[i][0] + jointr * Math.cos(avga - Math.PI/2),
 		ry = this.fp[i][1] + jointr * Math.sin(avga - Math.PI/2);
+	
 	
 	return [[lx, ly], [rx, ry]];
 }
