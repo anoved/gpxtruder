@@ -498,9 +498,9 @@ Gpex.prototype.segment_angle = function(i) {
  * (p could be kept as a Gpex property.)
  */
 Gpex.prototype.joint_points = function(i, rel, avga) {
-	
+
 	// distance from endpoint to segment buffer intersection
-	var jointr = this.buffer/Math.cos(rel);
+	var jointr = this.buffer/Math.cos(rel/2);
 	
 	// arbitrary hack to prevent extremely spiky corner artifacts
 	// on acute angles. Real solution requires an additional corner
@@ -515,7 +515,6 @@ Gpex.prototype.joint_points = function(i, rel, avga) {
 		ly = this.fp[i][1] + jointr * Math.sin(avga + Math.PI/2),
 		rx = this.fp[i][0] + jointr * Math.cos(avga - Math.PI/2),
 		ry = this.fp[i][1] + jointr * Math.sin(avga - Math.PI/2);
-	
 	
 	return [[lx, ly], [rx, ry]];
 }
@@ -559,7 +558,7 @@ Gpex.prototype.process_path = function() {
 		angle = this.segment_angle(i);
 		rel_angle = angle - last_angle;
 		joint_angle = rel_angle / 2 + last_angle;
-		pp = this.joint_points(i, rel_angle/2, joint_angle);
+		pp = this.joint_points(i, rel_angle, joint_angle);
 		
 		// next four points of segment polyhedron
 		PathSegment.points(vertices, pp, this.fp[i][2]);
