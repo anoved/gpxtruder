@@ -261,14 +261,53 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 	};
 	
 	var rawpoints = [];
-	for (var i = 0; i < trkpts.length; i++) {
-		rawpoints.push(this.llz(trkpts[i]));
+	var rawpt = [];
+	var min_lat
+	
+	
+	rawpt = this.llz(trkpts[0]);
+	min_lon = rawpt[0];
+	max_lon = rawpt[0];
+	min_lat = rawpt[1];
+	max_lat = rawpt[1];
+	
+	for (var i = 1; i < trkpts.length; i++) {
+		rawpt = this.llz(trkpts[i]);
+		
+		if (rawpt[0] < min_lon) {
+			min_lon = rawpt[0];
+		}
+		
+		if (rawpt[0] > max_lon) {
+			max_lon = rawpt[0];
+		}
+		
+		if (rawpt[1] < min_lat) {
+			min_lat = rawpt[1];
+		}
+		
+		if (rawpt[1] > max_lat) {
+			max_lat = rawpt[1];
+		}
+		
+		rawpoints.push(rawpt);
+	}
+	
+	// attempt to auto-calculate minimum distance based on scaled path width
+	// (only applied with actual route track shape)
+	if (this.minimumDistance == 0 && this.shape == 0) {
+		var min_geo = proj4('GOOGLE', [min_lon, min_lat]);
+		var max_geo = proj4('GOOGLE', [max_lon, max_lat]);
+		var geo_x = max_geo[0] - min_geo[0];
+		var geo_y = max_geo[1] - min_geo[1];
+		var scale = this.getScale(geo_x, geo_y);
+		var bufferw = this.buffer / scale;
+		this.minimumDistance = Math.round(bufferw);
+		console.log('Auto-filtering at ' + this.minimumDistance + ' meters');
 	}
 	
 	distFilter(rawpoints, this.minimumDistance);
-
-	//console.log('total', this.distance, 'avg', this.distance / this.d.length);
-		
+	
 	this.ringRadius = this.distance / (Math.PI * 2);
 }
 
@@ -395,26 +434,30 @@ Gpex.prototype.basemap = function() {
 	this.jscad.viewer.setBaseMap(mapurl, mapscale, this.rotate);
 }
 
-// calculate scale used to fit model on output bed
-Gpex.prototype.UpdateScale = function() {
+Gpex.prototype.getScale = function(xextent, yextent) {
 	// indent bed extent to accomodate buffer width
 	var xbe = this.bedx - (2 * this.buffer),
 		ybe = this.bedy - (2 * this.buffer);
-	var mmax = Math.max(this.xextent, this.yextent),
-		mmin = Math.min(this.xextent, this.yextent),
+	var mmax = Math.max(xextent, yextent),
+		mmin = Math.min(xextent, yextent),
 		bmax = Math.max(xbe, ybe),
 		bmin = Math.min(xbe, ybe),
 		fmax = bmax / mmax,
 		fmin = bmin / mmin;
-	this.scale = Math.min(fmax, fmin);
+	return Math.min(fmax, fmin);
+}
+
+Gpex.prototype.getRotate = function() {
+	var xbe = this.bedx - (2 * this.buffer),
+		ybe = this.bedy - (2 * this.buffer);
 	
 	// determine whether the model should be rotated to fit
 	if ((xbe >= ybe && this.xextent >= this.yextent) ||
 		(xbe < ybe && this.xextent < this.yextent)) {
-		this.rotate = false;
-	} else {
-		this.rotate = true;
+		return false;
 	}
+	
+	return true;
 }
 
 // point to project and cumulative distance along path
@@ -483,7 +526,9 @@ Gpex.prototype.ProjectPoints = function() {
 	
 	this.UpdateExtent();
 	this.UpdateOffset();
-	this.UpdateScale();
+	
+	this.scale = this.getScale(this.xextent, this.yextent);
+	this.rotate = this.getRotate();
 }
 
 Gpex.prototype.vector_angle = function(a, b) {
