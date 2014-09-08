@@ -503,9 +503,9 @@ Gpex.prototype.joint_points = function(i, rel, avga) {
 	var jointr = this.buffer/Math.cos(rel/2);
 	
 	// arbitrary hack to prevent extremely spiky corner artifacts
-	// on acute angles. Real solution requires an additional corner
-	// point or possibly swapping l/r vertices for successive segs.
-	// (As-is, buffer width will not be maintained on acute corners.)
+	// on acute angles. Optimal solution would introduce additional
+	// corner points. (As-is, path width is not maintained here.)
+	
 	if (Math.abs(jointr) > this.buffer * 2) {
 		jointr = Math.sign(jointr) * this.buffer * 2;
 	}
@@ -527,6 +527,13 @@ Gpex.prototype.joint_points = function(i, rel, avga) {
  * that segment; consecutive segments share endpoints.
  */
 Gpex.prototype.process_path = function() {
+	
+	var acuteAngle = function(angle) {
+		if ((Math.abs(angle) > Math.PI/2) && (Math.abs(angle) < (3 * Math.PI)/2)) {
+			return true;
+		}
+		return false;
+	};
 	
 		// angle of initial segment (ids 0 - 1)
 	var last_angle = this.segment_angle(0),
@@ -552,25 +559,39 @@ Gpex.prototype.process_path = function() {
 	// initial endcap
 	var faces = [];
 	PathSegment.first_face(faces);
-	
-	for (var i = 1; i < this.fp.length; i++) {
+		
+	// s is segment counter used for calculating face indices; it is
+	// managed separately from i in case we skip any acute/noisy segment
+	for (var i = 1, s = 1; i < this.fp.length; i++) {
 		
 		angle = this.segment_angle(i);
 		rel_angle = angle - last_angle;
 		joint_angle = rel_angle / 2 + last_angle;
+		
+		// Collapse series of acute angle segments into a single cusp
+		if (acuteAngle(rel_angle)
+			&& (i < this.fp.length - 1)
+			&& acuteAngle(this.segment_angle(i + 1) - angle)) {
+			
+			// by continuing, we add no points or faces to the model,
+			// and do not update last_angle - it remains pointing at
+			// whatever it did before we hit this weird acute segment
+			continue;
+		}
+		
 		pp = this.joint_points(i, rel_angle, joint_angle);
 		
 		// next four points of segment polyhedron
 		PathSegment.points(vertices, pp, this.fp[i][2]);
 		
 		// faces connecting first four points to last four of segment
-		PathSegment.faces(faces, i);
-		
+		PathSegment.faces(faces, s);
+		s = s + 1;
 		last_angle = angle;
 	}
 	
 	// final endcap
-	PathSegment.last_face(faces, i);
+	PathSegment.last_face(faces, s);
 	
 	// generate array of point vector SCAD strings
 	this.model_points = vertices.map(function(v) {
@@ -582,9 +603,6 @@ Gpex.prototype.process_path = function() {
 		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 	});
 }
-
-// returns jscad for one marker
-// use oscad-style cube params rather than corner1 and corner2
 
 // set these code generators up as objects that can keep track of whether
 // they need to include "CSG.", etc, rather than passing this boolean dl param around
