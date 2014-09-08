@@ -229,26 +229,49 @@ Gpex.prototype.LoadSegment = function(segment) {
 // Also assembles array of segment distances (n - 1 where n = point count)
 Gpex.prototype.ScanPoints = function(trkpts) {
 	
-	this.ll.push(this.llz(trkpts[0]));
+	var that = this;
 	
-	for (var current = 1, last = 0; current < trkpts.length; current++) {
+	var distFilter = function(points, mindist) {
+	
+		var pts = [];
+		var dst = [];
+		var total = 0;
 		
-		var point = this.llz(trkpts[current]);
-		var dist = distVincenty(point[1], point[0], this.ll[last][1], this.ll[last][0]);
+		pts.push(points[0]);
 		
-		if (this.minimumDistance == 0 || dist >= this.minimumDistance) {
-			this.ll.push(point);
-			this.d.push(dist);
-			last += 1;
+		for (var cur = 1, pre = 0; cur < points.length; cur++) {
+			
+			var dist = distVincenty(
+					points[cur][1], points[cur][0],
+					pts[pre][1], pts[pre][0]);
+			
+			if (mindist == 0 || dist >= mindist) {
+				pts.push(points[cur]);
+				dst.push(dist);
+				total += dist;
+				pre += 1;
+			}
 		}
+		
+		that.distance = total;
+		that.ll = pts;
+		that.d = dst;
+		
+		return total;
+	};
+	
+	var rawpoints = [];
+	for (var i = 0; i < trkpts.length; i++) {
+		rawpoints.push(this.llz(trkpts[i]));
 	}
 	
-	this.distance = this.d.reduce(function(prev, cur) {
-		return prev + cur;
-	});
-	
+	distFilter(rawpoints, this.minimumDistance);
+
+	//console.log('total', this.distance, 'avg', this.distance / this.d.length);
+		
 	this.ringRadius = this.distance / (Math.PI * 2);
 }
+
 
 // set min/max x/y/z bounds to the given xyz point
 Gpex.prototype.InitBounds = function(xyz) {
@@ -384,7 +407,7 @@ Gpex.prototype.UpdateScale = function() {
 		fmax = bmax / mmax,
 		fmin = bmin / mmin;
 	this.scale = Math.min(fmax, fmin);
-
+	
 	// determine whether the model should be rotated to fit
 	if ((xbe >= ybe && this.xextent >= this.yextent) ||
 		(xbe < ybe && this.xextent < this.yextent)) {
