@@ -138,8 +138,7 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	// array of 2D vectors marking miles/kms
 	this.markers = [];
 	
-	// remember indices of projected points bounding each marker
-	// (so that marker segment angles can be computed after scaling)
+	// orientation of each marker (aligned with initial segment along which it lies)
 	this.markseg = [];
 	
 	// meters per marker (0 = no markers)
@@ -258,7 +257,11 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		that.ll = pts;
 		that.d = dst;
 		
-		return total;
+		// the total distance computed here will differ from (be less than)
+		// the initial total because some points are discarded, straightening
+		// the route and thereby decrease path length. mile markers are placed
+		// using the initial distances and thereby remain fixed regardless of
+		// route smoothing, so we don't necessarily care that route length varies
 	};
 	
 	var lastpt = this.llz(trkpts[0]),
@@ -267,7 +270,11 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		min_lat = lastpt[1],
 		max_lat = lastpt[1],
 		rawpoints = [],
+		rawpointcd = [],
 		totaldist = 0;
+	
+	var cd = 0, md = 0, lastmd = 0;
+	var marker_objs = [];
 	
 	for (var i = 1; i < trkpts.length; i++) {
 		
@@ -294,8 +301,81 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		var segdist = distVincenty(lastpt[1], lastpt[0], rawpt[1], rawpt[0]);
 		totaldist += segdist;
 		lastpt = rawpt;
+		
+		// lastmd is marker distance up to but not including this segment
+		lastmd = md;
+		
+		// now md is marker distance including this segment
+		md += segdist;
+		cd += segdist;
+		
+		// stash cumulative distance to each raw point
+		rawpointcd.push(cd);
+		
+		// if marker distance including this segment exceeds marker interval, mark!
+		if (this.mpermark > 0 && md >= this.mpermark) {
+			
+			// portion of this segment's length that falls before the marker
+			var last_seg = this.mpermark - lastmd;
+			
+			// portion of this segment's length that falls after the marker
+			var next_seg = segdist - last_seg;
+			
+			// percent along segment from lastpt to rawpt
+			var pd = last_seg / segdist;
+			
+			var markerpoint = [
+				lastpt[0] + pd * (rawpt[0] - lastpt[0]),
+				lastpt[1] + pd * (rawpt[1] - lastpt[1]),
+				lastpt[2] + pd * (rawpt[2] - lastpt[2])
+			];
+			
+			// storing the geographic coordinates + cumulative distance;
+			// convert to projected coordinates on output
+			marker_objs.push({
+				loc: markerpoint,
+				pos: cd - next_seg,
+				seg: i
+			});
+			
+			// markseg is, originally, used to cache indices of [projected/scaled]
+			// segments surrounding this marker, so that the marker can be oriented
+			// along the same vector as that segment. Since our final route may be
+			// based on a filtered set of points, the segment we're on now may not
+			// be present in the output. So, best to work out the orientation now.
+			
+			// reset distance to the next marker
+			// (starting with remainder of this segment)
+			md = next_seg;
+		}
 	}
 	
+	this.distance = totaldist;
+	
+	// some issues with gaps at ends of linear/ring shapes if filtered distance is less
+	// than initial distance. Consider using filtered distance... or ratio, not absolute.
+	this.ringRadius = this.distance / (Math.PI * 2);
+	
+	// now that totaldist is known, we can run projectpoints to get actual marker location -
+	// and the corresponding vector orientations.
+	
+	for (var i = 0; i < marker_objs.length; i++) {
+		
+		this.markers.push(this.ProjectPoint(marker_objs[i].loc, marker_objs[i].pos));
+		
+		var marker_angle = this.vector_angle(
+			this.ProjectPoint(rawpoints[marker_objs[i].seg - 1], rawpointcd[marker_objs[i].seg - 1]),
+			this.ProjectPoint(rawpoints[marker_objs[i].seg], rawpointcd[marker_objs[i].seg])
+		);
+		
+		// pushing actual orientation angle to markseg now, not surrounding segment endpoint indices
+		this.markseg.push(marker_angle);
+		
+	}
+	
+	// actually, hang on; we can store marker locations in geographic form
+	// and only call ProjectPoint on them at output time - once total is known.
+
 	// Guestimate viable mindist based on scale if automatic smoothing
 	// is enabled and the shape type is route (directional smoothing
 	// is not vital for linear/ring shape - but might be faster.)
@@ -310,9 +390,8 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		Messages.status('Automatic interval: ' + this.minimumDistance);
 	}
 	
-	this.distance = distFilter(rawpoints, this.minimumDistance);
-
-	this.ringRadius = this.distance / (Math.PI * 2);
+	// smooth route by minimum distance filter
+	distFilter(rawpoints, this.minimumDistance);
 }
 
 
@@ -482,9 +561,6 @@ Gpex.prototype.ProjectPoints = function() {
 	// cumulative distance
 	var cd = 0;
 	
-	// distance since last marker
-	var md = 0, lastmd = 0;
-	
 	// Initialize extents using first projected point.
 	var xyz = this.ProjectPoint(this.ll[0], 0);
 	this.InitBounds(xyz);
@@ -493,39 +569,11 @@ Gpex.prototype.ProjectPoints = function() {
 	// Project the rest of the points, updating extents.
 	for (var i = 1; i < this.ll.length; i++) {
 		
-		lastmd = md;
-		md += this.d[i-1];
 		cd += this.d[i-1];
 		
 		xyz = this.ProjectPoint(this.ll[i], cd);
 		this.UpdateBounds(xyz);
 		this.pp.push(xyz);
-		
-		// If we've met or exceeded distance to next marker,
-		// determine its exact location and add it to list.
-		// (No marker calculations if mpermark is zero)
-		if (this.mpermark > 0 && md >= this.mpermark) {
-			
-			var last_seg = this.mpermark - lastmd;
-			var seg_length = md - lastmd;
-			var next_seg = seg_length - last_seg;
-			var pd = last_seg / seg_length;
-			
-			// marker located along segment between previous and current point
-			// pd is the proportionate distance along that vector
-			var markerpoint = [
-				this.ll[i-1][0] + pd * (this.ll[i][0] - this.ll[i-1][0]),
-				this.ll[i-1][1] + pd * (this.ll[i][1] - this.ll[i-1][1]),
-				this.ll[i-1][2] + pd * (this.ll[i][2] - this.ll[i-1][2])
-			];
-			
-			// store projected marker location
-			this.markers.push(this.ProjectPoint(markerpoint, cd - next_seg));
-			this.markseg.push([i - 1, i]);
-			
-			// reset distance to next marker
-			md = next_seg;
-		}
 	}
 	
 	this.UpdateExtent();
@@ -686,8 +734,9 @@ Gpex.prototype.jscad_marker = function(i, dl) {
 		
 		// angle between this the projected/scaled/centered points comprising the segment
 		// along which this marker lies.
-		t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
-	
+		//t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
+		t = this.markseg[i];
+
 	if (dl == true) {
 		var scad = "cube({size: [1, " + (2 * r) + ", " + z + "], center: true})" +
 				".rotateZ(" + (t * 180 / Math.PI) + ")" +
@@ -786,7 +835,8 @@ Gpex.prototype.oscad_marker = function(i) {
 		y = this.markers[i][1],
 		z = this.markers[i][2],
 		r = this.buffer + 1,
-		t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
+		//t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
+		t = this.markseg[i];
 	return "translate([" + x + ", " + y + ", " + z/2 + "]) " + 
 		   "rotate([0, 0, " + (t * 180/Math.PI) + "]) " + 
 		   "cube(size=[1, " + (2 * r) + ", " + z + "], center=true);";
