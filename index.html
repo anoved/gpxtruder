@@ -76,11 +76,11 @@
 			
 			<div id="config-route" class="config-group">
 			<p>Vertical exaggeration: <input type="text" size="10" id="vertical" required value="5"></input><br />
-			   <span class="info">Enhance elevation changes by this factor.</span></p>
+			   <span class="info">Multiply elevation values by this factor to enhance terrain.</span></p>
 			<p>Clip to minimum elevation: <input type="checkbox" id="zcut" value="1" checked></input><br />
-			   <span class="info">Disable to depict full elevation above sea level.</span></p>
-			<p>Smoothing: <input type="radio" name="smooth" value="0" id="smooth_auto" checked /> <label for="smooth_auto">Automatic</label> <input type="radio" name="smooth" value="1" id="smooth_manual" /> <label for="smooth_manual">Minimum interval:</label> <input type="text" size="5" id="mindist" required value="0"></input> (meters)<br />
-			   <span class="info">Simplify the route by discarding points that are too close together. Automatic smoothing calculates minimum interval based on model size and scale.</span></p>
+			   <span class="info">Uncheck to show full elevation above sea level.</span></p>
+			<p>Smoothing: <input type="radio" name="smooth" value="0" id="smooth_auto" checked /> <label for="smooth_auto">Automatic</label> <input type="radio" name="smooth" value="1" id="smooth_manual" /> <label for="smooth_manual">Manual minimum interval:</label> <input type="text" size="5" id="mindist" required value="0"></input> (meters)<br />
+			   <span class="info">Simplify the route by discarding points that are close together. Automatic smoothing computes interval based on model shape, size, and scale.</span></p>
 			</div>
 			
 			<h3><span onclick="toggleDivDisplay('config-model', 'config-model-link');" id="config-model-link" class="config-link inactive">Model</span></h3>
