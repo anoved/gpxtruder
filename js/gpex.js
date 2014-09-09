@@ -255,22 +255,23 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 			}
 		}
 		
-		that.distance = total;
 		that.ll = pts;
 		that.d = dst;
 		
 		return total;
 	};
 	
-	var rawpt = this.llz(trkpts[0]),
-		min_lon = rawpt[0],
-		max_lon = rawpt[0],
-		min_lat = rawpt[1],
-		max_lat = rawpt[1],
-		rawpoints = [];
+	var lastpt = this.llz(trkpts[0]),
+		min_lon = lastpt[0],
+		max_lon = lastpt[0],
+		min_lat = lastpt[1],
+		max_lat = lastpt[1],
+		rawpoints = [],
+		totaldist = 0;
 	
 	for (var i = 1; i < trkpts.length; i++) {
-		rawpt = this.llz(trkpts[i]);
+		
+		var rawpt = this.llz(trkpts[i]);
 		
 		if (rawpt[0] < min_lon) {
 			min_lon = rawpt[0];
@@ -289,6 +290,10 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		}
 		
 		rawpoints.push(rawpt);
+		
+		var segdist = distVincenty(lastpt[1], lastpt[0], rawpt[1], rawpt[0]);
+		totaldist += segdist;
+		lastpt = rawpt;
 	}
 	
 	// Guestimate viable mindist based on scale if automatic smoothing
@@ -305,8 +310,8 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		Messages.status('Automatic interval: ' + this.minimumDistance);
 	}
 	
-	distFilter(rawpoints, this.minimumDistance);
-	
+	this.distance = distFilter(rawpoints, this.minimumDistance);
+
 	this.ringRadius = this.distance / (Math.PI * 2);
 }
 
