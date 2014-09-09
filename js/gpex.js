@@ -226,6 +226,8 @@ Gpex.prototype.LoadSegment = function(segment) {
 	document.getElementById('output').scrollIntoView();
 }
 
+// this function has ballooned into a gross gargantua
+
 // Converts GPX trkpt nodelist to array of lon/lat/elevation vectors.
 // Also assembles array of segment distances (n - 1 where n = point count)
 Gpex.prototype.ScanPoints = function(trkpts) {
@@ -379,14 +381,29 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 	// Guestimate viable mindist based on scale if automatic smoothing
 	// is enabled and the shape type is route (directional smoothing
 	// is not vital for linear/ring shape - but might be faster.)
-	if (this.smoothingMode === 0 && this.shape === 0) {
-		var min_geo = proj4('GOOGLE', [min_lon, min_lat]);
-		var max_geo = proj4('GOOGLE', [max_lon, max_lat]);
-		var geo_x = max_geo[0] - min_geo[0];
-		var geo_y = max_geo[1] - min_geo[1];
-		var scale = this.getScale(geo_x, geo_y);
-		var bufferw = this.buffer / scale;
-		this.minimumDistance = Math.round(bufferw);
+	if (this.smoothingMode === 0) {
+		
+		if (this.shape === 0) {
+			// track: set scale based on approx route extent
+			var min_geo = proj4('GOOGLE', [min_lon, min_lat]);
+			var max_geo = proj4('GOOGLE', [max_lon, max_lat]);
+			var geo_x = max_geo[0] - min_geo[0];
+			var geo_y = max_geo[1] - min_geo[1];
+			var scale = this.getScale(geo_x, geo_y);
+		}
+		else if (this.shape === 1) {
+			// linear: set scale based on distance
+			var scale = this.getScale(this.distance, 0);
+		}
+		else if (this.shape === 2) {
+			// ring: set scale based on ring radius
+			var scale = this.getScale(2 * this.ringRadius, 2 * this.ringRadius);
+		}
+		
+		// Model path buffer (mm) / scale = real world path buffer size (meters);
+		// segments representing lengths less than this size are noisy; discard.
+		this.minimumDistance = Math.floor(this.buffer / scale);
+		
 		Messages.status('Automatic interval: ' + this.minimumDistance);
 	}
 	
