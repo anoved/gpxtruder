@@ -79,8 +79,8 @@
 			   <span class="info">Enhance elevation changes by this factor.</span></p>
 			<p>Clip to minimum elevation: <input type="checkbox" id="zcut" value="1" checked></input><br />
 			   <span class="info">Disable to depict full elevation above sea level.</span></p>
-			<p>Minimum distance between points: <input type="text" size="10" id="mindist" required value="0"></input> (meters) <br />
-			   <span class="info">Discard points that are too close together. A nonzero minimum distance will simplify the output model but will alter the exact shape and length of the route.</span></p>
+			<p>Smoothing: <input type="radio" name="smooth" value="0" id="smooth_auto" checked /> <label for="smooth_auto">Automatic</label> <input type="radio" name="smooth" value="1" id="smooth_manual" /> <label for="smooth_manual">Minimum interval:</label> <input type="text" size="5" id="mindist" required value="0"></input> (meters)<br />
+			   <span class="info">Simplify the route by discarding points that are too close together. Automatic smoothing calculates minimum interval based on model size and scale.</span></p>
 			</div>
 			
 			<h3><span onclick="toggleDivDisplay('config-model', 'config-model-link');" id="config-model-link" class="config-link inactive">Model</span></h3>

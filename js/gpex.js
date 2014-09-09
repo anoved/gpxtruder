@@ -87,6 +87,7 @@ var loader = function(gpxfile, jscad) {
 					document.getElementById('zcut').checked,
 					radioValue(document.getElementsByName('shape')),
 					radioValue(document.getElementsByName('marker')),
+					radioValue(document.getElementsByName('smooth')),
 					document.getElementById('mindist').value,
 					document.getElementById('code_jscad'),
 					document.getElementById('code_openscad'));
@@ -100,7 +101,7 @@ var loader = function(gpxfile, jscad) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, mindist, code_jscad, code_openscad) {
+function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, smooth, mindist, code_jscad, code_openscad) {
 	this.content = content;
 	this.jscad = jscad;
 	this.buffer = parseFloat(buffer);
@@ -110,6 +111,7 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	this.base = parseFloat(base);
 	this.zcut = zcut;
 	this.shape = shape;
+	this.smoothingMode = smooth;
 	this.minimumDistance = parseFloat(mindist);
 	this.code_jscad = code_jscad;
 	this.code_openscad = code_openscad;
@@ -293,9 +295,10 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		rawpoints.push(rawpt);
 	}
 	
-	// attempt to auto-calculate minimum distance based on scaled path width
-	// (only applied with actual route track shape)
-	if (this.minimumDistance == 0 && this.shape == 0) {
+	// Guestimate viable mindist based on scale if automatic smoothing
+	// is enabled and the shape type is route (directional smoothing
+	// is not vital for linear/ring shape - but might be faster.)
+	if (this.smoothingMode === 0 && this.shape === 0) {
 		var min_geo = proj4('GOOGLE', [min_lon, min_lat]);
 		var max_geo = proj4('GOOGLE', [max_lon, max_lat]);
 		var geo_x = max_geo[0] - min_geo[0];
@@ -303,7 +306,7 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		var scale = this.getScale(geo_x, geo_y);
 		var bufferw = this.buffer / scale;
 		this.minimumDistance = Math.round(bufferw);
-		console.log('Auto-filtering at ' + this.minimumDistance + ' meters');
+		Messages.status('Automatic interval: ' + this.minimumDistance);
 	}
 	
 	distFilter(rawpoints, this.minimumDistance);
