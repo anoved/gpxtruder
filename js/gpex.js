@@ -262,16 +262,12 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		return total;
 	};
 	
-	var rawpoints = [];
-	var rawpt = [];
-	var min_lat
-	
-	
-	rawpt = this.llz(trkpts[0]);
-	min_lon = rawpt[0];
-	max_lon = rawpt[0];
-	min_lat = rawpt[1];
-	max_lat = rawpt[1];
+	var rawpt = this.llz(trkpts[0]),
+		min_lon = rawpt[0],
+		max_lon = rawpt[0],
+		min_lat = rawpt[1],
+		max_lat = rawpt[1],
+		rawpoints = [];
 	
 	for (var i = 1; i < trkpts.length; i++) {
 		rawpt = this.llz(trkpts[i]);
