@@ -87,6 +87,7 @@ var loader = function(gpxfile, jscad) {
 					document.getElementById('zcut').checked,
 					radioValue(document.getElementsByName('shape')),
 					radioValue(document.getElementsByName('marker')),
+					document.getElementById('marker_interval').value,
 					radioValue(document.getElementsByName('smooth')),
 					document.getElementById('mindist').value,
 					document.getElementById('code_jscad'),
@@ -101,7 +102,8 @@ var loader = function(gpxfile, jscad) {
 	window.URL.revokeObjectURL(gpxurl);
 }
 
-function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, smooth, mindist, code_jscad, code_openscad) {
+// use a tidier options object
+function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, marker_interval, smooth, mindist, code_jscad, code_openscad) {
 	this.content = content;
 	this.jscad = jscad;
 	this.buffer = parseFloat(buffer);
@@ -145,7 +147,19 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	this.markseg = [];
 	
 	// meters per marker (0 = no markers)
-	this.mpermark = marker;
+	if (marker == 0) {
+		// no markers
+		this.mpermark = 0;
+	} else if (marker == 1) {
+		// kilometers
+		this.mpermark = 1000;
+	} else if (marker == 2) {
+		// miles
+		this.mpermark = 1609;
+	} else {
+		// other interval
+		this.mpermark = parseFloat(marker_interval);
+	}
 	
 	this.minx = 0;
 	this.maxx = 0;
