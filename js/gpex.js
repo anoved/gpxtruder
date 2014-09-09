@@ -129,6 +129,9 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	// used for ring shape only; ring circumference = this.distance
 	this.ringRadius = 0;
 	
+	// total distance of smoothed route (may vary from initial total)
+	this.smooth_total;
+	
 	// array of projected x/y/z vectors (meters) (pp = projected points)
 	this.pp = [];
 	
@@ -258,6 +261,7 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		
 		that.ll = pts;
 		that.d = dst;
+		that.smooth_total = total;
 		
 		// the total distance computed here will differ from (be less than)
 		// the initial total because some points are discarded, straightening
@@ -363,11 +367,11 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 	
 	for (var i = 0; i < marker_objs.length; i++) {
 		
-		this.markers.push(this.ProjectPoint(marker_objs[i].loc, marker_objs[i].pos));
+		this.markers.push(this.ProjectPoint(marker_objs[i].loc, marker_objs[i].pos/this.distance));
 		
 		var marker_angle = this.vector_angle(
-			this.ProjectPoint(rawpoints[marker_objs[i].seg - 1], rawpointcd[marker_objs[i].seg - 1]),
-			this.ProjectPoint(rawpoints[marker_objs[i].seg], rawpointcd[marker_objs[i].seg])
+			this.ProjectPoint(rawpoints[marker_objs[i].seg - 1], (rawpointcd[marker_objs[i].seg - 1])/this.distance),
+			this.ProjectPoint(rawpoints[marker_objs[i].seg], (rawpointcd[marker_objs[i].seg])/this.distance)
 		);
 		
 		// pushing actual orientation angle to markseg now, not surrounding segment endpoint indices
@@ -561,12 +565,13 @@ Gpex.prototype.getRotate = function() {
 }
 
 // point to project and cumulative distance along path
-Gpex.prototype.ProjectPoint = function(point, cd) {
+// distance ratio now, now absolute distance
+Gpex.prototype.ProjectPoint = function(point, cdr) {
 	var xyz;
 	if (this.shape == 1) {
-		xyz = PointProjector.linear(point, cd);
+		xyz = PointProjector.linear(point, cdr, this.distance);
 	} else if (this.shape == 2) {
-		xyz = PointProjector.ring(point, cd/this.distance, this.ringRadius);
+		xyz = PointProjector.ring(point, cdr, this.ringRadius);
 	} else {
 		xyz = PointProjector.mercator(point);
 	}
@@ -588,7 +593,7 @@ Gpex.prototype.ProjectPoints = function() {
 		
 		cd += this.d[i-1];
 		
-		xyz = this.ProjectPoint(this.ll[i], cd);
+		xyz = this.ProjectPoint(this.ll[i], cd/this.smooth_total);
 		this.UpdateBounds(xyz);
 		this.pp.push(xyz);
 	}
@@ -950,8 +955,8 @@ Gpex.prototype.llz = function(pt) {
  */
 var PointProjector = {
 	
-	linear: function(v, dist) {
-		return [0, dist, v[2]];
+	linear: function(v, distRatio, total) {
+		return [0, distRatio * total, v[2]];
 	},
 	
 	ring: function(v, distRatio, radius) {
