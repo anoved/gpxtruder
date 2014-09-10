@@ -549,6 +549,8 @@ Gpex.prototype.basemap = function() {
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg";
 	
+	console.log(mapurl, mapscale, this.bedx * mapscale, this.bedy * mapscale);
+	
 	this.jscad.viewer.setBaseMap(mapurl, mapscale, this.rotate);
 }
 
