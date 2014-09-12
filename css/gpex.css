@@ -6,23 +6,20 @@ body {
 	background-color: #D7E8A7;
 }
 
-.config-link {
+details {
+	margin-top:10px;
+	margin-bottom: 10px;
+}
+
+details summary {
+	font-weight: bold;
 	cursor: pointer;
 }
 
-.config-link.inactive {
-	color: gray;
-}
-
-.config-link.active {
-	color: black;
-}
-
-.config-group {
-	display: none;
-	
-	border-left: 15px solid #BBB;
-	padding-left: 15px;
+details div.group {
+	padding-left: 10px;
+	border-left: 5px solid #D7E8A7;
+	margin: 10px;
 }
 
 div.panel {
