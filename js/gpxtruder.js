@@ -792,7 +792,7 @@ Gpex.prototype.jscad_marker = function(i, dl) {
 Gpex.prototype.jscad_markers = function(dl) {
 	
 	// return empty string if markers are disabled
-	if (this.mpermark <= 0) {
+	if (this.mpermark <= 0 || this.markers.length == 0) {
 		return "";
 	}
 	
@@ -804,9 +804,7 @@ Gpex.prototype.jscad_markers = function(dl) {
 	var jscad = markers[0] + markers.slice(1).map(function(s) {
 		return ".union(" + s + ")";
 	}).join("");
-	
-	//var jscad = markers[0].join(".union(\n") + ")";
-	
+		
 	if (this.rotate) {
 		jscad += ".rotateZ(90)";
 	}
@@ -830,15 +828,19 @@ Gpex.prototype.jscad_profile = function(dl) {
 
 // dl = download version (webgl jscad is not openjscad.org compatible)
 Gpex.prototype.jscad_assemble = function(dl) {
-	var jscad = this.jscad_profile(dl) + this.jscad_markers(dl);
+	var jscad = this.jscad_profile(dl);
+	
+	if (this.markers.length > 0 && this.mpermark > 0) {
+		jscad += this.jscad_markers(dl);
+	}
 	
 	if (dl == true) {
-		var um = (this.mpermark > 0 ? ".union(markers())" : "");
+		var um = (this.mpermark > 0 && this.markers.length > 0 ? ".union(markers())" : "");
 		var mainf = "function main() {\nreturn profile()" + um + ";\n}\n";
 	} else {
 		var models = ["{name: 'profile', caption: 'Profile', data: profile()}"];
 		
-		if (this.mpermark > 0) {
+		if (this.mpermark > 0 && this.markers.length > 0) {
 			models.push("{name: 'markers', caption: 'Markers', data: markers()}");
 		}
 		
@@ -851,7 +853,7 @@ Gpex.prototype.jscad_assemble = function(dl) {
 Gpex.prototype.oscad_assemble = function() {
 	var openscad = "module profile() {\npolyhedron(points=[\n" + this.model_points.join(",\n") + "\n],\nfaces=[\n" + this.model_faces.join(",\n") + "\n]);\n}\n";
 
-	if (this.mpermark > 0) {
+	if (this.mpermark > 0 && this.markers.length > 0) {
 		openscad += this.oscad_markers();
 		openscad += "markers();\n";
 	}
