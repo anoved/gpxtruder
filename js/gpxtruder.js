@@ -596,13 +596,19 @@ Gpex.prototype.ProjectPoint = function(point, cdr) {
 
 Gpex.prototype.ProjectPoints = function() {
 	
+	// set startd and stopd to meter distances of desired segment
+	var startd = null, stopd = null;
+	
 	// cumulative distance
 	var cd = 0;
 	
 	// Initialize extents using first projected point.
 	var xyz = this.ProjectPoint(this.ll[0], 0);
 	this.InitBounds(xyz);
-	this.pp.push(xyz);
+	
+	if ((startd === null || cd >= startd) && (stopd === null || cd <= stopd)) {
+		this.pp.push(xyz);
+	}
 	
 	// Project the rest of the points, updating extents.
 	for (var i = 1; i < this.ll.length; i++) {
@@ -611,7 +617,10 @@ Gpex.prototype.ProjectPoints = function() {
 		
 		xyz = this.ProjectPoint(this.ll[i], cd/this.smooth_total);
 		this.UpdateBounds(xyz);
-		this.pp.push(xyz);
+		
+		if ((startd === null || cd >= startd) && (stopd === null || cd <= stopd)) {
+			this.pp.push(xyz);
+		}
 	}
 	
 	this.UpdateExtent();
