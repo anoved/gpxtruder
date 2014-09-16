@@ -140,6 +140,17 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	// array of scaled/centered/z-cut x/y/z vectors (fp = final points)
 	this.fp = [];
 	
+	// startm/stopm: meter markers of path segment of interest
+	//               (null indicates start/top of whole path)
+	// starti/stopi: corresponding indices into pp/fp arrays
+	//               (Calculated by ProjectPoints; must be initialized null.)
+	this.pathrange = {
+		startm: 10138.87,
+		stopm: 17702.789,
+		starti: null,
+		stopi: null
+	};
+	
 	// array of 2D vectors marking miles/kms
 	this.markers = [];
 	
@@ -596,18 +607,17 @@ Gpex.prototype.ProjectPoint = function(point, cdr) {
 
 Gpex.prototype.ProjectPoints = function() {
 	
-	// set startd and stopd to meter distances of desired segment
-	var startd = null, stopd = null;
-	
 	// cumulative distance
 	var cd = 0;
 	
 	// Initialize extents using first projected point.
 	var xyz = this.ProjectPoint(this.ll[0], 0);
 	this.InitBounds(xyz);
+	this.pp.push(xyz);
 	
-	if ((startd === null || cd >= startd) && (stopd === null || cd <= stopd)) {
-		this.pp.push(xyz);
+	// should we start at the start?
+	if (this.pathrange.startm === null || cd >= this.pathrange.startm) {
+		this.pathrange.starti = 0;
 	}
 	
 	// Project the rest of the points, updating extents.
@@ -617,10 +627,26 @@ Gpex.prototype.ProjectPoints = function() {
 		
 		xyz = this.ProjectPoint(this.ll[i], cd/this.smooth_total);
 		this.UpdateBounds(xyz);
+		this.pp.push(xyz);
 		
-		if ((startd === null || cd >= startd) && (stopd === null || cd <= stopd)) {
-			this.pp.push(xyz);
+		if (this.pathrange.starti !== null && this.pathrange.stopi === null) {
+			// in this case, we've passed the path start point,
+			// but haven't yet hit the stop point - so check for it.
+			if (this.pathrange.stopm !== null && cd >= this.pathrange.stopm) {
+				this.pathrange.stopi = i;
+			}
+		} else if (this.pathrange.starti === null) {
+			// in this case, we haven't yet hit the start point,
+			// so check if we have.
+			if (cd >= this.pathrange.startm) {
+				this.pathrange.starti = i;
+			}
 		}
+	}
+	
+	// mark stop at the last point if not already stopped
+	if (this.pathrange.stopi === null) {
+		this.pathrange.stopi = i - 1;
 	}
 	
 	this.UpdateExtent();
@@ -702,41 +728,39 @@ Gpex.prototype.process_path = function() {
 		return false;
 	};
 	
-		// angle of initial segment (ids 0 - 1)
-	var last_angle = this.segment_angle(0),
-		
-		// angle of next segment
-		angle,
-		
-		// relative angle (angle of this segment relative to last)
-		rel_angle = 0,
-		
-		// joint angle: split the difference between neighboring segments
-		// (initially, same as initial segment)
-		joint_angle = last_angle,
-		
-		// 2d segment corner base points, buffered from point 0 (i),
-		// oriented perpendicular to joint angle ja
-		pp = this.joint_points(0, 0, joint_angle);
-	
-	// first four points of segment polyhedron
-	var vertices = [];
-	PathSegment.points(vertices, pp, this.fp[0][2]);
-	
-	// initial endcap
-	var faces = [];
-	PathSegment.first_face(faces);
+	var last_angle = undefined,
+		angle = undefined,
+		rel_angle = undefined,
+		joint_angle = undefined,
+		pp = undefined,
+		vertices = [],
+		faces = [];
 		
 	// s is segment counter used for calculating face indices; it is
 	// managed separately from i in case we skip any acute/noisy segment
-	for (var i = 1, s = 1; i < this.fp.length; i++) {
+	for (
+			var i = this.pathrange.starti, s = 0;
+			i < this.fp.length, i <= this.pathrange.stopi;
+			i++
+	) {
 		
 		angle = this.segment_angle(i);
+				
+		if (i == this.pathrange.starti) {
+			if (i == 0) {
+				last_angle = angle;
+			} else {
+				last_angle = this.segment_angle(i-1);
+			}
+		}
+		
 		rel_angle = angle - last_angle;
 		joint_angle = rel_angle / 2 + last_angle;
 		
-		// Collapse series of acute angle segments into a single cusp
-		if (acuteAngle(rel_angle)
+		// Collapse series of acute angle segments into a single cusp. Disabled
+		// at path cut point to ensure final face is oriented naturally.
+		if (i < this.pathrange.stopi
+			&& acuteAngle(rel_angle)
 			&& (i < this.fp.length - 1)
 			&& acuteAngle(this.segment_angle(i + 1) - angle)) {
 			
@@ -752,6 +776,7 @@ Gpex.prototype.process_path = function() {
 		PathSegment.points(vertices, pp, this.fp[i][2]);
 		
 		// faces connecting first four points to last four of segment
+		// if s == 0, default to first_face behavior
 		PathSegment.faces(faces, s);
 		s = s + 1;
 		last_angle = angle;
@@ -927,6 +952,11 @@ var PathSegment = {
 	
 	// Path segment faces; s is segment index
 	faces: function(a, s) {
+		
+		if (s == 0) {
+			this.first_face(a);
+			return;
+		}
 		
 		// i is index of first corner point of segment
 		var i = (s - 1) * 4;
