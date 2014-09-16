@@ -90,6 +90,8 @@ var loader = function(gpxfile, jscad) {
 					document.getElementById('marker_interval').value,
 					radioValue(document.getElementsByName('smooth')),
 					document.getElementById('mindist').value,
+					parseFloat(document.getElementById('startm').value),
+					parseFloat(document.getElementById('stopm').value),
 					document.getElementById('code_jscad'),
 					document.getElementById('code_openscad'));
 			gd.LoadTracks();
@@ -103,7 +105,7 @@ var loader = function(gpxfile, jscad) {
 }
 
 // use a tidier options object
-function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, marker_interval, smooth, mindist, code_jscad, code_openscad) {
+function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, marker_interval, smooth, mindist, startm, stopm, code_jscad, code_openscad) {
 	this.content = content;
 	this.jscad = jscad;
 	this.buffer = parseFloat(buffer);
@@ -145,8 +147,8 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	// starti/stopi: corresponding indices into pp/fp arrays
 	//               (Calculated by ProjectPoints; must be initialized null.)
 	this.pathrange = {
-		startm: null,
-		stopm: null,
+		startm: startm == 0 ? null : startm,
+		stopm: stopm == 0 ? null : stopm,
 		starti: null,
 		stopi: null
 	};
