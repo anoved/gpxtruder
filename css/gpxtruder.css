@@ -58,14 +58,6 @@ div#input {
 div#output {
 }
 
-div#ads {
-	width: 120px;
-	height: 200px;
-	float: right;
-	border: 1px dotted gray;
-	color: gray;
-}
-
 div#footer {
 	text-align: center;
 }
