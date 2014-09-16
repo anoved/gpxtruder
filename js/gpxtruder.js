@@ -367,7 +367,10 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		rawpointcd.push(cd);
 		
 		// if marker distance including this segment exceeds marker interval, mark!
-		if (this.mpermark > 0 && md >= this.mpermark) {
+		// - Only consider markers that fall within the path range
+		if (this.mpermark > 0 && md >= this.mpermark
+			&& ((this.pathrange.startm === null || cd >= this.pathrange.startm)
+			&&  (this.pathrange.stopm === null || cd <= this.pathrange.stopm))) {
 			
 			// portion of this segment's length that falls before the marker
 			var last_seg = this.mpermark - lastmd;
