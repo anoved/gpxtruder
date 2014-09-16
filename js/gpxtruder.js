@@ -827,28 +827,18 @@ Gpex.prototype.process_path = function() {
 
 // set these code generators up as objects that can keep track of whether
 // they need to include "CSG.", etc, rather than passing this boolean dl param around
-Gpex.prototype.jscad_marker = function(i, dl) {
+Gpex.prototype.jscad_marker = function(i) {
 	var x = this.markers[i][0],
 		y = this.markers[i][1],
 		z = this.markers[i][2],
-		r = this.buffer + 1,
 		
 		// angle between this the projected/scaled/centered points comprising the segment
 		// along which this marker lies.
 		//t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
-		t = this.markseg[i];
+		t = this.markseg[i] * 180/Math.PI;
 
-	if (dl == true) {
-		var scad = "cube({size: [1, " + (2 * r) + ", " + z + "], center: true})" +
-				".rotateZ(" + (t * 180 / Math.PI) + ")" +
-				".translate([" + x + ", " + y + ", " + z/2 + "])";
-	} else {
-		var scad = "CSG.cube({radius: [1, " + (2 * r) + ", " + z/2 + "], center: [0, 0, 0]})" +
-				".rotateZ(" + (t * 180 / Math.PI) + ")" +
-				".translate([" + x + ", " + y + ", " + z/2 + "])";
-	}
-		
-	return scad;
+	return "marker([" + x + ", " + y + "], " + t + ", " + z + ")";
+
 }
 
 // returns jscad function for markers
@@ -861,7 +851,7 @@ Gpex.prototype.jscad_markers = function(dl) {
 	
 	var markers = [];
 	for (var i = 0; i < this.markers.length; i++) {
-		markers.push(this.jscad_marker(i, dl));
+		markers.push(this.jscad_marker(i));
 	}
 	
 	var jscad = markers[0] + markers.slice(1).map(function(s) {
@@ -872,7 +862,19 @@ Gpex.prototype.jscad_markers = function(dl) {
 		jscad += ".rotateZ(90)";
 	}
 	
-	return "function markers() {\nreturn " + jscad + ";\n}\n\n";
+	if (dl == true) {
+		var markerfunc = "function marker(position, orientation, height) {\n\
+	var z = height + 2;\n\
+	return cube({size: [1, " + (2 * this.buffer + 2) + ", z], center: true}).rotateZ(orientation).translate([position[0], position[1], z/2]);\n\
+}\n";
+	} else {
+		var markerfunc = "function marker(position, orientation, height) {\n\
+	var z = height + 2;\n\
+	return CSG.cube({radius: [1, " + (2 * this.buffer + 2) + ", z/2], center: [0, 0, 0]}).rotateZ(orientation).translate([position[0], position[1], z/2]);\n\
+	}\n";
+	}
+	
+	return markerfunc + "function markers() {\nreturn " + jscad + ";\n}\n\n";
 }
 
 // returns jscad function for profile
@@ -930,19 +932,23 @@ Gpex.prototype.oscad_markers = function() {
 	for (var i = 0; i < this.markers.length; i++) {
 		m.push(this.oscad_marker(i));
 	}
-	return "module markers() {\nunion() {\n" + m.join("\n") + "\n}\n}\n";
+	
+	return "module marker(position, orientation, height) {\n\
+	assign(z=height+2) {\n\
+	translate([position[0], position[1], z/2])\n\
+	rotate([0, 0, orientation])\n\
+	cube(size=[1, " + (2*this.buffer + 2) + ", z], center=true);\n\
+}}\n\n\
+module markers() {\n\
+	union() {\n" + m.join("\n") + "}\n}\n";
 }
 
 Gpex.prototype.oscad_marker = function(i) {
 	var x = this.markers[i][0],
 		y = this.markers[i][1],
 		z = this.markers[i][2],
-		r = this.buffer + 1,
-		//t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
-		t = this.markseg[i];
-	return "translate([" + x + ", " + y + ", " + z/2 + "]) " + 
-		   "rotate([0, 0, " + (t * 180/Math.PI) + "]) " + 
-		   "cube(size=[1, " + (2 * r) + ", " + z + "], center=true);";
+		t = this.markseg[i] * 180/Math.PI;
+	return "marker([" + x + ", " + y + "], " + t + ", " + z + ");"
 }
 
 var PathSegment = {
