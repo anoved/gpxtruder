@@ -367,10 +367,7 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		rawpointcd.push(cd);
 		
 		// if marker distance including this segment exceeds marker interval, mark!
-		// - Only consider markers that fall within the path range
-		if (this.mpermark > 0 && md >= this.mpermark
-			&& ((this.pathrange.startm === null || cd >= this.pathrange.startm)
-			&&  (this.pathrange.stopm === null || cd <= this.pathrange.stopm))) {
+		if (this.mpermark > 0 && md >= this.mpermark) {
 			
 			// portion of this segment's length that falls before the marker
 			var last_seg = this.mpermark - lastmd;
@@ -387,13 +384,19 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 				lastpt[2] + pd * (rawpt[2] - lastpt[2])
 			];
 			
-			// storing the geographic coordinates + cumulative distance;
-			// convert to projected coordinates on output
-			marker_objs.push({
-				loc: markerpoint,
-				pos: cd - next_seg,
-				seg: i
-			});
+			if ((this.pathrange.startm === null || cd >= this.pathrange.startm)
+				&& (this.pathrange.stopm === null || cd <= this.pathrange.stopm)) {
+					
+				
+				// storing the geographic coordinates + cumulative distance;
+				// convert to projected coordinates on output
+				marker_objs.push({
+					loc: markerpoint,
+					pos: cd - next_seg,
+					seg: i
+				});
+				
+			}
 			
 			// markseg is, originally, used to cache indices of [projected/scaled]
 			// segments surrounding this marker, so that the marker can be oriented
