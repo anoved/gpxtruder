@@ -145,8 +145,8 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	// starti/stopi: corresponding indices into pp/fp arrays
 	//               (Calculated by ProjectPoints; must be initialized null.)
 	this.pathrange = {
-		startm: 10138.87,
-		stopm: 17702.789,
+		startm: null,
+		stopm: null,
 		starti: null,
 		stopi: null
 	};
