@@ -323,7 +323,7 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		max_lon = lastpt[0],
 		min_lat = lastpt[1],
 		max_lat = lastpt[1],
-		rawpoints = [],
+		rawpoints = [lastpt],
 		rawpointcd = [],
 		totaldist = 0;
 	
