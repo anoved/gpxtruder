@@ -55,6 +55,18 @@ var loader = function(gpxfile, jscad) {
 	
 	Messages.clear();
 	
+	// return true if options are valid, false otherwise.
+	// expected to post a Message explaining any errors
+	var validate = function(options) {
+		
+		if (options.startm < 0 || options.stopm < 0 || options.stopm < options.startm) {
+			Messages.error("Invalid start or stop location.");
+			return false;
+		}
+		
+		return true;
+	};
+	
 	var radioValue = function(radios) {
 		for (var i = 0, len = radios.length; i < len; i++) {
 			if (radios[i].checked) {
@@ -76,24 +88,31 @@ var loader = function(gpxfile, jscad) {
 				return;
 			}
 			
-			var gd = new Gpex(
-					req.responseXML,
-					jscad,
-					document.getElementById('path_width').value / 2.0,
-					document.getElementById('vertical').value,
-					document.getElementById('width').value,
-					document.getElementById('depth').value,
-					document.getElementById('base').value,
-					document.getElementById('zcut').checked,
-					radioValue(document.getElementsByName('shape')),
-					radioValue(document.getElementsByName('marker')),
-					document.getElementById('marker_interval').value,
-					radioValue(document.getElementsByName('smooth')),
-					document.getElementById('mindist').value,
-					parseFloat(document.getElementById('startm').value),
-					parseFloat(document.getElementById('stopm').value),
-					document.getElementById('code_jscad'),
-					document.getElementById('code_openscad'));
+			var options = {
+				buffer:     parseFloat(document.getElementById('path_width').value) / 2.0,
+				vertical:   parseFloat(document.getElementById('vertical').value),
+				bedx:       parseFloat(document.getElementById('width').value),
+				bedy:       parseFloat(document.getElementById('depth').value),
+				base:       parseFloat(document.getElementById('base').value),
+				zcut:       document.getElementById('zcut').checked,
+				shapetype:  radioValue(document.getElementsByName('shape')),
+				marktype:   radioValue(document.getElementsByName('marker')),
+				markspan:   parseFloat(document.getElementById('marker_interval').value),
+				smoothtype: radioValue(document.getElementsByName('smooth')),
+				smoothspan: parseFloat(document.getElementById('mindist').value),
+				startm:     parseFloat(document.getElementById('startm').value),
+				stopm:      parseFloat(document.getElementById('stopm').value),
+				jscadDiv:   document.getElementById('code_jscad'),
+				oscadDiv:   document.getElementById('code_openscad')
+			};
+			
+			// validate should perhaps assemble the options object as well,
+			// since many of those assignments presume the field defined and valid.
+			if (validate(options) == false) {
+				return;
+			}
+			
+			var gd = new Gpex(req.responseXML, jscad, options);
 			gd.LoadTracks();
 		}
 	}
@@ -105,20 +124,22 @@ var loader = function(gpxfile, jscad) {
 }
 
 // use a tidier options object
-function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, marker, marker_interval, smooth, mindist, startm, stopm, code_jscad, code_openscad) {
+function Gpex(content, jscad, options) {
+	
 	this.content = content;
 	this.jscad = jscad;
-	this.buffer = parseFloat(buffer);
-	this.vertical = parseFloat(vertical);
-	this.bedx = parseFloat(bedx);
-	this.bedy = parseFloat(bedy);
-	this.base = parseFloat(base);
-	this.zcut = zcut;
-	this.shape = shape;
-	this.smoothingMode = smooth;
-	this.minimumDistance = parseFloat(mindist);
-	this.code_jscad = code_jscad;
-	this.code_openscad = code_openscad;
+	
+	this.buffer = options.buffer;
+	this.vertical = options.vertical;
+	this.bedx = options.bedx;
+	this.bedy = options.bedy;
+	this.base = options.base;
+	this.zcut = options.zcut;
+	this.shape = options.shapetype;
+	this.smoothingMode = options.smoothtype;
+	this.minimumDistance = options.smoothspan;
+	this.code_jscad = options.jscadDiv;
+	this.code_openscad = options.oscadDiv;
 	
 	// array of lon/lat/ele vectors (deg-ew/deg-ns/meters)
 	this.ll = [];
@@ -147,8 +168,8 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	// starti/stopi: corresponding indices into pp/fp arrays
 	//               (Calculated by ProjectPoints; must be initialized null.)
 	this.pathrange = {
-		startm: startm == 0 ? null : startm,
-		stopm: stopm == 0 ? null : stopm,
+		startm: options.startm == 0 ? null : options.startm,
+		stopm: options.stopm == 0 ? null : options.stopm,
 		starti: null,
 		stopi: null
 	};
@@ -160,18 +181,18 @@ function Gpex(content, jscad, buffer, vertical, bedx, bedy, base, zcut, shape, m
 	this.markseg = [];
 	
 	// meters per marker (0 = no markers)
-	if (marker == 0) {
+	if (options.marktype == 0) {
 		// no markers
 		this.mpermark = 0;
-	} else if (marker == 1) {
+	} else if (options.marktype == 1) {
 		// kilometers
 		this.mpermark = 1000;
-	} else if (marker == 2) {
+	} else if (options.marktype == 2) {
 		// miles
 		this.mpermark = 1609;
 	} else {
 		// other interval
-		this.mpermark = parseFloat(marker_interval);
+		this.mpermark = options.markspan;
 	}
 	
 	this.minx = 0;
