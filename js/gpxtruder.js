@@ -776,6 +776,9 @@ Gpex.prototype.process_path = function() {
 		angle = this.segment_angle(i);
 				
 		if (i == this.pathrange.starti) {
+			
+			console.log('first', i, this.fp[i], angle);
+			
 			if (i == 0) {
 				last_angle = angle;
 			} else {
@@ -810,6 +813,9 @@ Gpex.prototype.process_path = function() {
 		s = s + 1;
 		last_angle = angle;
 	}
+	
+	// last point: i-1
+	console.log('last', i-1, this.fp[i-1], angle);
 	
 	// final endcap
 	PathSegment.last_face(faces, s);
