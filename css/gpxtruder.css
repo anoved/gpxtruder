@@ -1,10 +1,22 @@
 body {
 	font-family: sans-serif;
-	
 	background-image: url(../img/tile2.png);
 	background-repeat: repeat;
 	background-color: #D7E8A7;
 }
+
+/* Text styles */
+
+.info {
+	font-size: x-small;
+	color: gray;
+}
+
+.info a {
+	color: gray;
+}
+
+/* Config option groups */
 
 details {
 	margin-top:10px;
@@ -21,6 +33,23 @@ details div.group {
 	border-left: 5px solid #D7E8A7;
 	margin: 10px;
 }
+
+/* General sections */
+
+div#intro {
+}
+
+div#input {
+}
+
+div#output {
+}
+
+div#footer {
+	text-align: center;
+}
+
+/* Section panels */
 
 div.panel {
 	
@@ -49,18 +78,11 @@ div.panel :last-child {
 	margin-bottom: 0;
 }
 
-div#intro {
+p.iolabel {
+	float: right;
 }
 
-div#input {
-}
-
-div#output {
-}
-
-div#footer {
-	text-align: center;
-}
+/* Step 1-2-3 Overview */
 
 table#howto {
 	width: 100%;
@@ -71,22 +93,7 @@ table#howto td {
 	vertical-align: top;
 }
 
-p.iolabel {
-	float: right;
-}
-
-.info {
-	font-size: x-small;
-	color: gray;
-}
-
-.info a {
-	color: gray;
-}
-
-div.viewer {
-	border: 1px solid #c4d994;
-}
+/* Status message popups */
 
 #messages {
 	position: fixed;
@@ -108,4 +115,36 @@ div.viewer {
 	border: 1px dotted blue;
 	box-shadow: 2px 2px 6px;
 	cursor: pointer;
+}
+
+/* OpenJSCAD display */
+
+div.viewer {
+}
+
+canvas {
+	border: 1px solid #c4d994;
+	cursor: move;
+}
+
+/* Display view buttons */
+
+.viewbuttonsdiv {
+	margin-bottom:5px;
+}
+
+img.viewbutton {
+	cursor: pointer;
+	border: none;
+	margin-left: 5px;
+	margin-right: 5px;
+}
+
+/* Display status line */
+
+.statusdiv {
+	margin-top: 10px;
+}
+
+#statusspan {
 }
