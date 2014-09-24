@@ -777,7 +777,9 @@ Gpex.prototype.process_path = function() {
 				
 		if (i == this.pathrange.starti) {
 			
-			console.log('first', i, this.fp[i], angle);
+			// first point
+			//console.log('first', i, this.fp[i], angle);
+			// "// translate([" + this.fp[i][0] + ", " + this.fp[i][1] + ", " + this.fp[i][2] + "]) rotate([0, 0, " + angle + "])\n";
 			
 			if (i == 0) {
 				last_angle = angle;
@@ -815,8 +817,9 @@ Gpex.prototype.process_path = function() {
 	}
 	
 	// last point: i-1
-	console.log('last', i-1, this.fp[i-1], angle);
-	
+	//console.log('last', i-1, this.fp[i-1], angle);
+	//"// translate([" + this.fp[i-1][0] + ", " + this.fp[i-1][1] + ", " + this.fp[i-1][2] + "]) rotate([0, 0, " + angle + "])\n";
+
 	// final endcap
 	PathSegment.last_face(faces, s);
 	
@@ -829,6 +832,8 @@ Gpex.prototype.process_path = function() {
 	this.model_faces = faces.map(function(v) {
 		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 	});
+	
+	
 }
 
 // set these code generators up as objects that can keep track of whether
