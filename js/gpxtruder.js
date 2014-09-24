@@ -100,8 +100,8 @@ var loader = function(gpxfile, jscad) {
 				markspan:   parseFloat(document.getElementById('marker_interval').value),
 				smoothtype: radioValue(document.getElementsByName('smooth')),
 				smoothspan: parseFloat(document.getElementById('mindist').value),
-				startm:     parseFloat(document.getElementById('startm').value),
-				stopm:      parseFloat(document.getElementById('stopm').value),
+				startm:     0,
+				stopm:      0,
 				jscadDiv:   document.getElementById('code_jscad'),
 				oscadDiv:   document.getElementById('code_openscad')
 			};
