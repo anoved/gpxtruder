@@ -23,30 +23,23 @@
 		
 		<p><img src="img/title.png" alt="GPXtruder: Make 3D-printable models of GPX tracks" /></p>
 		
-		<table width="100%" id="howto">
+		<table id="howto">
 		<tr>
-			<td valign="top" width="33%">
-				
+			<td>
 				<p><img src="img/step1.png" alt="Step 1" /></p>
 				
 				<p>Go for a run or a ride. Record your route with a GPS watch.</p>
 				
 				<p class="info">Alternatively, export a route from a site like <a href="https://strava.zendesk.com/entries/22555481-Exporting-your-Data-and-Bulk-Export">Strava</a> or <a href="https://support.mapmyfitness.com/hc/en-us/articles/200118304-Exporting-Routes">MapMyRun</a>. Add elevations with <a href="http://www.gpsvisualizer.com/elevation">GPS Visualizer</a>.</p>
-				
 			</td>
-			
-			<td valign="top" width="33%">
-				
+			<td>
 				<p><img src="img/step2.png" alt="Step 2" /></p>
 				
 				<p>Use GPXtruder to convert your route to a 3D elevation map.</p>
 				
 				<p class="info">Upload a GPX file. Download an STL file or copy the output code to make a remix of your model.</p>
-				
 			</td>
-			
-			<td valign="top" width="33%">
-				
+			<td>
 				<p><img src="img/step3.png" alt="Step 3" /></p>
 
 				<p>Print your route model on a 3D printer. Show off those hills!</p>
@@ -65,16 +58,16 @@
 		<p class="iolabel"><img src="img/input.png" width="129" height="31" alt="Input" /></p>
 		
 		<form enctype="multipart/form-data" method="post" name="gpxform">
-			<p>GPX file: <input type="file" id="gpxfile" required></input></p>
+			<p>GPX file: <input type="file" id="gpxfile" required /></p>
 			
 			<details>
 			<summary>Route</summary>
 			<div class="group">
-			<p>Vertical exaggeration: <input type="text" size="10" id="vertical" required value="5"></input><br />
+			<p>Vertical exaggeration: <input type="text" size="10" id="vertical" required value="5" /><br />
 			   <span class="info">Multiply elevation values by this factor to enhance terrain.</span></p>
-			<p>Clip to minimum elevation: <input type="checkbox" id="zcut" value="1" checked></input><br />
+			<p>Clip to minimum elevation: <input type="checkbox" id="zcut" value="1" checked /><br />
 			   <span class="info">Uncheck to show full elevation above sea level.</span></p>
-			<p>Smoothing: <input type="radio" name="smooth" value="0" id="smooth_auto" checked /> <label for="smooth_auto">Automatic</label> <input type="radio" name="smooth" value="1" id="smooth_manual" /> <label for="smooth_manual">Manual minimum interval:</label> <input type="text" size="5" id="mindist" required value="0"></input> (meters)<br />
+			<p>Smoothing: <input type="radio" name="smooth" value="0" id="smooth_auto" checked /> <label for="smooth_auto">Automatic</label> <input type="radio" name="smooth" value="1" id="smooth_manual" /> <label for="smooth_manual">Manual minimum interval:</label> <input type="text" size="5" id="mindist" required value="0" /> (meters)<br />
 			   <span class="info">Simplify the route by discarding points that are close together. Automatic smoothing computes interval based on model shape, size, and scale.</span></p>
 			</div>
 			</details>
@@ -89,7 +82,7 @@
 			<p>Markers: <input type="radio" name="marker" value="0" id="marker_none" checked /> <label for="marker_none">None</label>
 						<input type="radio" name="marker" value="1" id="marker_km" /> <label for="marker_km">Kilometers</label>
 						<input type="radio" name="marker" value="2" id="marker_mi" /> <label for="marker_mi">Miles</label>
-						<input type="radio" name="marker" value="3" id="marker_other" /> <label for="marker_other">Other interval:</label> <input type="text" size="5" id="marker_interval" value="8047"></input> (meters)<br />
+						<input type="radio" name="marker" value="3" id="marker_other" /> <label for="marker_other">Other interval:</label> <input type="text" size="5" id="marker_interval" value="8047" /> (meters)<br />
 			   <span class="info">If enabled, a secondary model is generated representing the position of each mile or kilometer marker.</span></p>
 			</div>
 			</details>
@@ -97,17 +90,17 @@
 			<details>
 			<summary>Size</summary>
 			<div class="group">
-			<p>Bed width (x): <input type="text" size="10" id="width" required value="180"></input> (mm)<br />
-			   Bed depth (y) <input type="text" size="10" id="depth" required value="90"></input> (mm)<br />
+			<p>Bed width (x): <input type="text" size="10" id="width" required value="180" /> (mm)<br />
+			   Bed depth (y) <input type="text" size="10" id="depth" required value="90" /> (mm)<br />
 			   <span class="info">Output is scaled to fit within these dimensions.</span></p>
-			<p>Path width: <input type="text" size="10" id="path_width" required value="2"></input> (mm)<br />
+			<p>Path width: <input type="text" size="10" id="path_width" required value="2" /> (mm)<br />
 			   <span class="info">Thickness of the output path.</span></p>
-			<p>Base height: <input type="text" size="10" id="base" required value="0"></input> (mm)<br />
+			<p>Base height: <input type="text" size="10" id="base" required value="0" /> (mm)<br />
 			   <span class="info">Extra height added to the bottom of the route model.</span></p>
 			</div>
 			</details>
 			
-			<p><input type="submit" value="Convert!"></input></p>
+			<p><input type="submit" value="Convert!" /></p>
 			
 		</form>
 		
