@@ -1049,9 +1049,9 @@ Gpex.prototype.llz = function(pt) {
  * 
  * Parameters:
  *  v, a 3-element vector [longitude, latitude, elevation]
- *  dist, position of point along path (meters)
  *  distRatio, ratio of point position to path length
- *  radius of ring, supposing circumference is path length
+ *  total, of path length
+ *  radius, of ring, supposing circumference is path length
  * 
  * Return Value:
  *  a 3-element vector [x, y, z] (meters)
