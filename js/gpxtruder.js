@@ -318,7 +318,7 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		// route smoothing, so we don't necessarily care that route length varies
 	};
 	
-	var lastpt = this.llz(trkpts[0]),
+	var lastpt = Parser.point(trkpts[0]),
 		min_lon = lastpt[0],
 		max_lon = lastpt[0],
 		min_lat = lastpt[1],
@@ -332,7 +332,7 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 	
 	for (var i = 1; i < trkpts.length; i++) {
 		
-		var rawpt = this.llz(trkpts[i]);
+		var rawpt = Parser.point(trkpts[i]);
 		
 		if (rawpt[0] < min_lon) {
 			min_lon = rawpt[0];
@@ -1035,14 +1035,21 @@ Gpex.prototype.pxyz = function(v) {
 	];
 }
 
-// returns numeric [longitude, latitude, elevation] vector from GPX track point
-Gpex.prototype.llz = function(pt) {
-	return [
+/*
+ * GPX Parser
+ */
+var Parser = {
+	
+	// Returns numeric [lon, lat, ele] vector from GPX track point
+	point: function(pt) {
+		return [
 			parseFloat(pt.getAttribute('lon')),
 			parseFloat(pt.getAttribute('lat')),
 			parseFloat(pt.getElementsByTagName('ele')[0].innerHTML)
-	];
-}
+		];
+	}
+	
+};
 
 /*
  * Point Projection Methods
