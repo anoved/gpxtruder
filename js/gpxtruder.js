@@ -29,11 +29,6 @@ var loader = function(gpxfile, jscad) {
 	// expected to post a Message explaining any errors
 	var validate = function(options) {
 		
-		if (options.startm < 0 || options.stopm < 0 || options.stopm < options.startm) {
-			Messages.error("Invalid start or stop location.");
-			return false;
-		}
-		
 		return true;
 	};
 	
@@ -74,8 +69,6 @@ var loader = function(gpxfile, jscad) {
 				markspan:   parseFloat(document.getElementById('marker_interval').value),
 				smoothtype: radioValue(document.getElementsByName('smooth')),
 				smoothspan: parseFloat(document.getElementById('mindist').value),
-				startm:     0,
-				stopm:      0,
 				jscadDiv:   document.getElementById('code_jscad'),
 				oscadDiv:   document.getElementById('code_openscad')
 			};
@@ -148,8 +141,8 @@ function Gpex(jscad, options, pts) {
 	// starti/stopi: corresponding indices into pp/fp arrays
 	//               (Calculated by ProjectPoints; must be initialized null.)
 	this.pathrange = {
-		startm: options.startm == 0 ? null : options.startm,
-		stopm: options.stopm == 0 ? null : options.stopm,
+		startm: null, // options.startm == 0 ? null : options.startm,
+		stopm: null, // options.stopm == 0 ? null : options.stopm,
 		starti: null,
 		stopi: null
 	};
