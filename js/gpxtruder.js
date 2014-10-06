@@ -1,10 +1,12 @@
+var OJSCAD = undefined;
+
 var setup = function() {
 	
 	// Setup notifications
 	Messages.msgdiv = document.getElementById('messages');
 	
 	// Setup WebGL preview display (and STL converter)
-	var jscad = new OpenJsCad.Processor(document.getElementById('display'), {
+	OJSCAD = new OpenJsCad.Processor(document.getElementById('display'), {
 		color: [0, 0.6, 0.1],
 		openJsCadPath: "js/",
 		viewerwidth: "800px",
@@ -17,13 +19,13 @@ var setup = function() {
 		'submit',
 		function(ev) {
 			ev.preventDefault();
-			loader(document.getElementById('gpxfile').files[0], jscad);
+			loader(document.getElementById('gpxfile').files[0]);
 		},
 		false
 	);
 }
 
-var loader = function(gpxfile, jscad) {
+var loader = function(upload_file) {
 	
 	var radioValue = function(radios) {
 		for (var i = 0, len = radios.length; i < len; i++) {
@@ -39,7 +41,7 @@ var loader = function(gpxfile, jscad) {
 	
 	// Assign a local URL to the file selected for upload
 	// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
-	var upload_url = window.URL.createObjectURL(gpxfile);
+	var upload_url = window.URL.createObjectURL(upload_file);
 	
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
@@ -73,7 +75,7 @@ var loader = function(gpxfile, jscad) {
 			}
 			
 			// If all is well, proceed to extrude the GPX path.
-			new Gpex(jscad, options, pts);
+			new Gpex(options, pts);
 		}
 	}
 	
@@ -85,9 +87,7 @@ var loader = function(gpxfile, jscad) {
 }
 
 // use a tidier options object
-function Gpex(jscad, options, pts) {
-	
-	this.jscad = jscad;
+function Gpex(options, pts) {
 	
 	this.buffer = options.buffer;
 	this.vertical = options.vertical;
@@ -198,21 +198,21 @@ Gpex.prototype.Extrude = function(pts) {
 Gpex.prototype.Display = function() {
 	
 	// Tweak preview display if available
-	if (this.jscad.viewer) {
-		this.jscad.viewer.setBedSize(this.bedx, this.bedy);
+	if (OJSCAD.viewer) {
+		OJSCAD.viewer.setBedSize(this.bedx, this.bedy);
 		
 		// basemap only for track shape; otherwise,
 		if (this.shape == 0) {
 			this.basemap();
 		} else {
 			// reset bed texture to default checkerboard
-			this.jscad.viewer.clearBaseMap(this.rotate);
+			OJSCAD.viewer.clearBaseMap(this.rotate);
 		}
 	}
 	
 	// Update the preview display AND allow STL export
 	// (Even if WebGL is not available for preview, STL export should work.)
-	this.jscad.setJsCad(this.jscad_assemble(false));
+	OJSCAD.setJsCad(this.jscad_assemble(false));
 	
 	// Display code for custom usage (can we utilize stuff cached above?)
 	this.code_jscad.innerHTML = this.jscad_assemble(true);	
@@ -521,7 +521,7 @@ Gpex.prototype.basemap = function() {
 	
 	if (zoominfo.zoom > 21) {
 		// don't bother with base map if zoom level would be too high
-		this.jscad.viewer.clearBaseMap(this.rotate);
+		OJSCAD.viewer.clearBaseMap(this.rotate);
 		return;
 	}
 	
@@ -533,7 +533,7 @@ Gpex.prototype.basemap = function() {
 	
 	console.log(mapurl, mapscale, this.bedx * mapscale, this.bedy * mapscale);
 	
-	this.jscad.viewer.setBaseMap(mapurl, mapscale, this.rotate);
+	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.rotate);
 }
 
 Gpex.prototype.getScale = function(xextent, yextent) {
