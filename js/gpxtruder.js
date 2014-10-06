@@ -1,59 +1,29 @@
-
-/*
- * Called onLoad. Intercept form submission; handle file locally.
- */
 var setup = function() {
+	
+	// Setup notifications
 	Messages.msgdiv = document.getElementById('messages');
+	
+	// Setup WebGL preview display (and STL converter)
 	var jscad = new OpenJsCad.Processor(document.getElementById('display'), {
 		color: [0, 0.6, 0.1],
 		openJsCadPath: "js/",
 		viewerwidth: "800px",
 		viewerheight: "400px",
-		bgColor: [0.553, 0.686, 0.8, 1]// [0.769, 0.851, 0.58, 1]// [0.745, 0.902, 0.745, 1]// [0.6, 0.6, 1, 1]
+		bgColor: [0.553, 0.686, 0.8, 1]
 	});
-	var form = document.forms.namedItem('gpxform');
-	form.addEventListener('submit', function(ev) {
-		ev.preventDefault();
-		loader(document.getElementById('gpxfile').files[0], jscad);
-	}, false);
+	
+	// Setup input form; handle submit events locally
+	document.forms.namedItem('gpxform').addEventListener(
+		'submit',
+		function(ev) {
+			ev.preventDefault();
+			loader(document.getElementById('gpxfile').files[0], jscad);
+		},
+		false
+	);
 }
 
-var Messages = {
-	msgdiv: null,
-	
-	clear: function() {
-		this.msgdiv.innerHTML = "";
-		this.msgdiv.className = "";
-	},
-	
-	error: function(message) {
-		this.msgdiv.innerHTML = message;
-		this.msgdiv.className = "errormsg";
-		var that = this;
-		this.msgdiv.onclick = function(e) {
-			that.clear();
-		};
-	},
-	
-	status: function(message) {
-		this.msgdiv.innerHTML = message;
-		this.msgdiv.className = "statusmsg";
-		var that = this;
-		this.msgdiv.onclick = function(e) {
-			that.clear();
-		};
-	}
-};
-
-/*
- * Get a File object URL from form input or drag and drop.
- * Use XMLHttpRequest to retrieve the file content, and
- * pass the content on to be processed. Basic Javascript GPX
- * parsing based on https://github.com/peplin/gpxviewer/
- */
 var loader = function(gpxfile, jscad) {
-	
-	Messages.clear();
 	
 	// return true if options are valid, false otherwise.
 	// expected to post a Message explaining any errors
@@ -77,7 +47,11 @@ var loader = function(gpxfile, jscad) {
 		return undefined;
 	};
 	
-	var gpxurl = window.URL.createObjectURL(gpxfile);
+	Messages.clear();
+	
+	// Assign a local URL to the file selected for upload
+	// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
+	var upload_url = window.URL.createObjectURL(gpxfile);
 	
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
@@ -112,19 +86,22 @@ var loader = function(gpxfile, jscad) {
 				return;
 			}
 			
+			// Attempt to parse response XML (upload content) as a GPX file.
 			var pts = Parser.file(req.responseXML);
 			if (pts === null) {
 				return;
 			}
 			
-			var gd = new Gpex(jscad, options, pts);
+			// If all is well, proceed to extrude the GPX path.
+			new Gpex(jscad, options, pts);
 		}
 	}
 	
-	req.open('GET', gpxurl, true);
-	req.send(null);
+	// submit asynchronous request for the [locally] uploaded file
+	req.open('GET', upload_url, true);
+	req.send();
 	
-	window.URL.revokeObjectURL(gpxurl);
+	window.URL.revokeObjectURL(upload_url);
 }
 
 // use a tidier options object
@@ -1020,6 +997,7 @@ Gpex.prototype.pxyz = function(v) {
 	];
 }
 
+// Rudimentary GPX parsing based on https://github.com/peplin/gpxviewer/
 var Parser = {
 	
 	// Parse GPX file, starting with tracks
@@ -1032,7 +1010,6 @@ var Parser = {
 		// Note: only the first track is used
 		return this.track(tracks[0]);
 	},
-	
 	
 	track: function(track) {
 		var segments = track.getElementsByTagName('trkseg');
@@ -1099,5 +1076,32 @@ var PointProjector = {
 	
 	mercator: function(v) {
 		return proj4('GOOGLE', [v[0], v[1]]).concat(v[2]);
+	}
+};
+
+var Messages = {
+	msgdiv: null,
+	
+	clear: function() {
+		this.msgdiv.innerHTML = "";
+		this.msgdiv.className = "";
+	},
+	
+	error: function(message) {
+		this.msgdiv.innerHTML = message;
+		this.msgdiv.className = "errormsg";
+		var that = this;
+		this.msgdiv.onclick = function(e) {
+			that.clear();
+		};
+	},
+	
+	status: function(message) {
+		this.msgdiv.innerHTML = message;
+		this.msgdiv.className = "statusmsg";
+		var that = this;
+		this.msgdiv.onclick = function(e) {
+			that.clear();
+		};
 	}
 };
