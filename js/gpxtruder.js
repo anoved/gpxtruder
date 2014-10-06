@@ -112,8 +112,12 @@ var loader = function(gpxfile, jscad) {
 				return;
 			}
 			
-			var gd = new Gpex(req.responseXML, jscad, options);
-			gd.LoadTracks();
+			var pts = Parser.file(req.responseXML);
+			if (pts === null) {
+				return;
+			}
+			
+			var gd = new Gpex(jscad, options, pts);
 		}
 	}
 	
@@ -124,9 +128,8 @@ var loader = function(gpxfile, jscad) {
 }
 
 // use a tidier options object
-function Gpex(content, jscad, options) {
+function Gpex(jscad, options, pts) {
 	
-	this.content = content;
 	this.jscad = jscad;
 	
 	this.buffer = options.buffer;
@@ -212,39 +215,15 @@ function Gpex(content, jscad, options) {
 	
 	this.scale = 0;
 	this.rotate = false;
-}
-
-Gpex.prototype.LoadTracks = function() {
-	var tracks = this.content.documentElement.getElementsByTagName('trk');
-	if (tracks.length === 0) {
-		Messages.error("This file does not appear to contain any tracks.<br />" +
-				"(Are you sure it is a GPX file?)");
-		return;
-	}
-	this.LoadTrack(tracks[0]);
-}
-
-Gpex.prototype.LoadTrack = function(track) {
-	var segments = track.getElementsByTagName('trkseg');
-	if (segments.length === 0) {
-		Messages.error("This file does not appear to contain any track segments.<br />" +
-				"(Are you sure it is a valid GPX file?)");
-		return;
-	}
-	this.LoadSegment(segments[0]);
-}
-
-Gpex.prototype.LoadSegment = function(segment) {
 	
-	var trkpts = segment.getElementsByTagName('trkpt');
-	if (trkpts[0].getElementsByTagName('ele').length === 0) {
-		Messages.error('This GPX file does not appear to contain any elevation data.<br />' +
-				'Try using <a href="http://www.gpsvisualizer.com/elevation">GPX Visualizer</a> to add elevation data to your route.');
-		return;
-	}
-	
+	this.Extrude(pts);
+	this.Display();
+}
+
+Gpex.prototype.Extrude = function(pts) {
+		
 	// populates this.ll (lat/lon vectors)
-	this.ScanPoints(trkpts);
+	this.ScanPoints(pts);
 	
 	// populates this.pp (projected point vectors)
 	this.ProjectPoints();
@@ -255,8 +234,13 @@ Gpex.prototype.LoadSegment = function(segment) {
 	// scale/center markers (overwriting originals)
 	this.markers = this.markers.map(this.pxyz, this);
 	
+	// create output geometry
 	this.process_path();
+}
+
+Gpex.prototype.Display = function() {
 	
+	// Tweak preview display if available
 	if (this.jscad.viewer) {
 		this.jscad.viewer.setBedSize(this.bedx, this.bedy);
 		
@@ -267,21 +251,23 @@ Gpex.prototype.LoadSegment = function(segment) {
 			// reset bed texture to default checkerboard
 			this.jscad.viewer.clearBaseMap(this.rotate);
 		}
-		
 	}
 	
+	// Update the preview display AND allow STL export
+	// (Even if WebGL is not available for preview, STL export should work.)
 	this.jscad.setJsCad(this.jscad_assemble(false));
+	
+	// Display code for custom usage (can we utilize stuff cached above?)
 	this.code_jscad.innerHTML = this.jscad_assemble(true);	
 	this.code_openscad.innerHTML = this.oscad_assemble();
 	
+	// Bring the output div into view
 	document.getElementById('output').scrollIntoView();
 }
 
-// this function has ballooned into a gross gargantua
-
-// Converts GPX trkpt nodelist to array of lon/lat/elevation vectors.
+// Scan point array to determine bounds, path length, and marker locations.
 // Also assembles array of segment distances (n - 1 where n = point count)
-Gpex.prototype.ScanPoints = function(trkpts) {
+Gpex.prototype.ScanPoints = function(pts) {
 	
 	var that = this;
 	
@@ -318,7 +304,7 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 		// route smoothing, so we don't necessarily care that route length varies
 	};
 	
-	var lastpt = Parser.point(trkpts[0]),
+	var lastpt = pts[0],
 		min_lon = lastpt[0],
 		max_lon = lastpt[0],
 		min_lat = lastpt[1],
@@ -330,9 +316,9 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 	var cd = 0, md = 0, lastmd = 0;
 	var marker_objs = [];
 	
-	for (var i = 1; i < trkpts.length; i++) {
+	for (var i = 1; i < pts.length; i++) {
 		
-		var rawpt = Parser.point(trkpts[i]);
+		var rawpt = pts[i];
 		
 		if (rawpt[0] < min_lon) {
 			min_lon = rawpt[0];
@@ -386,7 +372,6 @@ Gpex.prototype.ScanPoints = function(trkpts) {
 			
 			if ((this.pathrange.startm === null || cd >= this.pathrange.startm)
 				&& (this.pathrange.stopm === null || cd <= this.pathrange.stopm)) {
-					
 				
 				// storing the geographic coordinates + cumulative distance;
 				// convert to projected coordinates on output
@@ -1035,10 +1020,46 @@ Gpex.prototype.pxyz = function(v) {
 	];
 }
 
-/*
- * GPX Parser
- */
 var Parser = {
+	
+	// Parse GPX file, starting with tracks
+	file: function(content) {
+		var tracks = content.documentElement.getElementsByTagName('trk');
+		if (tracks.length === 0) {
+			Messages.error("This file does not appear to contain any tracks.<br />(Are you sure it is a GPX file?)");
+			return null;
+		}
+		// Note: only the first track is used
+		return this.track(tracks[0]);
+	},
+	
+	
+	track: function(track) {
+		var segments = track.getElementsByTagName('trkseg');
+		if (segments.length === 0) {
+			Messages.error("This file does not appear to contain any track segments.<br />(Are you sure it is a valid GPX file?)");
+			return null;
+		}
+		// Note: only the first segment is used
+		return this.segment(segments[0]);
+	},
+	
+	segment: function(segment) {
+		var trkpts = segment.getElementsByTagName('trkpt');
+		if (trkpts[0].getElementsByTagName('ele').length === 0) {
+			Messages.error('This GPX file does not appear to contain any elevation data.<br />Try using <a href="http://www.gpsvisualizer.com/elevation">GPX Visualizer</a> to add elevation data to your route.');
+			return null;
+		}
+		
+		// Convert GPX XML trkpts to lon/lat/ele vectors
+		// No processing is done at this point.
+		var pts = [];
+		for (var i = 0; i < trkpts.length; i++) {
+			pts.push(this.point(trkpts[i]));
+		}
+		
+		return pts;
+	},
 	
 	// Returns numeric [lon, lat, ele] vector from GPX track point
 	point: function(pt) {
@@ -1048,7 +1069,6 @@ var Parser = {
 			parseFloat(pt.getElementsByTagName('ele')[0].innerHTML)
 		];
 	}
-	
 };
 
 /*
