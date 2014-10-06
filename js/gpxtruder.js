@@ -201,11 +201,9 @@ Gpex.prototype.Display = function() {
 	if (OJSCAD.viewer) {
 		OJSCAD.viewer.setBedSize(this.bedx, this.bedy);
 		
-		// basemap only for track shape; otherwise,
-		if (this.shape == 0) {
-			this.basemap();
-		} else {
-			// reset bed texture to default checkerboard
+		// Attempt to retrieve a basemap on two conditions:
+		// track shape is selected and zoom level is reasonable
+		if (!(this.shape === 0 && this.basemap())) {
 			OJSCAD.viewer.clearBaseMap(this.rotate);
 		}
 	}
@@ -507,6 +505,7 @@ function getBoundsZoomLevel(ne, sw, mapDim) {
 	};
 }
 
+// returns true if a basemap is set; returns false if no basemap is set
 Gpex.prototype.basemap = function() {
 	
 	var bedmax = Math.max(this.bedx, this.bedy);
@@ -521,8 +520,7 @@ Gpex.prototype.basemap = function() {
 	
 	if (zoominfo.zoom > 21) {
 		// don't bother with base map if zoom level would be too high
-		OJSCAD.viewer.clearBaseMap(this.rotate);
-		return;
+		return false;
 	}
 	
 	var mapscale = mapsize[zoominfo.axis] / 256 / Math.exp(zoominfo.zoom * Math.LN2) / zoominfo.span;
@@ -531,9 +529,11 @@ Gpex.prototype.basemap = function() {
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg";
 	
-	console.log(mapurl, mapscale, this.bedx * mapscale, this.bedy * mapscale);
+	//console.log(mapurl, mapscale, this.bedx * mapscale, this.bedy * mapscale);
 	
 	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.rotate);
+	
+	return true;
 }
 
 Gpex.prototype.getScale = function(xextent, yextent) {
