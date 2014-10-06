@@ -25,13 +25,6 @@ var setup = function() {
 
 var loader = function(gpxfile, jscad) {
 	
-	// return true if options are valid, false otherwise.
-	// expected to post a Message explaining any errors
-	var validate = function(options) {
-		
-		return true;
-	};
-	
 	var radioValue = function(radios) {
 		for (var i = 0, len = radios.length; i < len; i++) {
 			if (radios[i].checked) {
@@ -72,12 +65,6 @@ var loader = function(gpxfile, jscad) {
 				jscadDiv:   document.getElementById('code_jscad'),
 				oscadDiv:   document.getElementById('code_openscad')
 			};
-			
-			// validate should perhaps assemble the options object as well,
-			// since many of those assignments presume the field defined and valid.
-			if (validate(options) == false) {
-				return;
-			}
 			
 			// Attempt to parse response XML (upload content) as a GPX file.
 			var pts = Parser.file(req.responseXML);
