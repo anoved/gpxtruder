@@ -37,6 +37,20 @@ var loader = function(upload_file) {
 		return undefined;
 	};
 	
+	var markerInterval = function(markerType, markerSpan) {
+		if (markerType === 0) {
+			// no markers
+			return 0;
+		} else if (markerType === 1) {
+			// kilometers
+			return 1000;
+		} else if (markerType === 2) {
+			// miles
+			return 1609;
+		}
+		return markerSpan;
+	};
+	
 	Messages.clear();
 	
 	// Assign a local URL to the file selected for upload
@@ -53,19 +67,18 @@ var loader = function(upload_file) {
 			}
 			
 			var options = {
-				buffer:     parseFloat(document.getElementById('path_width').value) / 2.0,
-				vertical:   parseFloat(document.getElementById('vertical').value),
-				bedx:       parseFloat(document.getElementById('width').value),
-				bedy:       parseFloat(document.getElementById('depth').value),
-				base:       parseFloat(document.getElementById('base').value),
-				zcut:       document.getElementById('zcut').checked,
-				shapetype:  radioValue(document.getElementsByName('shape')),
-				marktype:   radioValue(document.getElementsByName('marker')),
-				markspan:   parseFloat(document.getElementById('marker_interval').value),
-				smoothtype: radioValue(document.getElementsByName('smooth')),
-				smoothspan: parseFloat(document.getElementById('mindist').value),
-				jscadDiv:   document.getElementById('code_jscad'),
-				oscadDiv:   document.getElementById('code_openscad')
+				buffer:         parseFloat(document.getElementById('path_width').value) / 2.0,
+				vertical:       parseFloat(document.getElementById('vertical').value),
+				bedx:           parseFloat(document.getElementById('width').value),
+				bedy:           parseFloat(document.getElementById('depth').value),
+				base:           parseFloat(document.getElementById('base').value),
+				zcut:           document.getElementById('zcut').checked,
+				shapetype:      radioValue(document.getElementsByName('shape')),
+				markerInterval: markerInterval(radioValue(document.getElementsByName('marker')), parseFloat(document.getElementById('marker_interval').value)),
+				smoothtype:     radioValue(document.getElementsByName('smooth')),
+				smoothspan:     parseFloat(document.getElementById('mindist').value),
+				jscadDiv:       document.getElementById('code_jscad'),
+				oscadDiv:       document.getElementById('code_openscad')
 			};
 			
 			// Attempt to parse response XML (upload content) as a GPX file.
@@ -89,17 +102,8 @@ var loader = function(upload_file) {
 // use a tidier options object
 function Gpex(options, pts) {
 	
-	this.buffer = options.buffer;
-	this.vertical = options.vertical;
-	this.bedx = options.bedx;
-	this.bedy = options.bedy;
-	this.base = options.base;
-	this.zcut = options.zcut;
-	this.shape = options.shapetype;
-	this.smoothingMode = options.smoothtype;
-	this.minimumDistance = options.smoothspan;
-	this.code_jscad = options.jscadDiv;
-	this.code_openscad = options.oscadDiv;
+	// read-only configuration
+	this.options = options;
 	
 	// array of lon/lat/ele vectors (deg-ew/deg-ns/meters)
 	this.ll = [];
@@ -129,21 +133,6 @@ function Gpex(options, pts) {
 	// orientation of each marker (aligned with initial segment along which it lies)
 	this.markseg = [];
 	
-	// meters per marker (0 = no markers)
-	if (options.marktype == 0) {
-		// no markers
-		this.mpermark = 0;
-	} else if (options.marktype == 1) {
-		// kilometers
-		this.mpermark = 1000;
-	} else if (options.marktype == 2) {
-		// miles
-		this.mpermark = 1609;
-	} else {
-		// other interval
-		this.mpermark = options.markspan;
-	}
-	
 	this.Extrude(pts);
 	this.Display();
 }
@@ -170,11 +159,11 @@ Gpex.prototype.Display = function() {
 	
 	// Tweak preview display if available
 	if (OJSCAD.viewer) {
-		OJSCAD.viewer.setBedSize(this.bedx, this.bedy);
+		OJSCAD.viewer.setBedSize(this.options.bedx, this.options.bedy);
 		
 		// Attempt to retrieve a basemap on two conditions:
 		// track shape is selected and zoom level is reasonable
-		if (!(this.shape === 0 && this.basemap())) {
+		if (!(this.options.shapetype === 0 && this.basemap())) {
 			OJSCAD.viewer.clearBaseMap(this.rotate);
 		}
 	}
@@ -184,8 +173,8 @@ Gpex.prototype.Display = function() {
 	OJSCAD.setJsCad(this.jscad_assemble(false));
 	
 	// Display code for custom usage (can we utilize stuff cached above?)
-	this.code_jscad.innerHTML = this.jscad_assemble(true);	
-	this.code_openscad.innerHTML = this.oscad_assemble();
+	this.options.jscadDiv.innerHTML = this.jscad_assemble(true);
+	this.options.oscadDiv.innerHTML = this.oscad_assemble();
 	
 	// Bring the output div into view
 	document.getElementById('output').scrollIntoView();
@@ -279,10 +268,10 @@ Gpex.prototype.ScanPoints = function(pts) {
 		rawpointcd.push(cd);
 		
 		// if marker distance including this segment exceeds marker interval, mark!
-		if (this.mpermark > 0 && md >= this.mpermark) {
+		if (this.options.markerInterval > 0 && md >= this.options.markerInterval) {
 			
 			// portion of this segment's length that falls before the marker
-			var last_seg = this.mpermark - lastmd;
+			var last_seg = this.options.markerInterval - lastmd;
 			
 			// portion of this segment's length that falls after the marker
 			var next_seg = segdist - last_seg;
@@ -339,15 +328,14 @@ Gpex.prototype.ScanPoints = function(pts) {
 		
 	}
 	
-	// actually, hang on; we can store marker locations in geographic form
-	// and only call ProjectPoint on them at output time - once total is known.
+	var smoothing_distance = this.options.smoothspan;
 
 	// Guestimate viable mindist based on scale if automatic smoothing
 	// is enabled and the shape type is route (directional smoothing
 	// is not vital for linear/ring shape - but might be faster.)
-	if (this.smoothingMode === 0) {
+	if (this.options.smoothtype === 0) {
 		
-		if (this.shape === 0) {
+		if (this.options.shapetype === 0) {
 			// track: set scale based on approx route extent
 			var min_geo = proj4('GOOGLE', [min_lon, min_lat]);
 			var max_geo = proj4('GOOGLE', [max_lon, max_lat]);
@@ -355,24 +343,24 @@ Gpex.prototype.ScanPoints = function(pts) {
 			var geo_y = max_geo[1] - min_geo[1];
 			var scale = this.getScale(geo_x, geo_y);
 		}
-		else if (this.shape === 1) {
+		else if (this.options.shapetype === 1) {
 			// linear: set scale based on distance
 			var scale = this.getScale(this.distance, 0);
 		}
-		else if (this.shape === 2) {
+		else if (this.options.shapetype === 2) {
 			// ring: set scale based on ring radius
 			var scale = this.getScale(2 * this.ringRadius, 2 * this.ringRadius);
 		}
 		
 		// Model path buffer (mm) / scale = real world path buffer size (meters);
 		// segments representing lengths less than this size are noisy; discard.
-		this.minimumDistance = Math.floor(this.buffer / scale);
+		smoothing_distance = Math.floor(this.options.buffer / scale);
 		
-		Messages.status('Automatic interval: ' + this.minimumDistance);
+		Messages.status('Automatic interval: ' + smoothing_distance);
 	}
 	
 	// smooth route by minimum distance filter
-	distFilter(rawpoints, this.minimumDistance);
+	distFilter(rawpoints, smoothing_distance);
 }
 
 
@@ -429,7 +417,7 @@ Gpex.prototype.UpdateOffset = function() {
 	
 	// zero z offset uses full height above sea level
 	// disabled if minimum elevation is at or below 0
-	if (this.zcut == false && this.minz > 0) {
+	if (this.options.zcut == false && this.minz > 0) {
 		this.zoffset = 0;
 	} else {
 		// by default, z offset is calculated to cut
@@ -474,10 +462,10 @@ function getBoundsZoomLevel(ne, sw, mapDim) {
 // returns true if a basemap is set; returns false if no basemap is set
 Gpex.prototype.basemap = function() {
 	
-	var bedmax = Math.max(this.bedx, this.bedy);
+	var bedmax = Math.max(this.options.bedx, this.options.bedy);
 	var mapsize = {
-		width:  Math.round(640 * (this.rotate ? this.bedy : this.bedx) / bedmax),
-		height: Math.round(640 * (this.rotate ? this.bedx : this.bedy) / bedmax)
+		width:  Math.round(640 * (this.rotate ? this.options.bedy : this.options.bedx) / bedmax),
+		height: Math.round(640 * (this.rotate ? this.options.bedx : this.options.bedy) / bedmax)
 	};
 	
 	var sw = proj4("GOOGLE", "WGS84", [this.minx, this.miny]);
@@ -495,8 +483,6 @@ Gpex.prototype.basemap = function() {
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg";
 	
-	//console.log(mapurl, mapscale, this.bedx * mapscale, this.bedy * mapscale);
-	
 	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.rotate);
 	
 	return true;
@@ -504,8 +490,8 @@ Gpex.prototype.basemap = function() {
 
 Gpex.prototype.getScale = function(xextent, yextent) {
 	// indent bed extent to accomodate buffer width
-	var xbe = this.bedx - (2 * this.buffer),
-		ybe = this.bedy - (2 * this.buffer);
+	var xbe = this.options.bedx - (2 * this.options.buffer),
+		ybe = this.options.bedy - (2 * this.options.buffer);
 	var mmax = Math.max(xextent, yextent),
 		mmin = Math.min(xextent, yextent),
 		bmax = Math.max(xbe, ybe),
@@ -516,8 +502,8 @@ Gpex.prototype.getScale = function(xextent, yextent) {
 }
 
 Gpex.prototype.getRotate = function() {
-	var xbe = this.bedx - (2 * this.buffer),
-		ybe = this.bedy - (2 * this.buffer);
+	var xbe = this.options.bedx - (2 * this.options.buffer),
+		ybe = this.options.bedy - (2 * this.options.buffer);
 	
 	// determine whether the model should be rotated to fit
 	if ((xbe >= ybe && this.xextent >= this.yextent) ||
@@ -532,9 +518,9 @@ Gpex.prototype.getRotate = function() {
 // distance ratio now, now absolute distance
 Gpex.prototype.ProjectPoint = function(point, cdr) {
 	var xyz;
-	if (this.shape == 1) {
+	if (this.options.shapetype == 1) {
 		xyz = PointProjector.linear(point, cdr, this.distance);
-	} else if (this.shape == 2) {
+	} else if (this.options.shapetype == 2) {
 		xyz = PointProjector.ring(point, cdr, this.ringRadius);
 	} else {
 		xyz = PointProjector.mercator(point);
@@ -606,14 +592,14 @@ Gpex.prototype.segment_angle = function(i) {
 Gpex.prototype.joint_points = function(i, rel, avga) {
 
 	// distance from endpoint to segment buffer intersection
-	var jointr = this.buffer/Math.cos(rel/2);
+	var jointr = this.options.buffer/Math.cos(rel/2);
 	
 	// arbitrary hack to prevent extremely spiky corner artifacts
 	// on acute angles. Optimal solution would introduce additional
 	// corner points. (As-is, path width is not maintained here.)
 	
-	if (Math.abs(jointr) > this.buffer * 2) {
-		jointr = Math.sign(jointr) * this.buffer * 2;
+	if (Math.abs(jointr) > this.options.buffer * 2) {
+		jointr = Math.sign(jointr) * this.options.buffer * 2;
 	}
 	
 	// joint coordinates (endpoint offset at bisect angle by jointr)
@@ -718,7 +704,7 @@ Gpex.prototype.jscad_marker = function(i) {
 Gpex.prototype.jscad_markers = function(dl) {
 	
 	// return empty string if markers are disabled
-	if (this.mpermark <= 0 || this.markers.length == 0) {
+	if (this.options.markerInterval <= 0 || this.markers.length == 0) {
 		return "";
 	}
 	
@@ -738,12 +724,12 @@ Gpex.prototype.jscad_markers = function(dl) {
 	if (dl == true) {
 		var markerfunc = "function marker(position, orientation, height) {\n\
 	var z = height + 2;\n\
-	return cube({size: [1, " + (2 * this.buffer + 2) + ", z], center: true}).rotateZ(orientation).translate([position[0], position[1], z/2]);\n\
+	return cube({size: [1, " + (2 * this.options.buffer + 2) + ", z], center: true}).rotateZ(orientation).translate([position[0], position[1], z/2]);\n\
 }\n";
 	} else {
 		var markerfunc = "function marker(position, orientation, height) {\n\
 	var z = height + 2;\n\
-	return CSG.cube({radius: [1, " + (2 * this.buffer + 2) + ", z/2], center: [0, 0, 0]}).rotateZ(orientation).translate([position[0], position[1], z/2]);\n\
+	return CSG.cube({radius: [1, " + (2 * this.options.buffer + 2) + ", z/2], center: [0, 0, 0]}).rotateZ(orientation).translate([position[0], position[1], z/2]);\n\
 	}\n";
 	}
 	
@@ -768,17 +754,17 @@ Gpex.prototype.jscad_profile = function(dl) {
 Gpex.prototype.jscad_assemble = function(dl) {
 	var jscad = this.jscad_profile(dl);
 	
-	if (this.markers.length > 0 && this.mpermark > 0) {
+	if (this.markers.length > 0 && this.options.markerInterval > 0) {
 		jscad += this.jscad_markers(dl);
 	}
 	
 	if (dl == true) {
-		var um = (this.mpermark > 0 && this.markers.length > 0 ? ".union(markers())" : "");
+		var um = (this.options.markerInterval > 0 && this.markers.length > 0 ? ".union(markers())" : "");
 		var mainf = "function main() {\nreturn profile()" + um + ";\n}\n";
 	} else {
 		var models = ["{name: 'profile', caption: 'Profile', data: profile()}"];
 		
-		if (this.mpermark > 0 && this.markers.length > 0) {
+		if (this.options.markerInterval > 0 && this.markers.length > 0) {
 			models.push("{name: 'markers', caption: 'Markers', data: markers()}");
 		}
 		
@@ -791,7 +777,7 @@ Gpex.prototype.jscad_assemble = function(dl) {
 Gpex.prototype.oscad_assemble = function() {
 	var openscad = "module profile() {\npolyhedron(points=[\n" + this.model_points.join(",\n") + "\n],\nfaces=[\n" + this.model_faces.join(",\n") + "\n]);\n}\n";
 
-	if (this.mpermark > 0 && this.markers.length > 0) {
+	if (this.options.markerInterval > 0 && this.markers.length > 0) {
 		openscad += this.oscad_markers();
 		openscad += "markers();\n";
 	}
@@ -810,7 +796,7 @@ Gpex.prototype.oscad_markers = function() {
 	assign(z=height+2) {\n\
 	translate([position[0], position[1], z/2])\n\
 	rotate([0, 0, orientation])\n\
-	cube(size=[1, " + (2*this.buffer + 2) + ", z], center=true);\n\
+	cube(size=[1, " + (2*this.options.buffer + 2) + ", z], center=true);\n\
 }}\n\n\
 module markers() {\n\
 	union() {\n" + m.join("\n") + "}\n}\n";
@@ -893,7 +879,7 @@ Gpex.prototype.pxyz = function(v) {
 	return [
 			this.scale * (v[0] - this.xoffset),
 			this.scale * (v[1] - this.yoffset),
-			this.scale * (v[2] - this.zoffset) * this.vertical + this.base
+			this.scale * (v[2] - this.zoffset) * this.options.vertical + this.options.base
 	];
 }
 
