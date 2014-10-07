@@ -105,6 +105,12 @@ function Gpex(options, pts) {
 	// read-only configuration
 	this.options = options;
 	
+	// available bed extent
+	this.bed = {
+		x: this.options.bedx - (2 * this.options.buffer),
+		y: this.options.bedy - (2 * this.options.buffer)
+	};
+	
 	// array of lon/lat/ele vectors (deg-ew/deg-ns/meters)
 	this.ll = [];
 	
@@ -341,15 +347,15 @@ Gpex.prototype.ScanPoints = function(pts) {
 			var max_geo = proj4('GOOGLE', [max_lon, max_lat]);
 			var geo_x = max_geo[0] - min_geo[0];
 			var geo_y = max_geo[1] - min_geo[1];
-			var scale = this.getScale(geo_x, geo_y);
+			var scale = Scale(this.bed, geo_x, geo_y);
 		}
 		else if (this.options.shapetype === 1) {
 			// linear: set scale based on distance
-			var scale = this.getScale(this.distance, 0);
+			var scale = Scale(this.bed, this.distance, 0);
 		}
 		else if (this.options.shapetype === 2) {
 			// ring: set scale based on ring radius
-			var scale = this.getScale(2 * this.ringRadius, 2 * this.ringRadius);
+			var scale = Scale(this.bed, 2 * this.ringRadius, 2 * this.ringRadius);
 		}
 		
 		// Model path buffer (mm) / scale = real world path buffer size (meters);
@@ -486,29 +492,23 @@ Gpex.prototype.basemap = function(bounds) {
 	return true;
 }
 
-Gpex.prototype.getScale = function(xextent, yextent) {
-	// indent bed extent to accomodate buffer width
-	var xbe = this.options.bedx - (2 * this.options.buffer),
-		ybe = this.options.bedy - (2 * this.options.buffer);
+// Return scale factor necessary to fit extent to bed, disregarding rotation
+var Scale = function(bed, xextent, yextent) {
 	var mmax = Math.max(xextent, yextent),
 		mmin = Math.min(xextent, yextent),
-		bmax = Math.max(xbe, ybe),
-		bmin = Math.min(xbe, ybe),
+		bmax = Math.max(bed.x, bed.y),
+		bmin = Math.min(bed.x, bed.y),
 		fmax = bmax / mmax,
 		fmin = bmin / mmin;
 	return Math.min(fmax, fmin);
 }
 
-Gpex.prototype.getRotate = function(xextent, yextent) {
-	var xbe = this.options.bedx - (2 * this.options.buffer),
-		ybe = this.options.bedy - (2 * this.options.buffer);
-	
-	// determine whether the model should be rotated to fit
-	if ((xbe >= ybe && xextent >= yextent) ||
-		(xbe < ybe && xextent < yextent)) {
+// Return boolean whether the model should be rotated to fit bed
+var Rotate = function(bed, xextent, yextent) {
+	if ((bed.x >= bed.y && xextent >= yextent) ||
+		(bed.x < bed.y && xextent < yextent)) {
 		return false;
-	}
-	
+	}	
 	return true;
 }
 
@@ -549,8 +549,8 @@ Gpex.prototype.ProjectPoints = function() {
 	var xextent = this.bounds.maxx - this.bounds.minx;
 	var yextent = this.bounds.maxy - this.bounds.miny;
 	this.offset = Offsets(this.bounds, this.options.zcut);
-	this.scale = this.getScale(xextent, yextent);
-	this.rotate = this.getRotate(xextent, yextent);
+	this.scale = Scale(this.bed, xextent, yextent);
+	this.rotate = Rotate(this.bed, xextent, yextent);
 }
 
 var vector_angle = function(a, b) {
