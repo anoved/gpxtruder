@@ -363,9 +363,12 @@ Gpex.prototype.ScanPoints = function(pts) {
 	distFilter(rawpoints, smoothing_distance);
 }
 
-
-// set min/max x/y/z bounds to the given xyz point
-Gpex.prototype.InitBounds = function(xyz) {
+var Bounds = function(xyz) {
+	
+	if (typeof xyz === 'undefined') {
+		var xyz = [0, 0, 0];
+	}
+	
 	this.minx = xyz[0];
 	this.maxx = xyz[0];
 	this.miny = xyz[1];
@@ -374,8 +377,7 @@ Gpex.prototype.InitBounds = function(xyz) {
 	this.maxz = xyz[2];
 }
 
-// update min/max x/y/z bounds to include the given xyz point
-Gpex.prototype.UpdateBounds = function(xyz) {
+Bounds.prototype.Update = function(xyz) {
 	if (xyz[0] < this.minx) {
 		this.minx = xyz[0];
 	}
@@ -401,28 +403,29 @@ Gpex.prototype.UpdateBounds = function(xyz) {
 	}
 }
 
+
 // calculate extents (model size in each dimension) from bounds
-Gpex.prototype.UpdateExtent = function() {
-	this.xextent = this.maxx - this.minx;
-	this.yextent = this.maxy - this.miny;
-	this.zextent = this.maxz - this.minz;
+Gpex.prototype.UpdateExtent = function(bounds) {
+	this.xextent = bounds.maxx - bounds.minx;
+	this.yextent = bounds.maxy - bounds.miny;
+	this.zextent = bounds.maxz - bounds.minz;
 }
 
 // calculate offsets used to translate model to output origin
-Gpex.prototype.UpdateOffset = function() {
+Gpex.prototype.UpdateOffset = function(bounds) {
 	
 	// xy offset used to center model around origin
-	this.xoffset = (this.minx + this.maxx) / 2;
-	this.yoffset = (this.miny + this.maxy) / 2;
+	this.xoffset = (bounds.minx + bounds.maxx) / 2;
+	this.yoffset = (bounds.miny + bounds.maxy) / 2;
 	
 	// zero z offset uses full height above sea level
 	// disabled if minimum elevation is at or below 0
-	if (this.options.zcut == false && this.minz > 0) {
+	if (this.options.zcut == false && bounds.minz > 0) {
 		this.zoffset = 0;
 	} else {
 		// by default, z offset is calculated to cut
 		// the elevation profile just below minimum
-		this.zoffset = Math.floor(this.minz - 1);
+		this.zoffset = Math.floor(bounds.minz - 1);
 	}
 }
 
@@ -460,7 +463,7 @@ function getBoundsZoomLevel(ne, sw, mapDim) {
 }
 
 // returns true if a basemap is set; returns false if no basemap is set
-Gpex.prototype.basemap = function() {
+Gpex.prototype.basemap = function(bounds) {
 	
 	var bedmax = Math.max(this.options.bedx, this.options.bedy);
 	var mapsize = {
@@ -468,8 +471,8 @@ Gpex.prototype.basemap = function() {
 		height: Math.round(640 * (this.rotate ? this.options.bedx : this.options.bedy) / bedmax)
 	};
 	
-	var sw = proj4("GOOGLE", "WGS84", [this.minx, this.miny]);
-	var ne = proj4("GOOGLE", "WGS84", [this.maxx, this.maxy]);
+	var sw = proj4("GOOGLE", "WGS84", [this.bounds.minx, this.bounds.miny]);
+	var ne = proj4("GOOGLE", "WGS84", [this.bounds.maxx, this.bounds.maxy]);
 	var zoominfo = getBoundsZoomLevel(ne, sw, mapsize);
 	
 	if (zoominfo.zoom > 21) {
@@ -535,7 +538,7 @@ Gpex.prototype.ProjectPoints = function() {
 	
 	// Initialize extents using first projected point.
 	var xyz = this.ProjectPoint(this.ll[0], 0);
-	this.InitBounds(xyz);
+	this.bounds = new Bounds(xyz);
 	this.pp.push(xyz);
 	
 	// Project the rest of the points, updating extents.
@@ -544,12 +547,12 @@ Gpex.prototype.ProjectPoints = function() {
 		cd += this.d[i-1];
 		
 		xyz = this.ProjectPoint(this.ll[i], cd/this.smooth_total);
-		this.UpdateBounds(xyz);
+		this.bounds.Update(xyz);
 		this.pp.push(xyz);
 	}
 	
-	this.UpdateExtent();
-	this.UpdateOffset();
+	this.UpdateExtent(this.bounds);
+	this.UpdateOffset(this.bounds);
 	
 	this.scale = this.getScale(this.xextent, this.yextent);
 	this.rotate = this.getRotate();
