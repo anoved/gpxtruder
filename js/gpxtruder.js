@@ -403,14 +403,6 @@ Bounds.prototype.Update = function(xyz) {
 	}
 }
 
-
-// calculate extents (model size in each dimension) from bounds
-Gpex.prototype.UpdateExtent = function(bounds) {
-	this.xextent = bounds.maxx - bounds.minx;
-	this.yextent = bounds.maxy - bounds.miny;
-	this.zextent = bounds.maxz - bounds.minz;
-}
-
 // calculate offsets used to translate model to output origin
 Gpex.prototype.UpdateOffset = function(bounds) {
 	
@@ -504,13 +496,13 @@ Gpex.prototype.getScale = function(xextent, yextent) {
 	return Math.min(fmax, fmin);
 }
 
-Gpex.prototype.getRotate = function() {
+Gpex.prototype.getRotate = function(xextent, yextent) {
 	var xbe = this.options.bedx - (2 * this.options.buffer),
 		ybe = this.options.bedy - (2 * this.options.buffer);
 	
 	// determine whether the model should be rotated to fit
-	if ((xbe >= ybe && this.xextent >= this.yextent) ||
-		(xbe < ybe && this.xextent < this.yextent)) {
+	if ((xbe >= ybe && xextent >= yextent) ||
+		(xbe < ybe && xextent < yextent)) {
 		return false;
 	}
 	
@@ -551,11 +543,13 @@ Gpex.prototype.ProjectPoints = function() {
 		this.pp.push(xyz);
 	}
 	
-	this.UpdateExtent(this.bounds);
+	var xextent = this.bounds.maxx - this.bounds.minx;
+	var yextent = this.bounds.maxy - this.bounds.miny;
+
 	this.UpdateOffset(this.bounds);
 	
-	this.scale = this.getScale(this.xextent, this.yextent);
-	this.rotate = this.getRotate();
+	this.scale = this.getScale(xextent, yextent);
+	this.rotate = this.getRotate(xextent, yextent);
 }
 
 Gpex.prototype.vector_angle = function(a, b) {
