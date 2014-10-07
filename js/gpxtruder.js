@@ -403,22 +403,25 @@ Bounds.prototype.Update = function(xyz) {
 	}
 }
 
-// calculate offsets used to translate model to output origin
-Gpex.prototype.UpdateOffset = function(bounds) {
+// returns offset vector to translate model to output origin
+// zcut is boolean indicating whether to trim at min z or not
+var Offsets = function(bounds, zcut) {
 	
 	// xy offset used to center model around origin
-	this.xoffset = (bounds.minx + bounds.maxx) / 2;
-	this.yoffset = (bounds.miny + bounds.maxy) / 2;
+	var xoffset = (bounds.minx + bounds.maxx) / 2;
+	var yoffset = (bounds.miny + bounds.maxy) / 2;
 	
 	// zero z offset uses full height above sea level
 	// disabled if minimum elevation is at or below 0
-	if (this.options.zcut == false && bounds.minz > 0) {
-		this.zoffset = 0;
+	if (zcut == false && bounds.minz > 0) {
+		var zoffset = 0;
 	} else {
 		// by default, z offset is calculated to cut
 		// the elevation profile just below minimum
-		this.zoffset = Math.floor(bounds.minz - 1);
+		var zoffset = Math.floor(bounds.minz - 1);
 	}
+	
+	return [xoffset, yoffset, zoffset];
 }
 
 // jacked from http://stackoverflow.com/a/13274361/339879
@@ -474,7 +477,7 @@ Gpex.prototype.basemap = function(bounds) {
 	
 	var mapscale = mapsize[zoominfo.axis] / 256 / Math.exp(zoominfo.zoom * Math.LN2) / zoominfo.span;
 	
-	var center = proj4("GOOGLE", "WGS84", [this.xoffset, this.yoffset]);
+	var center = proj4("GOOGLE", "WGS84", [this.offset[0], this.offset[1]]);
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg";
 	
@@ -545,9 +548,7 @@ Gpex.prototype.ProjectPoints = function() {
 	
 	var xextent = this.bounds.maxx - this.bounds.minx;
 	var yextent = this.bounds.maxy - this.bounds.miny;
-
-	this.UpdateOffset(this.bounds);
-	
+	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = this.getScale(xextent, yextent);
 	this.rotate = this.getRotate(xextent, yextent);
 }
@@ -874,9 +875,9 @@ var PathSegment = {
 // returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Projected vector
 Gpex.prototype.pxyz = function(v) {
 	return [
-			this.scale * (v[0] - this.xoffset),
-			this.scale * (v[1] - this.yoffset),
-			this.scale * (v[2] - this.zoffset) * this.options.vertical + this.options.base
+			this.scale * (v[0] - this.offset[0]),
+			this.scale * (v[1] - this.offset[1]),
+			this.scale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
 	];
 }
 
