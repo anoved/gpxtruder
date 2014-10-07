@@ -123,17 +123,6 @@ function Gpex(options, pts) {
 	// array of scaled/centered/z-cut x/y/z vectors (fp = final points)
 	this.fp = [];
 	
-	// startm/stopm: meter markers of path segment of interest
-	//               (null indicates start/top of whole path)
-	// starti/stopi: corresponding indices into pp/fp arrays
-	//               (Calculated by ProjectPoints; must be initialized null.)
-	this.pathrange = {
-		startm: null, // options.startm == 0 ? null : options.startm,
-		stopm: null, // options.stopm == 0 ? null : options.stopm,
-		starti: null,
-		stopi: null
-	};
-	
 	// array of 2D vectors marking miles/kms
 	this.markers = [];
 	
@@ -307,18 +296,13 @@ Gpex.prototype.ScanPoints = function(pts) {
 				lastpt[2] + pd * (rawpt[2] - lastpt[2])
 			];
 			
-			if ((this.pathrange.startm === null || cd >= this.pathrange.startm)
-				&& (this.pathrange.stopm === null || cd <= this.pathrange.stopm)) {
-				
-				// storing the geographic coordinates + cumulative distance;
-				// convert to projected coordinates on output
-				marker_objs.push({
-					loc: markerpoint,
-					pos: cd - next_seg,
-					seg: i
-				});
-				
-			}
+			// storing the geographic coordinates + cumulative distance;
+			// convert to projected coordinates on output
+			marker_objs.push({
+				loc: markerpoint,
+				pos: cd - next_seg,
+				seg: i
+			});
 			
 			// markseg is, originally, used to cache indices of [projected/scaled]
 			// segments surrounding this marker, so that the marker can be oriented
@@ -568,11 +552,6 @@ Gpex.prototype.ProjectPoints = function() {
 	this.InitBounds(xyz);
 	this.pp.push(xyz);
 	
-	// should we start at the start?
-	if (this.pathrange.startm === null || cd >= this.pathrange.startm) {
-		this.pathrange.starti = 0;
-	}
-	
 	// Project the rest of the points, updating extents.
 	for (var i = 1; i < this.ll.length; i++) {
 		
@@ -581,25 +560,6 @@ Gpex.prototype.ProjectPoints = function() {
 		xyz = this.ProjectPoint(this.ll[i], cd/this.smooth_total);
 		this.UpdateBounds(xyz);
 		this.pp.push(xyz);
-		
-		if (this.pathrange.starti !== null && this.pathrange.stopi === null) {
-			// in this case, we've passed the path start point,
-			// but haven't yet hit the stop point - so check for it.
-			if (this.pathrange.stopm !== null && cd >= this.pathrange.stopm) {
-				this.pathrange.stopi = i;
-			}
-		} else if (this.pathrange.starti === null) {
-			// in this case, we haven't yet hit the start point,
-			// so check if we have.
-			if (cd >= this.pathrange.startm) {
-				this.pathrange.starti = i;
-			}
-		}
-	}
-	
-	// mark stop at the last point if not already stopped
-	if (this.pathrange.stopi === null) {
-		this.pathrange.stopi = i - 1;
 	}
 	
 	this.UpdateExtent();
@@ -691,34 +651,18 @@ Gpex.prototype.process_path = function() {
 		
 	// s is segment counter used for calculating face indices; it is
 	// managed separately from i in case we skip any acute/noisy segment
-	for (
-			var i = this.pathrange.starti, s = 0;
-			i < this.fp.length, i <= this.pathrange.stopi;
-			i++
-	) {
+	for (var i = 0, s = 0; i < this.fp.length; i++) {
 		
 		angle = this.segment_angle(i);
-				
-		if (i == this.pathrange.starti) {
-			
-			// first point
-			//console.log('first', i, this.fp[i], angle);
-			// "// translate([" + this.fp[i][0] + ", " + this.fp[i][1] + ", " + this.fp[i][2] + "]) rotate([0, 0, " + angle + "])\n";
-			
-			if (i == 0) {
-				last_angle = angle;
-			} else {
-				last_angle = this.segment_angle(i-1);
-			}
+		if (i === 0) {
+			last_angle = angle;
 		}
 		
 		rel_angle = angle - last_angle;
 		joint_angle = rel_angle / 2 + last_angle;
 		
-		// Collapse series of acute angle segments into a single cusp. Disabled
-		// at path cut point to ensure final face is oriented naturally.
-		if (i < this.pathrange.stopi
-			&& acuteAngle(rel_angle)
+		// Collapse series of acute angle segments into a single cusp.
+		if (acuteAngle(rel_angle)
 			&& (i < this.fp.length - 1)
 			&& acuteAngle(this.segment_angle(i + 1) - angle)) {
 			
@@ -740,10 +684,6 @@ Gpex.prototype.process_path = function() {
 		last_angle = angle;
 	}
 	
-	// last point: i-1
-	//console.log('last', i-1, this.fp[i-1], angle);
-	//"// translate([" + this.fp[i-1][0] + ", " + this.fp[i-1][1] + ", " + this.fp[i-1][2] + "]) rotate([0, 0, " + angle + "])\n";
-
 	// final endcap
 	PathSegment.last_face(faces, s);
 	
@@ -756,8 +696,6 @@ Gpex.prototype.process_path = function() {
 	this.model_faces = faces.map(function(v) {
 		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
 	});
-	
-	
 }
 
 // set these code generators up as objects that can keep track of whether
