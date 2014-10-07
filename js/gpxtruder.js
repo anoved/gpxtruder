@@ -318,7 +318,7 @@ Gpex.prototype.ScanPoints = function(pts) {
 		
 		this.markers.push(this.ProjectPoint(marker_objs[i].loc, marker_objs[i].pos/this.distance));
 		
-		var marker_angle = this.vector_angle(
+		var marker_angle = vector_angle(
 			this.ProjectPoint(rawpoints[marker_objs[i].seg - 1], (rawpointcd[marker_objs[i].seg - 1])/this.distance),
 			this.ProjectPoint(rawpoints[marker_objs[i].seg], (rawpointcd[marker_objs[i].seg])/this.distance)
 		);
@@ -553,7 +553,7 @@ Gpex.prototype.ProjectPoints = function() {
 	this.rotate = this.getRotate(xextent, yextent);
 }
 
-Gpex.prototype.vector_angle = function(a, b) {
+var vector_angle = function(a, b) {
 	var dx = b[0] - a[0],
 		dy = b[1] - a[1];
 	return Math.atan2(dy, dx);
@@ -574,7 +574,7 @@ Gpex.prototype.segment_angle = function(i) {
 	}
 	
 	// angle between this point and the next
-	return this.vector_angle(this.fp[i], this.fp[i + 1]);
+	return vector_angle(this.fp[i], this.fp[i + 1]);
 }
 
 /*
@@ -691,7 +691,6 @@ Gpex.prototype.jscad_marker = function(i) {
 		
 		// angle between this the projected/scaled/centered points comprising the segment
 		// along which this marker lies.
-		//t = this.vector_angle(this.fp[this.markseg[i][0]], this.fp[this.markseg[i][1]]);
 		t = this.markseg[i] * 180/Math.PI;
 
 	return "marker([" + x + ", " + y + "], " + t + ", " + z + ")";
