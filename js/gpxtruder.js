@@ -155,24 +155,6 @@ function Gpex(options, pts) {
 		this.mpermark = options.markspan;
 	}
 	
-	this.minx = 0;
-	this.maxx = 0;
-	this.miny = 0;
-	this.maxy = 0;
-	this.minz = 0;
-	this.maxz = 0;
-	
-	this.xextent = 0;
-	this.yextent = 0;
-	this.zextent = 0;
-	
-	this.xoffset = 0;
-	this.yoffset = 0;
-	this.zoffset = 0;
-	
-	this.scale = 0;
-	this.rotate = false;
-	
 	this.Extrude(pts);
 	this.Display();
 }
