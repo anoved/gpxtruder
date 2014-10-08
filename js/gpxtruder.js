@@ -774,15 +774,15 @@ Code.prototype.jscad = function(preview) {
 
 Code.prototype.oscad = function() {
 	
-	var result = "module profile() {\npolyhedron(points=[\n" + this.points + "\n],\nfaces=[\n" + this.faces + "\n]);\n}\n";
+	var result = "module profile() {\npolyhedron(points=[\n" + this.points + "\n],\nfaces=[\n" + this.faces + "\n]);\n}\n\n";
 	
 	if (this.markers.length > 0) {
 		result += "module marker(position, orientation, height) {\n" +
 			"	assign(z=height+2) {\n" +
 			"	translate([position[0], position[1], z/2])\n" +
 			"	rotate([0, 0, orientation])\n" +
-			"	cube(size=[1, " + this.options.markerWidth + ", z], center=true);\n}}\n";
-		result += "module markers() {\nunion() {\n" + this.markers.join(";\n") + ";\n}\n}\n";
+			"	cube(size=[1, " + this.options.markerWidth + ", z], center=true);\n}}\n\n";
+		result += "module markers() {\n\tunion() {\n\t\t" + this.markers.join(";\n\t\t") + ";\n\t}\n}\n\n";
 		result += "markers();\n";
 	}
 	
