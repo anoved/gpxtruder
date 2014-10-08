@@ -181,15 +181,13 @@ Gpex.prototype.Display = function(code) {
 		}
 	}
 	
-	// Update the preview display AND allow STL export
-	// (Even if WebGL is not available for preview, STL export should work.)
-	//OJSCAD.setJsCad(this.jscad_assemble(false));
-	OJSCAD.setJsCad(code.jscad(true, this.rotate, 2 * this.options.buffer + 2));
+	// Update the preview display (required to prepare STL export,
+	// even if WebGL is not available to display the preview)
+	OJSCAD.setJsCad(code.jscad(true));
 	
-	// Display code for custom usage (can we utilize stuff cached above?)
-	this.options.jscadDiv.innerHTML = code.jscad(false, this.rotate, 2 * this.options.buffer + 2);
-	
-	this.options.oscadDiv.innerHTML = code.oscad(2 * this.options.buffer + 2);
+	// Display code for custom usage
+	this.options.jscadDiv.innerHTML = code.jscad(false);
+	this.options.oscadDiv.innerHTML = code.oscad();
 	
 	// Bring the output div into view
 	document.getElementById('output').scrollIntoView();
@@ -680,33 +678,23 @@ Gpex.prototype.process_path = function() {
 	PathSegment.last_face(faces, s);
 	
 	// Package results in a code object and pass it back to caller
-	return new Code(vertices, faces, this.markers);
+	return new Code(vertices, faces, this.markers, {rotation: this.rotate, markerWidth: 2 * this.options.buffer + 2});
 }
 
 /*
- * SCAD Code Builder
+ * SCAD Code
  * 
- * Input Lists:
+ * Input:
  * - points
  * - faces
- * - markers (& markseg (orientations))
+ * - markers
+ * - options = {
+ *    rotate: // boolean; indicates whether model should be rotated to fit bed
+ *    markerWidth: // used to size interval markers
+ *   }
  * 
- * Input Options:
- * - buffer (used for marker sizing)
- * - rotate (used for preview jscad orientation)
- * 
- * Methods:
- * - return preview jscad
- * - return download jscad
- * - return download openscad
- * 
- * Usage:
- *   var code = new Code();
- *   jscad.setJsScad(code.preview_jscad());
- *   jsdiv.innerHTML = code.download_jscad();
- *   osdiv.innerHTML = code.download_oscad();
  */
-var Code = function(points, faces, markers) {
+var Code = function(points, faces, markers, options) {
 
 	// Compose points as a SCAD-ready string of vertex vectors
 	this.points = points.map(function(v) {
@@ -722,32 +710,30 @@ var Code = function(points, faces, markers) {
 	this.markers = markers.map(function(marker) {
 		return "marker([" + marker.location[0] + ", " + marker.location[1] + "], " + (marker.orientation * 180/Math.PI) + ", " + marker.location[2] + ")";
 	});
+	
+	this.options = options;
 }
 
-// needs:
-// - preview (boolean; determines jscad dialect)
-// - rotate (boolean)
-// - markerwidth (2 * buffer + 2)
-Code.prototype.jscad = function(preview, rotate, markerwidth) {
+// preview mode: boolean; openjscad.js (built-in preview) and openjscad.org (external) use different dialects.
+Code.prototype.jscad = function(preview) {
 		
 	var models = ["{name: 'profile', caption: 'Profile', data: profile()}"];
-
-
+	
 	// profile
 	
-	var c = "function profile() {\nreturn ";
+	var result = "function profile() {\nreturn ";
 	
 	if (preview) {
-		c += "CSG.polyhedron({points:[\n" + this.points + "\n],\nfaces:[\n" + this.faces + "\n]})";
+		result += "CSG.polyhedron({points:[\n" + this.points + "\n],\nfaces:[\n" + this.faces + "\n]})";
 	} else {
-		c += "polyhedron({points:[\n" + this.points + "\n],\ntriangles:[\n" + this.faces + "\n]})";
+		result += "polyhedron({points:[\n" + this.points + "\n],\ntriangles:[\n" + this.faces + "\n]})";
 	}
 	
-	if (rotate) {
-		c += ".rotateZ(90)";
+	if (this.options.rotation) {
+		result += ".rotateZ(90)";
 	}
 	
-	c += ";\n}\n\n";
+	result += ";\n}\n\n";
 	
 	// markers
 	
@@ -758,55 +744,50 @@ Code.prototype.jscad = function(preview, rotate, markerwidth) {
 			return ".union(" + s + ")";
 		}).join("");
 		
-		if (rotate) {
+		if (this.options.rotation) {
 			m += ".rotateZ(90)";
 		}
 		
 		if (preview) {
-			c += "function marker(position, orientation, height) {\nvar z = height + 2;\n" +
-				"return CSG.cube({radius: [1, " + markerwidth + ", z/2], center: [0, 0, 0]})" +
+			result += "function marker(position, orientation, height) {\nvar z = height + 2;\n" +
+				"return CSG.cube({radius: [1, " + this.options.markerWidth + ", z/2], center: [0, 0, 0]})" +
 				".rotateZ(orientation).translate([position[0], position[1], z/2]);\n}\n";
 		} else {
-			c += "function marker(position, orientation, height) {\nvar z = height + 2;\n" +
-				"return cube({size: [1, " + markerwidth + ", z], center: true})" +
+			result += "function marker(position, orientation, height) {\nvar z = height + 2;\n" +
+				"return cube({size: [1, " + this.options.markerWidth + ", z], center: true})" +
 				".rotateZ(orientation).translate([position[0], position[1], z/2]);\n}\n";
 		}
 		
-		c += "function markers() {\nreturn " + m + ";\n}\n\n";
+		result += "function markers() {\nreturn " + m + ";\n}\n\n";
 		
 		models.push("{name: 'markers', caption: 'Markers', data: markers()}");
 	}
 
-	//ar um = (this.options.markerInterval > 0 && this.markers.length > 0 ? ".union(markers())" : "");
-	//	var mainf = "function main() {\nreturn profile()" + um + ";\n}\n";
-
 	if (preview) {
-		var result = c + "function main() {\nreturn [" + models.join(',') + "];\n}\n";
+		result += "function main() {\nreturn [" + models.join(',') + "];\n}\n";
 	} else {
-		var result = c + "function main() {\nreturn profile()" + (this.markers.length > 0 ? ".union(markers())" : "") + ";\n}\n";
+		result += "function main() {\nreturn profile()" + (this.markers.length > 0 ? ".union(markers())" : "") + ";\n}\n";
 	}
 	
 	return result;
 }
 
-
-Code.prototype.oscad = function(markerwidth) {
+Code.prototype.oscad = function() {
 	
-	var o = "module profile() {\npolyhedron(points=[\n" + this.points + "\n],\nfaces=[\n" + this.faces + "\n]);\n}\n";
-
+	var result = "module profile() {\npolyhedron(points=[\n" + this.points + "\n],\nfaces=[\n" + this.faces + "\n]);\n}\n";
+	
 	if (this.markers.length > 0) {
-		o += "module marker(position, orientation, height) {\n" +
+		result += "module marker(position, orientation, height) {\n" +
 			"	assign(z=height+2) {\n" +
 			"	translate([position[0], position[1], z/2])\n" +
 			"	rotate([0, 0, orientation])\n" +
-			"	cube(size=[1, " + markerwidth + ", z], center=true);\n}}\n";
-		o += "module markers() {\nunion() {\n" + this.markers.join(";\n") + ";\n}\n}\n";
-		o += "markers();\n";
+			"	cube(size=[1, " + this.options.markerWidth + ", z], center=true);\n}}\n";
+		result += "module markers() {\nunion() {\n" + this.markers.join(";\n") + ";\n}\n}\n";
+		result += "markers();\n";
 	}
 	
-	o += "profile();\n";
-	
-	return o;
+	result += "profile();\n";
+	return result;
 }
 
 var PathSegment = {
