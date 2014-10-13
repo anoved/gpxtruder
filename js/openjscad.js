@@ -55,16 +55,16 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
   // Set to true so lines don't use the depth buffer
   this.lineOverlay = options.showLines || false;
 
+
   gl.canvas.style.width = displayW;
   gl.canvas.style.height = displayH;
   // Set up the viewport
   gl.canvas.width = width;
   gl.canvas.height = height;
   gl.viewport(0, 0, width, height);
-  gl.matrixMode(gl.PROJECTION);
-  gl.loadIdentity();
-  gl.perspective(45, width / height, 0.5, 100000);
-  gl.matrixMode(gl.MODELVIEW);
+
+	// begin with perspective display
+	this.orthoMode(false);
 
   // Set up WebGL state
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -173,6 +173,25 @@ OpenJsCad.Viewer.prototype = {
   supported: function() {
     return !!this.gl;
   },
+
+	// ortho: boolean; if false, set perspective mode; if true, set orthographic mode
+	orthoMode: function(ortho) {
+		if (typeof this.orthoview === 'undefined') {
+			this.orthoview = ortho;
+		} else if (ortho === this.orthoview) {
+			// do nothing if already in the requested mode
+			return;
+		}
+		this.orthoview = ortho;
+		this.gl.matrixMode(this.gl.PROJECTION);
+		this.gl.loadIdentity();
+		if (ortho) {
+			this.gl.ortho(-this.bedWidth/2, this.bedWidth/2, -this.bedDepth/2, this.bedDepth/2, 0, 10000);
+		} else {
+			this.gl.perspective(45, this.gl.canvas.width / this.gl.canvas.height, 0.5, 100000);
+		}
+		this.gl.matrixMode(this.gl.MODELVIEW);
+	},
 
   ZOOM_MAX: 10000,
   ZOOM_MIN: 10,
@@ -293,6 +312,8 @@ OpenJsCad.Viewer.prototype = {
         this.angleZ += e.deltaX * 2;
         this.angleX += e.deltaY * 2;
       }
+      
+      this.orthoMode(false);
       this.onDraw();
     }
   },
@@ -875,26 +896,32 @@ OpenJsCad.Processor.prototype = {
     viewbuttons.style.width = this.viewerwidth;
     
 	this.addViewButton("Reset view", 'reset', viewbuttons, function(e) {
+		that.viewer.orthoMode(false);
 		that.viewer.resetView();
 	});
 	
 	this.addViewButton("Front (-Y)", 'front', viewbuttons, function(e) {
-		that.viewer.setView([-85, 0, 0], [0, 0, that.viewer.viewpointZ]);
+		that.viewer.orthoMode(true);
+		that.viewer.setView([-90, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
 	this.addViewButton("Rear (+Y)", 'rear', viewbuttons, function(e) {
-		that.viewer.setView([-85, 0, 180], [0, 0, that.viewer.viewpointZ]);
+		that.viewer.orthoMode(true);
+		that.viewer.setView([-90, 0, 180], [0, 0, that.viewer.viewpointZ]);
 	});
 	
 	this.addViewButton("Right (+X)", 'right', viewbuttons, function(e) {
-		that.viewer.setView([-85, 0, -90], [0, 0, that.viewer.viewpointZ]);
+		that.viewer.orthoMode(true);
+		that.viewer.setView([-90, 0, -90], [0, 0, that.viewer.viewpointZ]);
 	});
 	
 	this.addViewButton("Left (-X)", 'left', viewbuttons, function(e) {
-		that.viewer.setView([-85, 0, 90], [0, 0, that.viewer.viewpointZ]);
+		that.viewer.orthoMode(true);
+		that.viewer.setView([-90, 0, 90], [0, 0, that.viewer.viewpointZ]);
 	});
 	
 	this.addViewButton("Top (+Z)", 'top', viewbuttons, function(e) {
+		that.viewer.orthoMode(true);
 		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
