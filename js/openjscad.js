@@ -174,6 +174,15 @@ OpenJsCad.Viewer.prototype = {
     return !!this.gl;
   },
 
+	// return scale factor to fit bed to canvas dimensions 
+	bedScale: function() {
+		var bmax = Math.max(this.bedWidth, this.bedDepth),
+			bmin = Math.min(this.bedWidth, this.bedDepth),
+			cmax = Math.max(this.gl.canvas.width, this.gl.canvas.height),
+			cmin = Math.min(this.gl.canvas.width, this.gl.canvas.height);
+		return Math.min(cmax/bmax, cmin/bmin);
+	},
+
 	// ortho: boolean; if false, set perspective mode; if true, set orthographic mode
 	orthoMode: function(ortho) {
 		if (typeof this.orthoview === 'undefined') {
@@ -186,7 +195,8 @@ OpenJsCad.Viewer.prototype = {
 		this.gl.matrixMode(this.gl.PROJECTION);
 		this.gl.loadIdentity();
 		if (ortho) {
-			this.gl.ortho(-this.bedWidth/2, this.bedWidth/2, -this.bedDepth/2, this.bedDepth/2, 0, 10000);
+			var bedscale = this.bedScale();
+			this.gl.ortho(-this.gl.canvas.width / 2 / bedscale, this.gl.canvas.width / 2 / bedscale, -this.gl.canvas.height / 2 / bedscale, this.gl.canvas.height / 2 / bedscale, 0, 10000);
 		} else {
 			this.gl.perspective(45, this.gl.canvas.width / this.gl.canvas.height, 0.5, 100000);
 		}
