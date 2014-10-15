@@ -303,28 +303,31 @@ OpenJsCad.Viewer.prototype = {
 	this.onDraw();
   },
   
-  onMouseMove: function(e) {
-    if (e.dragging) {
-      e.preventDefault();
-      if(e.altKey) {
-        //ROTATE X, Y
-        this.angleY += e.deltaX * 2;
-        this.angleX += e.deltaY * 2;
-        //this.angleX = Math.max(-180, Math.min(180, this.angleX));
-      } else if(e.shiftKey) {//PAN
-        var factor = 5e-3;
-        this.viewpointX += factor * e.deltaX * this.viewpointZ;
-        this.viewpointY -= factor * e.deltaY * this.viewpointZ;
-      } else {
-        //ROTATE Z, X
-        this.angleZ += e.deltaX * 2;
-        this.angleX += e.deltaY * 2;
-      }
-      
-      this.setViewPerspective();
-      this.onDraw();
-    }
-  },
+	onMouseMove: function(e) {
+		if (e.dragging) {
+			e.preventDefault();
+			if(e.altKey) {
+				//ROTATE X, Y
+				this.angleY += e.deltaX * 2;
+				this.angleX += e.deltaY * 2;
+				//this.angleX = Math.max(-180, Math.min(180, this.angleX));
+			} else if(e.shiftKey) {
+				//PAN
+				var factor = 5e-3;
+				this.viewpointX += factor * e.deltaX * this.viewpointZ;
+				this.viewpointY -= factor * e.deltaY * this.viewpointZ;
+			} else {
+				//ROTATE Z, X
+				this.angleZ += e.deltaX * 2;
+				this.angleX += e.deltaY * 2;
+			}
+			// Restore perspective view if in ortho and not panning
+			if (this.orthomode && !e.shiftKey) {
+				this.setViewPerspective();
+			}
+			this.onDraw();
+		}
+	},
 
   onDraw: function(e) {
 	var bedx = this.bedWidth / 2,
