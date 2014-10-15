@@ -64,7 +64,8 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
   gl.viewport(0, 0, width, height);
 
 	// begin with perspective display
-	this.orthoMode(false);
+	this.orthomode = false;
+	this.setViewPerspective();
 
   // Set up WebGL state
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -173,36 +174,30 @@ OpenJsCad.Viewer.prototype = {
   supported: function() {
     return !!this.gl;
   },
-
-	// return scale factor to fit bed to canvas dimensions 
-	bedScale: function() {
-		var bmax = Math.max(this.bedWidth, this.bedDepth),
-			bmin = Math.min(this.bedWidth, this.bedDepth),
-			cmax = Math.max(this.gl.canvas.width, this.gl.canvas.height),
-			cmin = Math.min(this.gl.canvas.width, this.gl.canvas.height);
-		return Math.min(cmax/bmax, cmin/bmin);
-	},
-
-	// ortho: boolean; if false, set perspective mode; if true, set orthographic mode
-	orthoMode: function(ortho) {
-		if (typeof this.orthoview === 'undefined') {
-			this.orthoview = ortho;
-		} else if (ortho === this.orthoview) {
-			// do nothing if already in the requested mode
-			return;
-		}
-		this.orthoview = ortho;
+	
+	setViewOrthographic: function() {
 		this.gl.matrixMode(this.gl.PROJECTION);
 		this.gl.loadIdentity();
-		if (ortho) {
-			var bedscale = this.bedScale();
-			this.gl.ortho(-this.gl.canvas.width / 2 / bedscale, this.gl.canvas.width / 2 / bedscale, -this.gl.canvas.height / 2 / bedscale, this.gl.canvas.height / 2 / bedscale, 0, 10000);
-		} else {
-			this.gl.perspective(45, this.gl.canvas.width / this.gl.canvas.height, 0.5, 100000);
-		}
+		
+		var cx = this.gl.canvas.width,
+			cy = this.gl.canvas.height;
+		
+		// use camera viewpoint Z position as the dimension to be fit to the canvas for scaling
+		var scale = Math.min(Math.max(cx, cy)/this.viewpointZ, Math.min(cx, cy)/this.viewpointZ);
+		
+		this.gl.ortho(-cx / 2 / scale, cx / 2 / scale, -cy / 2 / scale, cy / 2 / scale, 0, 10000);
 		this.gl.matrixMode(this.gl.MODELVIEW);
+		this.orthomode = true;
 	},
-
+	
+	setViewPerspective: function() {
+		this.gl.matrixMode(this.gl.PROJECTION);
+		this.gl.loadIdentity();
+		this.gl.perspective(45, this.gl.canvas.width / this.gl.canvas.height, 0.5, 100000);
+		this.gl.matrixMode(this.gl.MODELVIEW);
+		this.orthomode = false;
+	},
+	
   ZOOM_MAX: 10000,
   ZOOM_MIN: 10,
   /*onZoomChanged: null,*/  
@@ -275,6 +270,9 @@ OpenJsCad.Viewer.prototype = {
     {
       this.onZoomChanged();
     }*/
+    if (this.orthomode) {
+		this.setViewOrthographic();
+	}
     this.onDraw();
   },
 
@@ -323,7 +321,7 @@ OpenJsCad.Viewer.prototype = {
         this.angleX += e.deltaY * 2;
       }
       
-      this.orthoMode(false);
+      this.setViewPerspective();
       this.onDraw();
     }
   },
@@ -906,32 +904,32 @@ OpenJsCad.Processor.prototype = {
     viewbuttons.style.width = this.viewerwidth;
     
 	this.addViewButton("Reset view", 'reset', viewbuttons, function(e) {
-		that.viewer.orthoMode(false);
+		that.viewer.setViewPerspective();
 		that.viewer.resetView();
 	});
 	
 	this.addViewButton("Front (-Y)", 'front', viewbuttons, function(e) {
-		that.viewer.orthoMode(true);
+		that.viewer.setViewOrthographic();
 		that.viewer.setView([-90, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
 	this.addViewButton("Rear (+Y)", 'rear', viewbuttons, function(e) {
-		that.viewer.orthoMode(true);
+		that.viewer.setViewOrthographic();
 		that.viewer.setView([-90, 0, 180], [0, 0, that.viewer.viewpointZ]);
 	});
 	
 	this.addViewButton("Right (+X)", 'right', viewbuttons, function(e) {
-		that.viewer.orthoMode(true);
+		that.viewer.setViewOrthographic();
 		that.viewer.setView([-90, 0, -90], [0, 0, that.viewer.viewpointZ]);
 	});
 	
 	this.addViewButton("Left (-X)", 'left', viewbuttons, function(e) {
-		that.viewer.orthoMode(true);
+		that.viewer.setViewOrthographic();
 		that.viewer.setView([-90, 0, 90], [0, 0, that.viewer.viewpointZ]);
 	});
 	
 	this.addViewButton("Top (+Z)", 'top', viewbuttons, function(e) {
-		that.viewer.orthoMode(true);
+		that.viewer.setViewOrthographic();
 		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
