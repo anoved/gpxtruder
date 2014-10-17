@@ -367,8 +367,6 @@ Gpex.prototype.ScanPoints = function(pts) {
 		// Model path buffer (mm) / scale = real world path buffer size (meters);
 		// segments representing lengths less than this size are noisy; discard.
 		smoothing_distance = Math.floor(this.options.buffer / scale);
-		
-		Messages.status('Automatic interval: ' + smoothing_distance);
 	}
 	
 	// smooth route by minimum distance filter
