@@ -34,6 +34,12 @@ details div.group {
 	margin: 10px;
 }
 
+div#output details div.group {
+	/*padding: 5px;
+	margin: 0;*/
+	border: none;
+}
+
 /* General sections */
 
 div#intro {
@@ -93,6 +99,23 @@ table#howto td {
 	vertical-align: top;
 }
 
+/* Code output */
+
+table#outputcode {
+	width: 100%;
+}
+
+table#outputcode td {
+	width: 50%;
+	vertical-align: top;
+	padding-right: 5px;
+}
+
+textarea.codebox {
+	width: 100%;
+	border: 1px solid #c4d994;
+}
+
 /* Status message popups */
 
 #messages {
@@ -130,7 +153,7 @@ canvas {
 /* Display view buttons */
 
 .viewbuttonsdiv {
-	margin-bottom:5px;
+	margin-bottom: 10px;
 }
 
 img.viewbutton {

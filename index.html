@@ -82,7 +82,7 @@
 						   <span class="info">Extra height added to the bottom of the route model.</span></p>
 					</div>
 				</details>
-				<p><input type="submit" value="Convert!" /></p>
+				<p><input type="submit" value="Extrude Route" /></p>
 			</form>
 		</div>
 		
@@ -90,11 +90,21 @@
 			<p class="iolabel"><img src="img/output.png" width="166" height="31" alt="Output" /></p>
 			<div id="display"></div>
 			<details>
-				<summary>Code</summary>
+				<summary>Parametric CAD Scripts</summary>
 				<div class="group">
-					<p><span class="info">To customize the model, paste this code into <a href="http://openjscad.org/">OpenJSCAD.org</a> (left) or <a href="http://www.openscad.org/">OpenSCAD</a> (right):</span><br />
-					<textarea id="code_jscad" cols="40" rows="10"></textarea>
-					<textarea id="code_openscad" cols="40" rows="10"></textarea></p>
+					<p>Remix the extruded route model by tinkering with this code. Batteries not included.</p>
+					<table id="outputcode">
+						<tr>
+							<td>
+								<textarea id="code_jscad" class="codebox" cols="40" rows="6"></textarea>
+								<p class="info"><a href="javascript:void(0)" onclick="document.getElementById('code_jscad').select();">Select all</a>, copy, and paste in <a href="http://openjscad.org/">OpenJSCAD.org</a>.</p>
+							</td>
+							<td>
+								<textarea id="code_openscad" class="codebox" cols="40" rows="6"></textarea>
+								<p class="info"><a href="javascript:void(0)" onclick="document.getElementById('code_openscad').select();">Select all</a>, copy, and paste in <a href="http://www.openscad.org/">OpenSCAD</a>.</p>
+							</td>
+						</tr>
+					</table>
 				</div>
 			</details>
 		</div>
