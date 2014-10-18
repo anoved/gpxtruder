@@ -1,32 +1,5 @@
 var OJSCAD = undefined;
 
-var setup = function() {
-	
-	// Setup notifications
-	Messages.msgdiv = document.getElementById('messages');
-	
-	// Setup WebGL preview display (and STL converter)
-	OJSCAD = new OpenJsCad.Processor(document.getElementById('display'), {
-		color: [0, 0.6, 0.1],
-		openJsCadPath: "js/",
-		viewerwidth: "800px",
-		viewerheight: "400px",
-		bgColor: [0.553, 0.686, 0.8, 1]
-	});
-	
-	// Setup input form; handle submit events locally
-	document.forms.namedItem('gpxform').addEventListener(
-		'submit',
-		function(ev) {
-			ev.preventDefault();
-			loader(document.getElementById('gpxfile').files[0]);
-		},
-		false
-	);
-}
-
-var loader = function(upload_file) {
-	
 	var radioValue = function(radios) {
 		for (var i = 0, len = radios.length; i < len; i++) {
 			if (radios[i].checked) {
@@ -50,7 +23,52 @@ var loader = function(upload_file) {
 		}
 		return markerSpan;
 	};
+
+
+var setup = function() {
 	
+	// Setup notifications
+	Messages.msgdiv = document.getElementById('messages');
+	
+	// Setup WebGL preview display (and STL converter)
+	OJSCAD = new OpenJsCad.Processor(document.getElementById('display'), {
+		color: [0, 0.6, 0.1],
+		openJsCadPath: "js/",
+		viewerwidth: "800px",
+		viewerheight: "400px",
+		bgColor: [0.553, 0.686, 0.8, 1]
+	});
+	
+	// Setup input form; handle submit events locally
+	document.forms.namedItem('gpxform').addEventListener(
+		'submit',
+		function(ev) {
+			ev.preventDefault();
+			
+			var form = ev.target;
+			var options = {
+				buffer:         parseFloat(form.path_width.value) / 2.0,
+				vertical:       parseFloat(form.vertical.value),
+				bedx:           parseFloat(form.width.value),
+				bedy:           parseFloat(form.depth.value),
+				base:           parseFloat(form.base.value),
+				zcut:           form.zcut.checked,
+				shapetype:      radioValue(form.shape),
+				markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
+				smoothtype:     radioValue(form.smooth),
+				smoothspan:     parseFloat(form.mindist.value),
+				jscadDiv:       document.getElementById('code_jscad'),
+				oscadDiv:       document.getElementById('code_openscad')
+			};
+			
+			loader(options, document.getElementById('gpxfile').files[0]);
+		},
+		false
+	);
+}
+
+var loader = function(options, upload_file) {
+		
 	Messages.clear();
 	
 	// Assign a local URL to the file selected for upload
@@ -65,21 +83,6 @@ var loader = function(upload_file) {
 				Messages.error("This doesn't appear to be a GPX file.");
 				return;
 			}
-			
-			var options = {
-				buffer:         parseFloat(document.getElementById('path_width').value) / 2.0,
-				vertical:       parseFloat(document.getElementById('vertical').value),
-				bedx:           parseFloat(document.getElementById('width').value),
-				bedy:           parseFloat(document.getElementById('depth').value),
-				base:           parseFloat(document.getElementById('base').value),
-				zcut:           document.getElementById('zcut').checked,
-				shapetype:      radioValue(document.getElementsByName('shape')),
-				markerInterval: markerInterval(radioValue(document.getElementsByName('marker')), parseFloat(document.getElementById('marker_interval').value)),
-				smoothtype:     radioValue(document.getElementsByName('smooth')),
-				smoothspan:     parseFloat(document.getElementById('mindist').value),
-				jscadDiv:       document.getElementById('code_jscad'),
-				oscadDiv:       document.getElementById('code_openscad')
-			};
 			
 			// Attempt to parse response XML (upload content) as a GPX file.
 			var pts = Parser.file(req.responseXML);
