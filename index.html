@@ -48,11 +48,11 @@
 				<details>
 					<summary>Route</summary>
 					<div class="group">
-						<p>Vertical exaggeration: <input type="text" size="10" id="vertical" required value="5" /><br />
+						<p>Vertical exaggeration: <input type="number" id="vertical" required min="1" step="0.1" value="5" /><br />
 						   <span class="info">Multiply elevation values by this factor to enhance terrain.</span></p>
 						<p>Clip to minimum elevation: <input type="checkbox" id="zcut" value="1" checked /><br />
 						   <span class="info">Uncheck to show full elevation above sea level.</span></p>
-						<p>Smoothing: <input type="radio" name="smooth" value="0" id="smooth_auto" checked /> <label for="smooth_auto">Automatic</label> <input type="radio" name="smooth" value="1" id="smooth_manual" /> <label for="smooth_manual">Manual minimum interval:</label> <input type="text" size="5" id="mindist" required value="0" /> (meters)<br />
+						<p>Smoothing: <input type="radio" name="smooth" value="0" id="smooth_auto" checked /> <label for="smooth_auto">Automatic</label> <input type="radio" name="smooth" value="1" id="smooth_manual" /> <label for="smooth_manual">Manual minimum interval:</label> <input type="number" id="mindist" required min="0" step="1" value="0" /> (meters)<br />
 						   <span class="info">Simplify the route by discarding points that are close together. Automatic smoothing computes interval based on model shape, size, and scale.</span></p>
 					</div>
 				</details>
@@ -66,19 +66,19 @@
 						<p>Markers: <input type="radio" name="marker" value="0" id="marker_none" checked /> <label for="marker_none">None</label>
 									<input type="radio" name="marker" value="1" id="marker_km" /> <label for="marker_km">Kilometers</label>
 									<input type="radio" name="marker" value="2" id="marker_mi" /> <label for="marker_mi">Miles</label>
-									<input type="radio" name="marker" value="3" id="marker_other" /> <label for="marker_other">Other interval:</label> <input type="text" size="5" id="marker_interval" value="8047" /> (meters)<br />
+									<input type="radio" name="marker" value="3" id="marker_other" /> <label for="marker_other">Other interval:</label> <input type="number" id="marker_interval" min="1" value="8047" /> (meters)<br />
 						   <span class="info">If enabled, a secondary model is generated representing the position of each mile or kilometer marker.</span></p>
 					</div>
 				</details>
 				<details>
 					<summary>Size</summary>
 					<div class="group">
-						<p>Bed width (x): <input type="text" size="10" id="width" required value="180" /> (mm)<br />
-						   Bed depth (y) <input type="text" size="10" id="depth" required value="90" /> (mm)<br />
+						<p>Bed width (x): <input type="number" id="width" required min="20" step="1" value="180" /> (mm)<br />
+						   Bed depth (y) <input type="number" id="depth" required min="20" step="1" value="90" /> (mm)<br />
 						   <span class="info">Output is scaled to fit these dimensions. Bed outline appears as black border on base map in 3D preview.</span></p>
-						<p>Path width: <input type="text" size="10" id="path_width" required value="2" /> (mm)<br />
+						<p>Path width: <input type="number" id="path_width" required min="1" step="1" value="2" /> (mm)<br />
 						   <span class="info">Thickness of the output path.</span></p>
-						<p>Base height: <input type="text" size="10" id="base" required value="0" /> (mm)<br />
+						<p>Base height: <input type="number" id="base" required min="0" step="1" value="0" /> (mm)<br />
 						   <span class="info">Extra height added to the bottom of the route model.</span></p>
 					</div>
 				</details>
