@@ -306,25 +306,32 @@ OpenJsCad.Viewer.prototype = {
 	onMouseMove: function(e) {
 		if (e.dragging) {
 			e.preventDefault();
-			var panning = false;
+			var rotating = false;
 			if(e.altKey) {
 				//ROTATE X, Y
 				this.angleY += e.deltaX * 2;
 				this.angleX += e.deltaY * 2;
-				//this.angleX = Math.max(-180, Math.min(180, this.angleX));
+				rotating = true;
 			} else if(e.shiftKey || e.buttons === 4) {
 				//PAN (shift or middle mouse)
-				panning = true;
 				var factor = 5e-3;
 				this.viewpointX += factor * e.deltaX * this.viewpointZ;
 				this.viewpointY -= factor * e.deltaY * this.viewpointZ;
+			} else if (e.ctrlKey) {
+				// ZOOM (lifted from gl.onmousemove)
+				var factor = Math.pow(1.003, e.deltaY);
+				var coeff = this.getZoom();
+				coeff = Math.max(coeff, 1e-3);
+				coeff *= factor;
+				this.setZoom(coeff);
 			} else {
 				//ROTATE Z, X
 				this.angleZ += e.deltaX * 2;
 				this.angleX += e.deltaY * 2;
+				rotating = true;
 			}
-			// Restore perspective view if in ortho and not panning
-			if (this.orthomode && !panning) {
+			// Restore perspective view if rotating from ortho
+			if (this.orthomode && rotating) {
 				this.setViewPerspective();
 			}
 			this.onDraw();
