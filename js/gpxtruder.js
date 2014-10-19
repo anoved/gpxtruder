@@ -105,19 +105,21 @@ var setup = function() {
 				return;
 			}
 			
-			loader(options, document.getElementById('gpxfile').files[0]);
+			// Assign a local URL to the file selected for upload
+			// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
+			var upload_url = window.URL.createObjectURL(document.getElementById('gpxfile').files[0]);
+			
+			loader(options, upload_url);
+			
+			window.URL.revokeObjectURL(upload_url);
 		},
 		false
 	);
 }
 
-var loader = function(options, upload_file) {
+var loader = function(options, gpx_url) {
 		
 	Messages.clear();
-	
-	// Assign a local URL to the file selected for upload
-	// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
-	var upload_url = window.URL.createObjectURL(upload_file);
 	
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
@@ -128,7 +130,7 @@ var loader = function(options, upload_file) {
 				return;
 			}
 			
-			// Attempt to parse response XML (upload content) as a GPX file.
+			// Attempt to parse response XML as a GPX file.
 			var pts = Parser.file(req.responseXML);
 			if (pts === null) {
 				return;
@@ -139,11 +141,9 @@ var loader = function(options, upload_file) {
 		}
 	}
 	
-	// submit asynchronous request for the [locally] uploaded file
-	req.open('GET', upload_url, true);
+	// submit asynchronous request for the GPX file
+	req.open('GET', gpx_url, true);
 	req.send();
-	
-	window.URL.revokeObjectURL(upload_url);
 }
 
 // use a tidier options object
