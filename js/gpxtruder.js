@@ -26,6 +26,47 @@ var setup = function() {
 		return markerSpan;
 	};
 	
+	// returns true if options are valid, false otherwise
+	var validOptions = function(options) {
+		
+		if (!isFinite(options.vertical) || options.vertical < 1) {
+			Messages.error("Vertical exaggeration must be greater than or equal to 1.");
+			return false;
+		}
+		
+		if (!isFinite(options.smoothspan) || options.smoothspan < 0) {
+			Messages.error("Minimum smoothing interval must be greater than or equal to 0.");
+			return false;
+		}
+		
+		if (!isFinite(options.markerInterval) || options.markerInterval < 0) {
+			Messages.error("Marker interval must be greater than or equal to 1.");
+			return false;
+		}
+		
+		if (!isFinite(options.bedx) || options.bedx < 20) {
+			Messages.error("Bed width must be greater than or equal to 20.");
+			return false;
+		}
+		
+		if (!isFinite(options.bedy) || options.bedy < 20) {
+			Messages.error("Bed height must be greater than or equal to 20.");
+			return false;
+		}
+		
+		if (!isFinite(options.buffer) || options.buffer < 0.5) {
+			Messages.error("Path width must be greater than or equal to 1.");
+			return false;
+		}
+		
+		if (!isFinite(options.base) || options.base < 0) {
+			Messages.error("Base height must be greater than or equal to 0.");
+			return false;
+		}
+		
+		return true;
+	};
+	
 	// Setup notifications
 	Messages.msgdiv = document.getElementById('messages');
 	
@@ -59,6 +100,10 @@ var setup = function() {
 				jscadDiv:       document.getElementById('code_jscad'),
 				oscadDiv:       document.getElementById('code_openscad')
 			};
+			
+			if (!validOptions(options)) {
+				return;
+			}
 			
 			loader(options, document.getElementById('gpxfile').files[0]);
 		},
