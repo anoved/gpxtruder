@@ -1,5 +1,7 @@
 var OJSCAD = undefined;
 
+var setup = function() {
+	
 	var radioValue = function(radios) {
 		for (var i = 0, len = radios.length; i < len; i++) {
 			if (radios[i].checked) {
@@ -23,9 +25,6 @@ var OJSCAD = undefined;
 		}
 		return markerSpan;
 	};
-
-
-var setup = function() {
 	
 	// Setup notifications
 	Messages.msgdiv = document.getElementById('messages');
