@@ -1064,6 +1064,12 @@ var GL = (function() {
 				this.attributes[attribute] = location;
 				gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
 				gl.enableVertexAttribArray(location);
+				
+				// crude attempt to circumvent invalid vertexAttribtPointer size warnings
+				if (buffer.buffer.spacing < 1 || buffer.buffer.spacing > 4) {
+					continue;
+				}
+				
 				gl.vertexAttribPointer(location, buffer.buffer.spacing, gl.FLOAT, false, 0, 0);
 				length = buffer.buffer.length / buffer.buffer.spacing;
 			}
