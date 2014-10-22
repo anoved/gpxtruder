@@ -24,7 +24,6 @@ OpenJsCad.log = function(txt) {
 // tumble it around by dragging the mouse.
 OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displayW, displayH, options) {
   options = options || {};
-  that = this;
   this.color = options.color || [0,0,1];
   this.bgColor = options.bgColor || [0.93, 0.93, 0.93, 1];
   var gl = GL.create();

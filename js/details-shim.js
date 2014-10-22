@@ -14,7 +14,7 @@
  * Enable proper operation of <details> tags in unsupportive browsers
  *
  * @param Details details element to shim
- * @returns {boolean} false on error
+ * @returns {boolean} false on error; true otherwise
  */
 function details_shim(Details) {
     // For backward compatibility, if no DOM Element is sent, call init()
@@ -89,6 +89,8 @@ function details_shim(Details) {
             span.appendChild(text);
         }
     }
+    
+    return true;
 } // details_shim()
 
 /**

@@ -172,7 +172,7 @@ function Gpex(options, pts) {
 	this.ringRadius = 0;
 	
 	// total distance of smoothed route (may vary from initial total)
-	this.smooth_total;
+	this.smooth_total = 0;
 	
 	// array of projected x/y/z vectors (meters) (pp = projected points)
 	this.pp = [];
@@ -421,11 +421,6 @@ Gpex.prototype.ScanPoints = function(pts) {
 }
 
 var Bounds = function(xyz) {
-	
-	if (typeof xyz === 'undefined') {
-		var xyz = [0, 0, 0];
-	}
-	
 	this.minx = xyz[0];
 	this.maxx = xyz[0];
 	this.miny = xyz[1];
