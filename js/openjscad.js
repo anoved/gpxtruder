@@ -946,27 +946,32 @@ OpenJsCad.Processor.prototype = {
 
 	this.containerdiv.appendChild(viewbuttons);
   
-    var viewerdiv = document.createElement("div");
-    viewerdiv.className = "viewer";
-    viewerdiv.style.width = this.viewerwidth;
-    viewerdiv.style.height = this.viewerheight;
-    // viewerdiv.style.backgroundColor = "rgb(200,200,200)";
+    var viewerdiv = document.createElement("div");   
     this.containerdiv.appendChild(viewerdiv);
     this.viewerdiv = viewerdiv;
+    
     // if viewerdiv sizes in px -> size canvas accordingly. Else use 800x600, canvas will then scale
     var wArr = this.viewerwidth.match(/^(\d+(?:\.\d+)?)(.*)$/);
     var hArr = this.viewerheight.match(/^(\d+(?:\.\d+)?)(.*)$/);
     var canvasW = wArr[2] == 'px' ? wArr[1] : '800';
     var canvasH = hArr[2] == 'px' ? hArr[1] : '600';
-    try
-    {
-      this.viewer = new OpenJsCad.Viewer(this.viewerdiv, canvasW, canvasH,
-          this.initialViewerDistance, this.viewerwidth, this.viewerheight, this.options);
-    } catch(e) {
-      //      this.viewer = null;
-      this.viewerdiv.innerHTML = "<b><br><br>Error: " + e.toString() + "</b><br><br>OpenJsCad requires a WebGL enabled browser. Try a recent version of Chrome of Firefox.";
-      //      this.viewerdiv.innerHTML = e.toString();
-    }
+    
+	try {
+		this.viewer = new OpenJsCad.Viewer(
+			this.viewerdiv,
+			canvasW, canvasH,
+			this.initialViewerDistance,
+			this.viewerwidth,
+			this.viewerheight,
+			this.options);
+		
+		this.viewerdiv.className = "viewer";
+		this.viewerdiv.style.width = this.viewerwidth;
+		this.viewerdiv.style.height = this.viewerheight;
+	} catch(e) {
+		this.viewerdiv.innerHTML = "<p>Preview disabled (" + e.toString() + ").</p>";
+		this.viewerdiv.className = "error";
+	}
     
     //Zoom control
     /*

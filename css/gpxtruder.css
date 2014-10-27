@@ -142,11 +142,14 @@ textarea.codebox {
 
 /* OpenJSCAD display */
 
-div.viewer {
+div#display div.error {
+	border: 5px dashed #DDD;
+	background-color: #EEE;
+	/* text */ color: #888;
+	padding: 10px;
 }
 
 canvas {
-	border: 1px solid #c4d994;
 	cursor: move;
 }
 
