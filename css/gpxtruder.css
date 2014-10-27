@@ -147,6 +147,7 @@ div#display div.error {
 	background-color: #EEE;
 	/* text */ color: #888;
 	padding: 10px;
+	clear: both;
 }
 
 canvas {

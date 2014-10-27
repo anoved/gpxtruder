@@ -944,10 +944,8 @@ OpenJsCad.Processor.prototype = {
 		that.viewer.setView([0, 0, 0], [0, 0, that.viewer.viewpointZ]);
 	});
 
-	this.containerdiv.appendChild(viewbuttons);
   
     var viewerdiv = document.createElement("div");   
-    this.containerdiv.appendChild(viewerdiv);
     this.viewerdiv = viewerdiv;
     
     // if viewerdiv sizes in px -> size canvas accordingly. Else use 800x600, canvas will then scale
@@ -968,52 +966,18 @@ OpenJsCad.Processor.prototype = {
 		this.viewerdiv.className = "viewer";
 		this.viewerdiv.style.width = this.viewerwidth;
 		this.viewerdiv.style.height = this.viewerheight;
+		this.containerdiv.appendChild(viewbuttons);
+		this.containerdiv.appendChild(viewerdiv);
+		
+		var usagehelp = document.createElement("p");
+		usagehelp.className = "info";
+		usagehelp.innerHTML = "Click and drag to rotate. Hold <em>Alt</em> to switch rotation axes. Hold <em>Shift</em> or middle mouse button to pan. Hold <em>Control</em> or scroll to zoom.";
+		this.containerdiv.appendChild(usagehelp);
 	} catch(e) {
 		this.viewerdiv.innerHTML = "<p>Preview disabled (" + e.toString() + ").</p>";
 		this.viewerdiv.className = "error";
+		this.containerdiv.appendChild(viewerdiv);
 	}
-    
-    //Zoom control
-    /*
-    var div = document.createElement("div");
-    this.zoomControl = div.cloneNode(false);
-    this.zoomControl.style.width = this.viewerwidth;
-    this.zoomControl.style.height = '20px';
-    this.zoomControl.style.backgroundColor = 'transparent';
-    this.zoomControl.style.overflowX = 'scroll';
-    // div.style.width = this.viewerwidth * 11 + 'px';
-    // FIXME - below doesn't behave as expected if
-    // options.viewerwidth not in pixels
-    // originally used this.viewerdiv.canvasW, which isn't a thing
-    div.style.width = this.viewerdiv.style.width * 11 + 'px';
-    div.style.height = '1px';
-    this.zoomControl.appendChild(div);
-    this.zoomChangedBySlider=false;
-    this.zoomControl.onscroll = function(event) {
-      var zoom = that.zoomControl;
-      var newzoom=zoom.scrollLeft / (10 * zoom.offsetWidth);
-      that.zoomChangedBySlider=true; // prevent recursion via onZoomChanged 
-      that.viewer.setZoom(newzoom);
-      that.zoomChangedBySlider=false;
-    };
-    if(this.viewer)
-    {
-      this.viewer.onZoomChanged = function() {
-        if(!that.zoomChangedBySlider)
-        {
-          var newzoom = that.viewer.getZoom();
-          that.zoomControl.scrollLeft = newzoom * (10 * that.zoomControl.offsetWidth);
-        }
-      };
-      this.zoomControl.scrollLeft = this.viewer.viewpointZ / this.viewer.ZOOM_MAX *
-        (this.zoomControl.scrollWidth - this.zoomControl.offsetWidth);
-    }
-
-    this.containerdiv.appendChild(this.zoomControl);
-    //this.zoomControl.scrollLeft = this.viewer.viewpointZ / this.viewer.ZOOM_MAX * this.zoomControl.offsetWidth;
-
-    //end of zoom control
-	*/
 	
     this.errordiv = document.createElement("div");
     this.errorpre = document.createElement("pre");
