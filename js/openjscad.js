@@ -55,6 +55,8 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
   this.lineOverlay = options.showLines || false;
 
 
+	this.oldFingerDist = -1;
+
   gl.canvas.style.width = displayW;
   gl.canvas.style.height = displayH;
   // Set up the viewport
@@ -133,6 +135,9 @@ void main() {\
   };
   gl.ondraw = function() {
     _this.onDraw();
+  };
+  gl.ontouchmove = function(e) {
+	  _this.onTouchMove(e);
   };
   gl.onmousewheel = function(e) {
     var wheelDelta = 0;
@@ -335,6 +340,62 @@ OpenJsCad.Viewer.prototype = {
 			}
 			this.onDraw();
 		}
+	},
+	
+	// derived from https://github.com/miguelitoelgrande/OpenJSCAD.org/commit/84ee46f2abc538b017e60610d8b316e85e830daf
+	onTouchMove: function(e) {
+		
+		var fingerCount = e.touches.length;
+		
+		// reset pinch zoom
+		if (fingerCount != 2) {
+			this.oldFingerDist = -1;
+		}
+		
+		if (e.dragging) {
+			var b = fingerCount;
+			e.preventDefault();
+			var rotating = false;
+			if (b == 1) {
+				// ROTATE X, Y
+				this.angleY += e.deltaX * 2;
+				this.angleX += e.deltaY * 2;
+				rotating = true;
+			} else if (b == 2) {
+				// ZOOM
+				var p1 = e.touches[0];
+				var p2 = e.touches[1];
+				//var fd = Math.abs(p2.pageX - p1.pageX) + Math.abs(p2.pageY - p1.pageY);
+				var fd = Math.sqrt(Math.pow(Math.abs(p2.pageX - p1.pageX), 2) + Math.pow(Math.abs(p2.pageY - p1.pageY), 2));
+				if (this.oldFingerDist == -1) {
+					this.oldFingerDist = fd;
+				}
+				var delta = this.oldFingerDist - fd;
+				var factor = Math.pow(1.003, delta)
+				var coeff = this.getZoom();
+				coeff = Math.max(coeff, 1e-3);
+				coeff *= factor;
+				this.setZoom(coeff);
+			} else if (b == 3) {
+				// PAN
+				var factor = 5e-3;
+				this.viewpointX += factor * e.deltaX * this.viewpointZ;
+				this.viewpointY -= factor * e.deltaY * this.viewpointZ;
+			} else if (b == 4) {
+				// ROTATE Z, X
+				this.angleZ += e.deltaX * 2;
+				this.angleX += e.deltaY * 2;
+				rotating = true;
+			}
+			
+			// Restore perspectrive if rotating from ortho
+			if (this.orthomode && rotating) {
+				this.setViewPerspective();
+			}
+			
+			this.onDraw();
+		}
+		
 	},
 
   onDraw: function(e) {
