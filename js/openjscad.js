@@ -68,17 +68,6 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
 	gl.enable(gl.CULL_FACE);
 	gl.polygonOffset(1, 1);
 	
-	// Black shader for wireframe
-	this.blackShader = new GL.Shader('\
-	void main() {\
-	  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-	}\
-	', '\
-	void main() {\
-	  gl_FragColor = vec4(0.0, 0.0, 0.0, 0.1);\
-	}\
-	');
-	
 	// Shader with diffuse and specular lighting
 	this.lightingShader = new GL.Shader('\
 	varying vec3 color;\
