@@ -543,13 +543,13 @@ OpenJsCad.isChrome = function()
 
 // This is called from within the web worker. Execute the main() function of the supplied script
 // and post a message to the calling thread when finished
-OpenJsCad.runMainInWorker = function(mainParameters)
+OpenJsCad.runMainInWorker = function()
 {
   try
   {
     if(typeof(main) != 'function') throw new Error('Your jscad file should contain a function main() which returns a CSG solid or a CAG area.');
     OpenJsCad.log.prevLogTime = Date.now();
-    var result = main(mainParameters);
+    var result = main();
     result=OpenJsCad.expandResultObjectArray(result);
     OpenJsCad.checkResult(result);
     var result_compact = OpenJsCad.resultToCompactBinary(result);
@@ -687,7 +687,7 @@ OpenJsCad.resultFromCompactBinary = function(resultin) {
 };
 
 
-OpenJsCad.parseJsCadScriptSync = function(script, mainParameters, debugging) {
+OpenJsCad.parseJsCadScriptSync = function(script, debugging) {
   var workerscript = "";
   workerscript += script;
   if(debugging)
@@ -701,7 +701,7 @@ OpenJsCad.parseJsCadScriptSync = function(script, mainParameters, debugging) {
     workerscript += "\n\n// Now press F11 twice to enter your main() function:\n\n";
     workerscript += "debugger;\n";
   }
-  workerscript += "return main("+JSON.stringify(mainParameters)+");";
+  workerscript += "return main();";
   var f = new Function(workerscript);
   OpenJsCad.log.prevLogTime = Date.now();
   var result = f();
@@ -711,7 +711,7 @@ OpenJsCad.parseJsCadScriptSync = function(script, mainParameters, debugging) {
 };
 
 // callback: should be function(error, csg)
-OpenJsCad.parseJsCadScriptASync = function(script, mainParameters, options, callback) {
+OpenJsCad.parseJsCadScriptASync = function(script, options, callback) {
   var baselibraries = [
     "csg.js",
     "openjscad.js"
@@ -743,7 +743,7 @@ OpenJsCad.parseJsCadScriptASync = function(script, mainParameters, options, call
   workerscript += "_csg_baselibraries.map(function(l){importScripts(l)});\n";
   workerscript += "_csg_libraries.map(function(l){importScripts(l)});\n";
   workerscript += "self.addEventListener('message', function(e) {if(e.data && e.data.cmd == 'render'){";
-  workerscript += "  OpenJsCad.runMainInWorker("+JSON.stringify(mainParameters)+");";
+  workerscript += "  OpenJsCad.runMainInWorker();";
   workerscript += "}},false);\n";
     
   var blobURL = OpenJsCad.textToBlobUrl(workerscript);
@@ -834,34 +834,6 @@ OpenJsCad.AlertUserOfUncaughtExceptions = function() {
   };
 };
 
-// parse the jscad script to get the parameter definitions
-OpenJsCad.getParamDefinitions = function(script) {
-  var scriptisvalid = true;
-  try
-  {
-    // first try to execute the script itself
-    // this will catch any syntax errors
-    var f = new Function(script);
-    f();
-  }
-  catch(e) {
-    scriptisvalid = false;
-  }
-  var params = [];
-  if(scriptisvalid)
-  {
-    var script1 = "if(typeof(getParameterDefinitions) == 'function') {return getParameterDefinitions();} else {return [];} ";
-    script1 += script;
-    var f = new Function(script1);
-    params = f();
-    if( (typeof(params) != "object") || (typeof(params.length) != "number") )
-    {
-      throw new Error("The getParameterDefinitions() function should return an array with the parameter definitions");
-    }
-  }
-  return params;
-};
-
 /**
  * options parameter:
  * - bgColor: canvas background color
@@ -885,8 +857,6 @@ OpenJsCad.Processor = function(containerdiv, options, onchange) {
   this.hasValidCurrentObject = false;
   this.hasOutputFile = false;
   this.worker = null;
-  this.paramDefinitions = [];
-  this.paramControls = [];
   this.script = null;
   this.hasError = false;
   this.debugging = false;
@@ -1035,25 +1005,9 @@ OpenJsCad.Processor.prototype = {
     this.downloadOutputFileLink = document.createElement("a");
     this.statusbuttons.appendChild(this.downloadOutputFileLink);    
     
-    this.parametersdiv = document.createElement("div");
-    this.parametersdiv.className = "parametersdiv";
-    var headerdiv = document.createElement("div");
-    headerdiv.textContent = "Parameters:";
-    headerdiv.className = "header";
-    this.parametersdiv.appendChild(headerdiv);
-    this.parameterstable = document.createElement("table");
-    this.parameterstable.className = "parameterstable";
-    this.parametersdiv.appendChild(this.parameterstable);
-    var parseParametersButton = document.createElement("button");
-    parseParametersButton.innerHTML = "Update";
-    parseParametersButton.onclick = function(e) {
-      that.rebuildSolid();
-    };
-    this.parametersdiv.appendChild(parseParametersButton);
     this.enableItems();
     this.containerdiv.appendChild(this.statusdiv);
     this.containerdiv.appendChild(this.errordiv);
-    this.containerdiv.appendChild(this.parametersdiv);
     this.clearViewer();
   },
 	
@@ -1209,7 +1163,6 @@ OpenJsCad.Processor.prototype = {
     this.formatDropdown.style.display = 'none'; //((!this.hasOutputFile)&&(this.hasValidCurrentObject))? "inline":"none";
     this.generateOutputFileButton.style.display = ((!this.hasOutputFile)&&(this.hasValidCurrentObject))? "inline":"none";
     this.downloadOutputFileLink.style.display = this.hasOutputFile? "inline":"none";
-    this.parametersdiv.style.display = (this.paramControls.length > 0)? "block":"none";
     this.errordiv.style.display = this.hasError? "block":"none";
     this.statusdiv.style.display = this.hasError? "none":"block";
   },
@@ -1242,22 +1195,19 @@ OpenJsCad.Processor.prototype = {
     filename = filename.replace(/\.jscad$/i, "");
     this.abort();
     this.clearViewer();
-    this.paramDefinitions = [];
-    this.paramControls = [];
     this.script = null;
     this.setError("");
-    var scripthaserrors = false;
-    try
-    {
-      this.paramDefinitions = OpenJsCad.getParamDefinitions(script);
-      this.createParamControls();
-    }
-    catch(e)
-    {
-      this.setError(e.toString());
-      this.statusspan.innerHTML = "Error.";
-      scripthaserrors = true;
-    }
+    
+	var scripthaserrors = false;
+	try {
+		var f = new Function(script);
+		f();
+	} catch(e) {
+		this.setError(e.toString());
+		this.statusspan.innerHTML = "Error.";
+		scripthaserrors = true;
+	}
+    
     if(!scripthaserrors)
     {
       this.script = script;
@@ -1271,52 +1221,7 @@ OpenJsCad.Processor.prototype = {
     }
   },
   
-  getParamValues: function()
-  {
-    var paramValues = {};
-    for(var i = 0; i < this.paramDefinitions.length; i++)
-    {
-      var paramdef = this.paramDefinitions[i];
-      var type = "text";
-      if('type' in paramdef)
-      {
-        type = paramdef.type;
-      }
-      var control = this.paramControls[i];
-      var value;
-      if( (type == "text") || (type == "longtext") || (type == "float") || (type == "int") )
-      {
-        value = control.value;
-        if( (type == "float") || (type == "int") )
-        {
-          var isnumber = !isNaN(parseFloat(value)) && isFinite(value);
-          if(!isnumber)
-          {
-            throw new Error("Not a number: "+value);
-          }
-          if(type == "int")
-          {
-            value = parseInt(value, 10);
-          }
-          else
-          {
-            value = parseFloat(value);
-          }
-        }
-      }
-      else if(type == "choice")
-      {
-        value = control.options[control.selectedIndex].value;
-      }
-      else if(type == "bool")
-      {
-        value = control.checked;
-      }
-      paramValues[paramdef.name] = value;
-    }
-    return paramValues;
-  },
-    
+
   rebuildSolid: function()
   {
     this.abort();
@@ -1326,7 +1231,6 @@ OpenJsCad.Processor.prototype = {
     this.statusspan.innerHTML = "Processing, please wait...";
     this.enableItems();
     var that = this;
-    var paramValues = this.getParamValues();
     var useSync = this.debugging;
     var options = {};
 
@@ -1334,7 +1238,7 @@ OpenJsCad.Processor.prototype = {
 
     if(!useSync)
     {
-      this.worker = OpenJsCad.parseJsCadScriptASync(this.script, paramValues, this.options, function(err, obj) {
+      this.worker = OpenJsCad.parseJsCadScriptASync(this.script, this.options, function(err, obj) {
         that.processing = false;
         that.worker = null;
         if(err)
@@ -1355,7 +1259,7 @@ OpenJsCad.Processor.prototype = {
     {
       try
       {
-        var obj = OpenJsCad.parseJsCadScriptSync(this.script, paramValues, this.debugging);
+        var obj = OpenJsCad.parseJsCadScriptSync(this.script, this.debugging);
         that.setRenderedObjects(obj);
         that.processing = false;
         that.statusspan.innerHTML = readyMessage;
@@ -1531,154 +1435,5 @@ OpenJsCad.Processor.prototype = {
       },
       function(fileerror){OpenJsCad.FileSystemApiErrorHandler(fileerror, "requestFileSystem");}
     );
-  },
-  
-  createParamControls: function() {
-    this.parameterstable.innerHTML = "";
-    this.paramControls = [];
-    var paramControls = [];
-    var tablerows = [];
-    for(var i = 0; i < this.paramDefinitions.length; i++)
-    {
-      var errorprefix = "Error in parameter definition #"+(i+1)+": ";
-      var paramdef = this.paramDefinitions[i];
-      if(!('name' in paramdef))
-      {
-        throw new Error(errorprefix + "Should include a 'name' parameter");
-      }
-      var type = "text";
-      if('type' in paramdef)
-      {
-        type = paramdef.type;
-      }
-      if( (type !== "text") && (type !== "int") && (type !== "float") && (type !== "choice") && (type !== "longtext") && (type !== "bool") )
-      {
-        throw new Error(errorprefix + "Unknown parameter type '"+type+"'");
-      }
-      var initial;
-      if('initial' in paramdef)
-      {
-        initial = paramdef.initial;
-      }
-      else if('default' in paramdef)
-      {
-        initial = paramdef['default'];
-      }
-      var control;
-      if( (type == "text") || (type == "int") || (type == "float") )
-      {
-        control = document.createElement("input");
-        control.type = "text";
-        if(initial !== undefined)
-        {
-          control.value = initial;
-        }
-        else
-        {
-          if( (type == "int") || (type == "float") )
-          {
-            control.value = "0";
-          }
-          else
-          {
-            control.value = "";
-          }
-        }
-      }
-      else if(type == "choice")
-      {
-        if(!('values' in paramdef))
-        {
-          throw new Error(errorprefix + "Should include a 'values' parameter");
-        }
-        control = document.createElement("select");
-        var values = paramdef.values;
-        var captions;
-        if('captions' in paramdef)
-        {
-          captions = paramdef.captions;
-          if(captions.length != values.length)
-          {
-            throw new Error(errorprefix + "'captions' and 'values' should have the same number of items");
-          }
-        }
-        else
-        {
-          captions = values;
-        }
-        var selectedindex = 0;
-        for(var valueindex = 0; valueindex < values.length; valueindex++)
-        {
-          var option = document.createElement("option");
-          option.value = values[valueindex];
-          option.text = captions[valueindex];
-          control.add(option);
-          if(initial !== undefined)
-          {
-            if(initial == values[valueindex])
-            {
-              selectedindex = valueindex;
-            }
-          }
-        }
-        if(values.length > 0)
-        {
-          control.selectedIndex = selectedindex;
-        }
-      }
-      else if(type == "longtext")
-      {
-        control = document.createElement("textarea");
-        if(initial !== undefined)
-        {
-          control.value = initial;
-        }
-        else
-        {
-          control.value = "";
-        }
-      }
-      else if(type == "bool")
-      {
-        control = document.createElement("input");
-        control.type = "checkbox";
-        if(initial !== undefined)
-        {
-          if(typeof(initial) != "boolean")
-          {
-            throw new Error(errorprefix + "initial/default of type 'bool' has to be boolean (true/false)");
-          }
-          control.checked = initial;
-        }
-        else
-        {
-          control.checked = false;
-        }
-      }
-      paramControls.push(control);
-      var tr = document.createElement("tr");
-      var td = document.createElement("td");
-      var label = paramdef.name + ":";
-      if('caption' in paramdef)
-      {
-        label = paramdef.caption;
-      }
-      if('visible' in paramdef)
-      {
-        tr.style.display = (paramdef.visible) ? "table-row" : "none";
-      }
-       
-      td.innerHTML = label;
-      tr.appendChild(td);
-      td = document.createElement("td");
-      td.appendChild(control);
-      tr.appendChild(td);
-      tablerows.push(tr);
-    }
-    var that = this;
-    tablerows.map(function(tr){
-      that.parameterstable.appendChild(tr);
-    });
-    this.paramControls = paramControls;
-  },
+  }
 };
