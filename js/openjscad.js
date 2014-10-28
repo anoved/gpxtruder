@@ -132,11 +132,7 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
 			wheelDelta = e.detail * -40;
 		}
 		if (wheelDelta) {
-			var factor = Math.pow(1.003, -wheelDelta);
-			var coeff = _this.getZoom();
-			coeff = Math.max(coeff, 1e-3);
-			coeff *= factor;
-			_this.setZoom(coeff);
+			_this.updateZoom(-wheelDelta);
 		}
 	};
 	
@@ -244,6 +240,13 @@ OpenJsCad.Viewer.prototype = {
 	ZOOM_MAX: 10000,
 	ZOOM_MIN: 10,
 	
+	updateZoom: function(delta) {
+		var factor = Math.pow(1.003, delta);
+		var coeff = Math.max(this.getZoom(), 0.001);
+		coeff *= factor;
+		this.setZoom(coeff);
+	},
+	
 	setZoom: function(coeff) { //0...1
 		coeff=Math.max(coeff, 0);
 		coeff=Math.min(coeff, 1);
@@ -293,11 +296,7 @@ OpenJsCad.Viewer.prototype = {
 				this.viewpointY -= factor * e.deltaY * this.viewpointZ;
 			} else if (e.ctrlKey) {
 				// ZOOM (lifted from gl.onmousemove)
-				var factor = Math.pow(1.003, e.deltaY);
-				var coeff = this.getZoom();
-				coeff = Math.max(coeff, 1e-3);
-				coeff *= factor;
-				this.setZoom(coeff);
+				this.updateZoom(e.deltaY);
 			} else {
 				//ROTATE Z, X
 				this.angleZ += e.deltaX * 2;
@@ -335,17 +334,13 @@ OpenJsCad.Viewer.prototype = {
 				// ZOOM
 				var p1 = e.touches[0];
 				var p2 = e.touches[1];
-				//var fd = Math.abs(p2.pageX - p1.pageX) + Math.abs(p2.pageY - p1.pageY);
-				var fd = Math.sqrt(Math.pow(Math.abs(p2.pageX - p1.pageX), 2) + Math.pow(Math.abs(p2.pageY - p1.pageY), 2));
+				var fd = Math.abs(p2.pageX - p1.pageX) + Math.abs(p2.pageY - p1.pageY);
+				//var fd = Math.sqrt(Math.pow(Math.abs(p2.pageX - p1.pageX), 2) + Math.pow(Math.abs(p2.pageY - p1.pageY), 2));
 				if (this.oldFingerDist == -1) {
 					this.oldFingerDist = fd;
 				}
 				var delta = this.oldFingerDist - fd;
-				var factor = Math.pow(1.006, delta)
-				var coeff = this.getZoom();
-				coeff = Math.max(coeff, 1e-3);
-				coeff *= factor;
-				this.setZoom(coeff);
+				this.updateZoom(delta);
 			} else if (b == 3) {
 				// PAN
 				var factor = 5e-3;
