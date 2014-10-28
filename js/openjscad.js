@@ -23,17 +23,17 @@ OpenJsCad.log = function(txt) {
 // A viewer is a WebGL canvas that lets the user view a mesh. The user can
 // tumble it around by dragging the mouse.
 OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displayW, displayH, options) {
-  options = options || {};
-  this.color = options.color || [0,0,1];
-  this.bgColor = options.bgColor || [0.93, 0.93, 0.93, 1];
-  var gl = GL.create();
-  this.gl = gl;
-  this.angleX = -60;
-  this.angleY = 0;
-  this.angleZ = -45;
-  this.viewpointX = 0;
-  this.viewpointY = 0;
-  this.viewpointZ = initialdepth;
+	options = options || {};
+	this.color = options.color || [0,0,1];
+	this.bgColor = options.bgColor || [0.93, 0.93, 0.93, 1];
+	var gl = GL.create();
+	this.gl = gl;
+	this.angleX = -60;
+	this.angleY = 0;
+	this.angleZ = -45;
+	this.viewpointX = 0;
+	this.viewpointY = 0;
+	this.viewpointZ = initialdepth;
 	
 	this.bedWidth = 180;
 	this.bedDepth = 90;
@@ -46,138 +46,137 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
 	this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
 	this.bedmesh.triangles = [[3, 1, 0], [3, 2, 1], [0, 1, 3], [1, 2, 3]];
 	this.bedmesh.compile();	
-
-  // Draw axes flag:
-  this.drawAxes = true;
-  // Draw triangle lines:
-  this.drawLines = options.showLines || false;
-  // Set to true so lines don't use the depth buffer
-  this.lineOverlay = options.showLines || false;
-
-
+	
+	// Draw axes flag:
+	this.drawAxes = true;
+	// Draw triangle lines:
+	this.drawLines = options.showLines || false;
+	// Set to true so lines don't use the depth buffer
+	this.lineOverlay = options.showLines || false;
+	
+	// touch zoom state
 	this.oldFingerDist = -1;
-
-  gl.canvas.style.width = displayW;
-  gl.canvas.style.height = displayH;
-  // Set up the viewport
-  gl.canvas.width = width;
-  gl.canvas.height = height;
-  gl.viewport(0, 0, width, height);
-
+	
+	gl.canvas.style.width = displayW;
+	gl.canvas.style.height = displayH;
+	// Set up the viewport
+	gl.canvas.width = width;
+	gl.canvas.height = height;
+	gl.viewport(0, 0, width, height);
+	
 	// begin with perspective display
 	this.orthomode = false;
 	this.setViewPerspective();
+	
+	// Set up WebGL state
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	gl.clearColor.apply(gl, this.bgColor);
+	gl.enable(gl.DEPTH_TEST);
+	gl.enable(gl.CULL_FACE);
+	gl.polygonOffset(1, 1);
+	
+	// Black shader for wireframe
+	this.blackShader = new GL.Shader('\
+	void main() {\
+	  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+	}\
+	', '\
+	void main() {\
+	  gl_FragColor = vec4(0.0, 0.0, 0.0, 0.1);\
+	}\
+	');
+	
+	// Shader with diffuse and specular lighting
+	this.lightingShader = new GL.Shader('\
+	varying vec3 color;\
+	varying vec3 normal;\
+	varying vec3 light;\
+	void main() {\
+	  const vec3 lightDir = vec3(1.0, 2.0, 3.0) / 3.741657386773941;\
+	  light = lightDir;\
+	  color = gl_Color.rgb;\
+	  normal = gl_NormalMatrix * gl_Normal;\
+	  gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+	}\
+	', '\
+	varying vec3 color;\
+	varying vec3 normal;\
+	varying vec3 light;\
+	void main() {\
+	  vec3 n = normalize(normal);\
+	  float diffuse = max(0.0, dot(light, n));\
+	  float specular = pow(max(0.0, -reflect(light, n).z), 10.0) * sqrt(diffuse);\
+	  gl_FragColor = vec4(mix(color * (0.3 + 0.7 * diffuse), vec3(1.0), specular), 1.0);\
+	}\
+	');
+	
+	// Basic texture shader
+	this.planeShader = new GL.Shader('\
+	varying vec2 coord;\
+	void main() {\
+	 coord = gl_TexCoord.xy;\
+	 gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+	}\
+	', '\
+	uniform sampler2D texture;\
+	varying vec2 coord;\
+	void main() {\
+	 gl_FragColor = texture2D(texture, coord);\
+	}\
+	');
 
-  // Set up WebGL state
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  // gl.clearColor(0.93, 0.93, 0.93, 1);
-  gl.clearColor.apply(gl, this.bgColor);
-  gl.enable(gl.DEPTH_TEST);
-  gl.enable(gl.CULL_FACE);
-  gl.polygonOffset(1, 1);
+	containerelement.appendChild(gl.canvas);
 
-  // Black shader for wireframe
-  this.blackShader = new GL.Shader('\
-    void main() {\
-      gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-    }\
-  ', '\
-    void main() {\
-      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.1);\
-    }\
-  ');
+	var _this=this;
 
-  // Shader with diffuse and specular lighting
-  this.lightingShader = new GL.Shader('\
-    varying vec3 color;\
-    varying vec3 normal;\
-    varying vec3 light;\
-    void main() {\
-      const vec3 lightDir = vec3(1.0, 2.0, 3.0) / 3.741657386773941;\
-      light = lightDir;\
-      color = gl_Color.rgb;\
-      normal = gl_NormalMatrix * gl_Normal;\
-      gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-    }\
-  ', '\
-    varying vec3 color;\
-    varying vec3 normal;\
-    varying vec3 light;\
-    void main() {\
-      vec3 n = normalize(normal);\
-      float diffuse = max(0.0, dot(light, n));\
-      float specular = pow(max(0.0, -reflect(light, n).z), 10.0) * sqrt(diffuse);\
-      gl_FragColor = vec4(mix(color * (0.3 + 0.7 * diffuse), vec3(1.0), specular), 1.0);\
-    }\
-  ');
-
-// Basic texture shader
-this.planeShader = new GL.Shader('\
-varying vec2 coord;\
-void main() {\
- coord = gl_TexCoord.xy;\
- gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
-}\
-', '\
-uniform sampler2D texture;\
-varying vec2 coord;\
-void main() {\
- gl_FragColor = texture2D(texture, coord);\
-}\
-');
-
-  containerelement.appendChild(gl.canvas);
-
-  var _this=this;
-
-  gl.onmousemove = function(e) {
-    _this.onMouseMove(e);
-  };
-  gl.ondraw = function() {
-    _this.onDraw();
-  };
-  gl.ontouchmove = function(e) {
-	  _this.onTouchMove(e);
-  };
-  gl.onmousewheel = function(e) {
-    var wheelDelta = 0;
-    if (e.wheelDelta)
-    {
-      wheelDelta = e.wheelDelta;
-    }
-    else if (e.detail)
-    {
-      // for firefox, see http://stackoverflow.com/questions/8886281/event-wheeldelta-returns-undefined
-      wheelDelta = e.detail * -40;
-    }
-    if(wheelDelta)
-    {
-      var factor = Math.pow(1.003, -wheelDelta);
-      var coeff = _this.getZoom();
-      coeff = Math.max(coeff, 1e-3);
-      coeff *= factor;
-      _this.setZoom(coeff);
-    }
-  };
-  this.clear();
+	gl.onmousemove = function(e) {
+		_this.onMouseMove(e);
+	};
+	
+	gl.ondraw = function() {
+		_this.onDraw();
+	};
+	
+	gl.ontouchmove = function(e) {
+		_this.onTouchMove(e);
+	};
+	
+	gl.onmousewheel = function(e) {
+		var wheelDelta = 0;
+		if (e.wheelDelta) {
+			wheelDelta = e.wheelDelta;
+		} else if (e.detail) {
+			// for firefox, see http://stackoverflow.com/questions/8886281/event-wheeldelta-returns-undefined
+			wheelDelta = e.detail * -40;
+		}
+		if (wheelDelta) {
+			var factor = Math.pow(1.003, -wheelDelta);
+			var coeff = _this.getZoom();
+			coeff = Math.max(coeff, 1e-3);
+			coeff *= factor;
+			_this.setZoom(coeff);
+		}
+	};
+	
+	this.clear();
 };
 
 OpenJsCad.Viewer.prototype = {
-  setCsg: function(csg) {
-    this.gl.makeCurrent();
-    this.meshes = OpenJsCad.Viewer.csgToMeshes(csg, this.color);
-    this.onDraw();
-  },
+	setCsg: function(csg) {
+		this.gl.makeCurrent();
+		this.meshes = OpenJsCad.Viewer.csgToMeshes(csg, this.color);
+		this.onDraw();
+	},
 
-  clear: function() {
-    // empty mesh list:
-    this.meshes = [];
-    this.onDraw();
-  },
+	clear: function() {
+		// empty mesh list:
+		this.meshes = [];
+		this.onDraw();
+	},
 
-  supported: function() {
-    return !!this.gl;
-  },
+	supported: function() {
+		return !!this.gl;
+	},
 	
 	setViewOrthographic: function() {
 		this.gl.matrixMode(this.gl.PROJECTION);
@@ -202,15 +201,11 @@ OpenJsCad.Viewer.prototype = {
 		this.orthomode = false;
 	},
 	
-  ZOOM_MAX: 10000,
-  ZOOM_MIN: 10,
-  /*onZoomChanged: null,*/  
-
-  setBedSize: function(width, depth) {
-	  this.bedWidth = width;
-	  this.bedDepth = depth;
-  },
-
+	setBedSize: function(width, depth) {
+		this.bedWidth = width;
+		this.bedDepth = depth;
+	},
+	
 	setBaseMap: function(url, scale, rotate) {
 		
 		var hash = url + scale + rotate;
@@ -238,8 +233,6 @@ OpenJsCad.Viewer.prototype = {
 				that.onDraw();
 			}
 		});
-		
-		
 	},
 	
 	clearBaseMap: function(rotate) {
@@ -247,7 +240,7 @@ OpenJsCad.Viewer.prototype = {
 		
 		var bedx = this.bedWidth/2,
 			bedy = this.bedDepth/2;
-
+		
 		this.bedmesh.vertices = [
 			[-bedx,  bedy, 0],
 			[ bedx,  bedy, 0],
@@ -265,48 +258,43 @@ OpenJsCad.Viewer.prototype = {
 		
 		this.onDraw();
 	},
-
-  setZoom: function(coeff) { //0...1
-    coeff=Math.max(coeff, 0);
-    coeff=Math.min(coeff, 1);
-    this.viewpointZ = this.ZOOM_MIN + coeff * (this.ZOOM_MAX - this.ZOOM_MIN);
-    /*if(this.onZoomChanged)
-    {
-      this.onZoomChanged();
-    }*/
-    if (this.orthomode) {
-		this.setViewOrthographic();
-	}
-    this.onDraw();
-  },
-
-  getZoom: function() {
-    var coeff = (this.viewpointZ-this.ZOOM_MIN) / (this.ZOOM_MAX - this.ZOOM_MIN);
-    return coeff;
-  },
-  
-  resetView: function() {
-	this.setView([-60, 0, -45], [0, 0, 200]);  
-  },
-  
- /* setViewTop: function() {
-	this.setViewVector([0, 0, 0]);
-  },*/
-  
-  setView: function(angle, viewpoint) {
-	this.angleX = angle[0];
-	this.angleY = angle[1];
-	this.angleZ = angle[2];
 	
-	if (viewpoint !== undefined) {
-		this.viewpointX = viewpoint[0];
-		this.viewpointY = viewpoint[1];
-		this.viewpointZ = viewpoint[2];
-	}
+	ZOOM_MAX: 10000,
+	ZOOM_MIN: 10,
 	
-	this.onDraw();
-  },
-  
+	setZoom: function(coeff) { //0...1
+		coeff=Math.max(coeff, 0);
+		coeff=Math.min(coeff, 1);
+		this.viewpointZ = this.ZOOM_MIN + coeff * (this.ZOOM_MAX - this.ZOOM_MIN);
+		if (this.orthomode) {
+			this.setViewOrthographic();
+		}
+		this.onDraw();
+	},
+	
+	getZoom: function() {
+		var coeff = (this.viewpointZ-this.ZOOM_MIN) / (this.ZOOM_MAX - this.ZOOM_MIN);
+		return coeff;
+	},
+	
+	resetView: function() {
+		this.setView([-60, 0, -45], [0, 0, 200]);  
+	},
+	
+	setView: function(angle, viewpoint) {
+		this.angleX = angle[0];
+		this.angleY = angle[1];
+		this.angleZ = angle[2];
+		
+		if (viewpoint !== undefined) {
+			this.viewpointX = viewpoint[0];
+			this.viewpointY = viewpoint[1];
+			this.viewpointZ = viewpoint[2];
+		}
+		
+		this.onDraw();
+	},
+	
 	onMouseMove: function(e) {
 		if (e.dragging) {
 			e.preventDefault();
@@ -371,7 +359,7 @@ OpenJsCad.Viewer.prototype = {
 					this.oldFingerDist = fd;
 				}
 				var delta = this.oldFingerDist - fd;
-				var factor = Math.pow(1.003, delta)
+				var factor = Math.pow(1.006, delta)
 				var coeff = this.getZoom();
 				coeff = Math.max(coeff, 1e-3);
 				coeff *= factor;
@@ -395,98 +383,106 @@ OpenJsCad.Viewer.prototype = {
 			
 			this.onDraw();
 		}
-		
 	},
-
-  onDraw: function(e) {
-	var bedx = this.bedWidth / 2,
-		bedy = this.bedDepth / 2;
-    var gl = this.gl;
-    gl.makeCurrent();
-
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.loadIdentity();
-    gl.translate(this.viewpointX, this.viewpointY, -this.viewpointZ);
-    gl.rotate(this.angleX, 1, 0, 0);
-    gl.rotate(this.angleY, 0, 1, 0);
-    gl.rotate(this.angleZ, 0, 0, 1);
-
-    if (!this.lineOverlay) gl.enable(gl.POLYGON_OFFSET_FILL);
-    for (var i = 0; i < this.meshes.length; i++) {
-      var mesh = this.meshes[i];
-      this.lightingShader.draw(mesh, gl.TRIANGLES);
-    }
-    if (!this.lineOverlay) gl.disable(gl.POLYGON_OFFSET_FILL);
-
-    if(this.drawLines)
-    {
-      if (this.lineOverlay) gl.disable(gl.DEPTH_TEST);
-      gl.enable(gl.BLEND);
-      for (var i = 0; i < this.meshes.length; i++) {
-        var mesh = this.meshes[i];
-        this.blackShader.draw(mesh, gl.LINES);
-      }
-      gl.disable(gl.BLEND);
-      if (this.lineOverlay) gl.enable(gl.DEPTH_TEST);
-    }
-    //EDW: axes
-    if (this.drawAxes) {
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.begin(gl.LINES);
-      //X - red
-      gl.color(1, 0.5, 0.5, 0.2); //negative direction is lighter
-      gl.vertex(-bedx, 0, 0);
-      gl.vertex(0, 0, 0);
-
-      gl.color(1, 0, 0, 0.8); //positive direction
-      gl.vertex(0, 0, 0);
-      gl.vertex(bedx, 0, 0);
-      //Y - green
-      gl.color(0.5, 1, 0.5, 0.2); //negative direction is lighter
-      gl.vertex(0, -bedy, 0);
-      gl.vertex(0, 0, 0);
-
-      gl.color(0, 1, 0, 0.8); //positive direction
-      gl.vertex(0, 0, 0);
-      gl.vertex(0, bedy, 0);
-      //Z - blue
-      gl.color(0.5, 0.5, 1, 0.2); //negative direction is lighter
-      gl.vertex(0, 0, -100);
-      gl.vertex(0, 0, 0);
-
-      gl.color(0, 0, 1, 0.8); //positive direction
-      gl.vertex(0, 0, 0);
-      gl.vertex(0, 0, 100);
-
-
-      
-      // bed platform outline
-      gl.color(0.1, 0.1, 0.1, 0.8);
-      
-		gl.vertex(-bedx, -bedy, 0);
-		gl.vertex(-bedx,  bedy, 0);
+	
+	onDraw: function(e) {
+		var bedx = this.bedWidth / 2,
+			bedy = this.bedDepth / 2;
+		var gl = this.gl;
+		gl.makeCurrent();
 		
-		gl.vertex(-bedx,  bedy, 0);
-		gl.vertex( bedx,  bedy, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.loadIdentity();
+		gl.translate(this.viewpointX, this.viewpointY, -this.viewpointZ);
+		gl.rotate(this.angleX, 1, 0, 0);
+		gl.rotate(this.angleY, 0, 1, 0);
+		gl.rotate(this.angleZ, 0, 0, 1);
 		
-		gl.vertex( bedx,  bedy, 0);
-		gl.vertex( bedx, -bedy, 0);
+		if (!this.lineOverlay) {
+			gl.enable(gl.POLYGON_OFFSET_FILL);
+		}
 		
-		gl.vertex( bedx, -bedy, 0);
-		gl.vertex(-bedx, -bedy, 0);
+		for (var i = 0; i < this.meshes.length; i++) {
+			var mesh = this.meshes[i];
+			this.lightingShader.draw(mesh, gl.TRIANGLES);
+		}
 		
-      gl.end();
-      
-      
-      this.maptexture.bind(0);
-      this.planeShader.uniforms({texture: 0}).draw(this.bedmesh);
-      this.maptexture.unbind(0);
-      
-      gl.disable(gl.BLEND);
-      
-    }
-  }
+		if (!this.lineOverlay) {
+			gl.disable(gl.POLYGON_OFFSET_FILL);
+		}
+		
+		if(this.drawLines) {
+			if (this.lineOverlay) {
+				gl.disable(gl.DEPTH_TEST);
+			}
+			gl.enable(gl.BLEND);
+			for (var i = 0; i < this.meshes.length; i++) {
+				var mesh = this.meshes[i];
+				this.blackShader.draw(mesh, gl.LINES);
+			}
+			gl.disable(gl.BLEND);
+			if (this.lineOverlay) {
+				gl.enable(gl.DEPTH_TEST);
+			}
+		}
+		
+		if (this.drawAxes) {
+			
+			gl.enable(gl.BLEND);
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+			gl.begin(gl.LINES);
+			
+			//X - red
+			gl.color(1, 0.5, 0.5, 0.2); //negative direction is lighter
+			gl.vertex(-bedx, 0, 0);
+			gl.vertex(0, 0, 0);
+			
+			gl.color(1, 0, 0, 0.8); //positive direction
+			gl.vertex(0, 0, 0);
+			gl.vertex(bedx, 0, 0);
+			
+			//Y - green
+			gl.color(0.5, 1, 0.5, 0.2); //negative direction is lighter
+			gl.vertex(0, -bedy, 0);
+			gl.vertex(0, 0, 0);
+			
+			gl.color(0, 1, 0, 0.8); //positive direction
+			gl.vertex(0, 0, 0);
+			gl.vertex(0, bedy, 0);
+			
+			//Z - blue
+			gl.color(0.5, 0.5, 1, 0.2); //negative direction is lighter
+			gl.vertex(0, 0, -100);
+			gl.vertex(0, 0, 0);
+			
+			gl.color(0, 0, 1, 0.8); //positive direction
+			gl.vertex(0, 0, 0);
+			gl.vertex(0, 0, 100);
+			
+			// bed platform outline
+			gl.color(0.1, 0.1, 0.1, 0.8);
+			
+			gl.vertex(-bedx, -bedy, 0);
+			gl.vertex(-bedx,  bedy, 0);
+			
+			gl.vertex(-bedx,  bedy, 0);
+			gl.vertex( bedx,  bedy, 0);
+			
+			gl.vertex( bedx,  bedy, 0);
+			gl.vertex( bedx, -bedy, 0);
+			
+			gl.vertex( bedx, -bedy, 0);
+			gl.vertex(-bedx, -bedy, 0);
+			
+			gl.end();
+			
+			this.maptexture.bind(0);
+			this.planeShader.uniforms({texture: 0}).draw(this.bedmesh);
+			this.maptexture.unbind(0);
+			
+			gl.disable(gl.BLEND);
+		}
+	}
 };
 
 // Convert from CSG solid to an array of GL.Mesh objects
