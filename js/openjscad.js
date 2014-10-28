@@ -47,13 +47,6 @@ OpenJsCad.Viewer = function(containerelement, width, height, initialdepth, displ
 	this.bedmesh.triangles = [[3, 1, 0], [3, 2, 1], [0, 1, 3], [1, 2, 3]];
 	this.bedmesh.compile();	
 	
-	// Draw axes flag:
-	this.drawAxes = true;
-	// Draw triangle lines:
-	this.drawLines = options.showLines || false;
-	// Set to true so lines don't use the depth buffer
-	this.lineOverlay = options.showLines || false;
-	
 	// touch zoom state
 	this.oldFingerDist = -1;
 	
@@ -393,95 +386,74 @@ OpenJsCad.Viewer.prototype = {
 		
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.loadIdentity();
+		
 		gl.translate(this.viewpointX, this.viewpointY, -this.viewpointZ);
 		gl.rotate(this.angleX, 1, 0, 0);
 		gl.rotate(this.angleY, 0, 1, 0);
 		gl.rotate(this.angleZ, 0, 0, 1);
 		
-		if (!this.lineOverlay) {
-			gl.enable(gl.POLYGON_OFFSET_FILL);
-		}
-		
+		// Path:
+		gl.enable(gl.POLYGON_OFFSET_FILL);
 		for (var i = 0; i < this.meshes.length; i++) {
 			var mesh = this.meshes[i];
 			this.lightingShader.draw(mesh, gl.TRIANGLES);
 		}
+		gl.disable(gl.POLYGON_OFFSET_FILL);
 		
-		if (!this.lineOverlay) {
-			gl.disable(gl.POLYGON_OFFSET_FILL);
-		}
+		// Axes:
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+		gl.begin(gl.LINES);
 		
-		if(this.drawLines) {
-			if (this.lineOverlay) {
-				gl.disable(gl.DEPTH_TEST);
-			}
-			gl.enable(gl.BLEND);
-			for (var i = 0; i < this.meshes.length; i++) {
-				var mesh = this.meshes[i];
-				this.blackShader.draw(mesh, gl.LINES);
-			}
-			gl.disable(gl.BLEND);
-			if (this.lineOverlay) {
-				gl.enable(gl.DEPTH_TEST);
-			}
-		}
+		//X - red
+		gl.color(1, 0.5, 0.5, 0.2); //negative direction is lighter
+		gl.vertex(-bedx, 0, 0);
+		gl.vertex(0, 0, 0);
 		
-		if (this.drawAxes) {
-			
-			gl.enable(gl.BLEND);
-			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-			gl.begin(gl.LINES);
-			
-			//X - red
-			gl.color(1, 0.5, 0.5, 0.2); //negative direction is lighter
-			gl.vertex(-bedx, 0, 0);
-			gl.vertex(0, 0, 0);
-			
-			gl.color(1, 0, 0, 0.8); //positive direction
-			gl.vertex(0, 0, 0);
-			gl.vertex(bedx, 0, 0);
-			
-			//Y - green
-			gl.color(0.5, 1, 0.5, 0.2); //negative direction is lighter
-			gl.vertex(0, -bedy, 0);
-			gl.vertex(0, 0, 0);
-			
-			gl.color(0, 1, 0, 0.8); //positive direction
-			gl.vertex(0, 0, 0);
-			gl.vertex(0, bedy, 0);
-			
-			//Z - blue
-			gl.color(0.5, 0.5, 1, 0.2); //negative direction is lighter
-			gl.vertex(0, 0, -100);
-			gl.vertex(0, 0, 0);
-			
-			gl.color(0, 0, 1, 0.8); //positive direction
-			gl.vertex(0, 0, 0);
-			gl.vertex(0, 0, 100);
-			
-			// bed platform outline
-			gl.color(0.1, 0.1, 0.1, 0.8);
-			
-			gl.vertex(-bedx, -bedy, 0);
-			gl.vertex(-bedx,  bedy, 0);
-			
-			gl.vertex(-bedx,  bedy, 0);
-			gl.vertex( bedx,  bedy, 0);
-			
-			gl.vertex( bedx,  bedy, 0);
-			gl.vertex( bedx, -bedy, 0);
-			
-			gl.vertex( bedx, -bedy, 0);
-			gl.vertex(-bedx, -bedy, 0);
-			
-			gl.end();
-			
-			this.maptexture.bind(0);
-			this.planeShader.uniforms({texture: 0}).draw(this.bedmesh);
-			this.maptexture.unbind(0);
-			
-			gl.disable(gl.BLEND);
-		}
+		gl.color(1, 0, 0, 0.8); //positive direction
+		gl.vertex(0, 0, 0);
+		gl.vertex(bedx, 0, 0);
+		
+		//Y - green
+		gl.color(0.5, 1, 0.5, 0.2); //negative direction is lighter
+		gl.vertex(0, -bedy, 0);
+		gl.vertex(0, 0, 0);
+		
+		gl.color(0, 1, 0, 0.8); //positive direction
+		gl.vertex(0, 0, 0);
+		gl.vertex(0, bedy, 0);
+		
+		//Z - blue
+		gl.color(0.5, 0.5, 1, 0.2); //negative direction is lighter
+		gl.vertex(0, 0, -100);
+		gl.vertex(0, 0, 0);
+		
+		gl.color(0, 0, 1, 0.8); //positive direction
+		gl.vertex(0, 0, 0);
+		gl.vertex(0, 0, 100);
+		
+		// bed platform outline
+		gl.color(0.1, 0.1, 0.1, 0.8);
+		
+		gl.vertex(-bedx, -bedy, 0);
+		gl.vertex(-bedx,  bedy, 0);
+		
+		gl.vertex(-bedx,  bedy, 0);
+		gl.vertex( bedx,  bedy, 0);
+		
+		gl.vertex( bedx,  bedy, 0);
+		gl.vertex( bedx, -bedy, 0);
+		
+		gl.vertex( bedx, -bedy, 0);
+		gl.vertex(-bedx, -bedy, 0);
+		
+		gl.end();
+		
+		this.maptexture.bind(0);
+		this.planeShader.uniforms({texture: 0}).draw(this.bedmesh);
+		this.maptexture.unbind(0);
+		
+		gl.disable(gl.BLEND);
 	}
 };
 
@@ -903,7 +875,6 @@ OpenJsCad.getParamDefinitions = function(script) {
 
 /**
  * options parameter:
- * - showLines: display all triangle lines without respecting depth buffer
  * - bgColor: canvas background color
  * - color: object color
  * - viewerwidth, viewerheight: set rendering size. If in pixels, both canvas resolution and
@@ -951,12 +922,6 @@ OpenJsCad.Processor.convertToSolid = function(obj) {
 };
 
 OpenJsCad.Processor.prototype = {
-  setLineDisplay: function(bool) {
-    // Draw triangle lines:
-    this.viewer.drawLines = bool;
-    // Set to true so lines don't use the depth buffer
-    this.viewer.lineOverlay = bool;
-  },
 
   createElements: function() {
     var that = this;//for event handlers
