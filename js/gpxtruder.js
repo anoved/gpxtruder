@@ -989,7 +989,14 @@ var Messages = {
 	msgdiv: null,
 	
 	clear: function(msgElement) {
-		this.msgdiv.removeChild(msgElement);
+		if (typeof msgElement === 'undefined') {
+			var j = this.msgdiv.children.length;
+			for (var i = 0; i < j; i++) {
+				this.msgdiv.removeChild(this.msgdiv.children[0]);
+			}
+		} else {
+			this.msgdiv.removeChild(msgElement);
+		}
 	},
 	
 	error: function(text) {
