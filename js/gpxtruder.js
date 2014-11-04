@@ -988,26 +988,27 @@ var PointProjector = {
 var Messages = {
 	msgdiv: null,
 	
-	clear: function() {
-		this.msgdiv.innerHTML = "";
-		this.msgdiv.className = "";
+	clear: function(msgElement) {
+		this.msgdiv.removeChild(msgElement);
 	},
 	
-	error: function(message) {
-		this.msgdiv.innerHTML = message;
-		this.msgdiv.className = "errormsg";
-		var that = this;
-		this.msgdiv.onclick = function(e) {
-			that.clear();
-		};
+	error: function(text) {
+		this.message(text, "errormsg");
 	},
 	
-	status: function(message) {
-		this.msgdiv.innerHTML = message;
-		this.msgdiv.className = "statusmsg";
+	status: function(text) {
+		this.message(text, "statusmsg");
+	},
+	
+	message: function(text, type) {
 		var that = this;
-		this.msgdiv.onclick = function(e) {
-			that.clear();
+		var msg = document.createElement("div");
+		msg.innerHTML = text;
+		msg.className = "msg " + type;
+		msg.onclick = function(e) {
+			that.clear(e.target);
 		};
+		
+		this.msgdiv.appendChild(msg);
 	}
 };
