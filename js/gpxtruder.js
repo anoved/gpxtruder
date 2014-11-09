@@ -537,7 +537,7 @@ Gpex.prototype.basemap = function(bounds) {
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
 	
-	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.rotate, mapsize.width, mapsize.height);
+	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.rotate, bedwidth, bedheight);
 	
 	//console.log(mapurl, mapscale);
 	
@@ -555,14 +555,14 @@ function prepmap(img, w, h) {
 	
 	var imgDataURL = canvas.toDataURL("image/jpeg");
 	
-	var ptmm = 72 / 25.4;
-	
+
 	var pdfdoc = new jsPDF({
 		orientation: w > h ? 'l' : 'p',
-		format: [w / ptmm, h / ptmm]
+		format: [w, h]
 	});
 	
-	pdfdoc.addImage(imgDataURL, 'JPEG', 0, 0, w / ptmm, h / ptmm);
+	
+	pdfdoc.addImage(imgDataURL, 'JPEG', 0, 0, w, h);
 	pdfdoc.save('basemap.pdf');
 }
 
