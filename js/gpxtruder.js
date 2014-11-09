@@ -537,11 +537,25 @@ Gpex.prototype.basemap = function(bounds) {
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
 	
-	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.rotate);
-	
-	//console.log(mapurl, mapscale * bedwidth, mapscale * bedheight);
+	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.rotate, bedwidth, bedheight);
 	
 	return true;
+}
+
+function prepmap(img, w, h) {
+	var imgDataURL = img2dataurl(img);
+	var pdfdoc = new jsPDF({format: "letter"});
+	pdfdoc.addImage(imgDataURL, 'JPEG', 0, 0, w, h);
+	pdfdoc.save('Test.pdf');
+}
+
+function img2dataurl(img) {
+	var canvas = document.createElement("canvas");
+	canvas.width = img.width;
+	canvas.height = img.height;
+	var context = canvas.getContext("2d");
+	context.drawImage(img, 0, 0);
+	return canvas.toDataURL("image/jpeg");
 }
 
 // Return scale factor necessary to fit extent to bed, disregarding rotation

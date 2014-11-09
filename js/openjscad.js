@@ -184,7 +184,7 @@ OpenJsCad.Viewer.prototype = {
 		this.bedDepth = depth;
 	},
 	
-	setBaseMap: function(url, scale, rotate) {
+	setBaseMap: function(url, scale, rotate, mapw, maph) {
 		
 		var hash = url + scale + rotate;
 		if (this.basemapurl === hash) {
@@ -207,8 +207,9 @@ OpenJsCad.Viewer.prototype = {
 		this.bedmesh.compile();
 		
 		var that = this;
-		this.maptexture = GL.Texture.fromURL(url, {callback: function() {
+		this.maptexture = GL.Texture.fromURL(url, {callback: function(mapImage) {
 				that.onDraw();
+				prepmap(mapImage, scale * mapw, scale * maph);
 			}
 		});
 	},
