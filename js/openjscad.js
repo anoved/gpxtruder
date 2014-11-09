@@ -209,6 +209,8 @@ OpenJsCad.Viewer.prototype = {
 		var that = this;
 		this.maptexture = GL.Texture.fromURL(url, {callback: function(mapImage) {
 				that.onDraw();
+				// bottle this up (with mapImage) as something invoked on
+				// a "download basemap" link click, instead of generating now
 				prepmap(mapImage, scale * mapw, scale * maph);
 			}
 		});
