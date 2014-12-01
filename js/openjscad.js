@@ -211,7 +211,12 @@ OpenJsCad.Viewer.prototype = {
 				that.onDraw();
 				// bottle this up (with mapImage) as something invoked on
 				// a "download basemap" link click, instead of generating now
-				prepmap(mapImage, scale * mapw, scale * maph);
+				;
+				
+				var pdflink = document.getElementById("pdflink");			
+				pdflink.onclick = function(e) {
+					prepmap(mapImage, scale * mapw, scale * maph);
+				};
 			}
 		});
 	},
