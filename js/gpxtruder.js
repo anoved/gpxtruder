@@ -107,11 +107,12 @@ var setup = function() {
 			
 			// Assign a local URL to the file selected for upload
 			// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
-			var upload_url = window.URL.createObjectURL(document.getElementById('gpxfile').files[0]);
+			//var upload_url = window.URL.createObjectURL(document.getElementById('gpxfile').files[0]);
 			
+			var upload_url = "SouthMtn.gpx";
 			loader(options, upload_url);
 			
-			window.URL.revokeObjectURL(upload_url);
+			//window.URL.revokeObjectURL(upload_url);
 		},
 		false
 	);
