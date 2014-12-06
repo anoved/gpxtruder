@@ -123,7 +123,6 @@ var loader = function(options, gpx_url) {
 	Messages.clear();
 	
 	var req = new XMLHttpRequest();
-	req.responseType = "document";
 	req.onreadystatechange = function() {
 		if (req.readyState === 4 && req.status == 200) {
 			
@@ -145,7 +144,6 @@ var loader = function(options, gpx_url) {
 	
 	// submit asynchronous request for the GPX file
 	req.open('GET', gpx_url, true);
-	req.responseType="document";
 	req.overrideMimeType("text/xml");
 	req.send();
 }
