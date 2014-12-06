@@ -145,6 +145,7 @@ var loader = function(options, gpx_url) {
 	
 	// submit asynchronous request for the GPX file
 	req.open('GET', gpx_url, true);
+	req.overrideMimeType("text/xml");
 	req.send();
 }
 
