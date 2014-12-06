@@ -209,12 +209,9 @@ OpenJsCad.Viewer.prototype = {
 		var that = this;
 		this.maptexture = GL.Texture.fromURL(url, {callback: function(mapImage) {
 				that.onDraw();
-				// bottle this up (with mapImage) as something invoked on
-				// a "download basemap" link click, instead of generating now
-				;
-				
-				var pdflink = document.getElementById("pdflink");			
-				pdflink.onclick = function(e) {
+				// insert a "Download PDF" button next to Generate STL
+				var basemapButton = document.getElementById("pdfmaplink");
+				basemapButton.onclick = function(e) {
 					prepmap(mapImage, scale, mapw, maph);
 				};
 			}
@@ -984,6 +981,11 @@ OpenJsCad.Processor.prototype = {
     };
     this.statusbuttons.appendChild(this.abortbutton);
 
+	this.basemapButton = document.createElement("button");
+	this.basemapButton.innerHTML = "Download PDF";
+	this.basemapButton.id = "pdfmaplink";
+	this.statusbuttons.appendChild(this.basemapButton);
+
     this.renderedElementDropdown = document.createElement("select");
     this.renderedElementDropdown.onchange = function(e) {
       that.setSelectedObjectIndex(that.renderedElementDropdown.selectedIndex);
@@ -1168,6 +1170,7 @@ OpenJsCad.Processor.prototype = {
     this.downloadOutputFileLink.style.display = this.hasOutputFile? "inline":"none";
     this.errordiv.style.display = this.hasError? "block":"none";
     this.statusdiv.style.display = this.hasError? "none":"block";
+    this.basemapButton.style.display = (this.viewer.basemapurl != "") ? "inline" : "none";
   },
 
   setOpenJsCadPath: function(path) {
