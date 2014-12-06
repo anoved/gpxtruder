@@ -109,7 +109,7 @@ var setup = function() {
 			// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
 			//var upload_url = window.URL.createObjectURL(document.getElementById('gpxfile').files[0]);
 			
-			var upload_url = "SouthMtn.gpx";
+			var upload_url = "/SouthMtn.gpx";
 			loader(options, upload_url);
 			
 			//window.URL.revokeObjectURL(upload_url);
