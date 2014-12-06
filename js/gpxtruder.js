@@ -123,6 +123,7 @@ var loader = function(options, gpx_url) {
 	Messages.clear();
 	
 	var req = new XMLHttpRequest();
+	req.responseType = "document";
 	req.onreadystatechange = function() {
 		if (req.readyState === 4 && req.status == 200) {
 			
