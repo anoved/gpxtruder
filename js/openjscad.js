@@ -215,7 +215,7 @@ OpenJsCad.Viewer.prototype = {
 				
 				var pdflink = document.getElementById("pdflink");			
 				pdflink.onclick = function(e) {
-					prepmap(mapImage, scale * mapw, scale * maph);
+					prepmap(mapImage, scale, mapw, maph);
 				};
 			}
 		});

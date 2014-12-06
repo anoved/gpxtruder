@@ -544,7 +544,11 @@ Gpex.prototype.basemap = function(bounds) {
 	return true;
 }
 
-function prepmap(img, w, h) {
+/*
+ * w & h are mm dimensions of bed extent
+ * scale applied to bed extent to get map extent
+ */
+function prepmap(img, scale, w, h) {
 	
 	var canvas = document.createElement("canvas");
 	canvas.width = img.width;
@@ -553,16 +557,20 @@ function prepmap(img, w, h) {
 	var context = canvas.getContext("2d");
 	context.drawImage(img, 0, 0);
 	
-	var imgDataURL = canvas.toDataURL("image/jpeg");
+	var mapw = scale * w;
+	var maph = scale * h;
 	
+	var imgDataURL = canvas.toDataURL("image/jpeg");
 
 	var pdfdoc = new jsPDF({
-		orientation: w > h ? 'l' : 'p',
-		format: [w, h]
+		orientation: mapw > maph ? 'l' : 'p',
+		format: [mapw, maph]
 	});
 	
 	
-	pdfdoc.addImage(imgDataURL, 'JPEG', 0, 0, w, h);
+	pdfdoc.addImage(imgDataURL, 'JPEG', 0, 0, mapw, maph);
+	pdfdoc.setDrawColor(26, 26, 26);
+	pdfdoc.rect(mapw/2 - w/2, maph/2 - h/2, w, h);
 	pdfdoc.save('basemap.pdf');
 }
 
