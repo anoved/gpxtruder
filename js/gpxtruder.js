@@ -109,7 +109,7 @@ var setup = function() {
 			// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
 			//var upload_url = window.URL.createObjectURL(document.getElementById('gpxfile').files[0]);
 			
-			var upload_url = "/SouthMtn.gpx";
+			var upload_url = "http://anoved.github.io/gpxtruder/SouthMtn.gpx";
 			loader(options, upload_url);
 			
 			//window.URL.revokeObjectURL(upload_url);
@@ -124,7 +124,7 @@ var loader = function(options, gpx_url) {
 	
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
-		if (req.readyState === 4) {
+		if (req.readyState === 4 && req.status == 200) {
 			
 			if (!req.responseXML) {
 				Messages.error("This doesn't appear to be a GPX file.");
