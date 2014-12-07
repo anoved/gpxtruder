@@ -58,7 +58,7 @@
 			<p class="iolabel"><img src="img/input.png" width="129" height="31" alt="Input" /></p>
 			<form enctype="multipart/form-data" method="post" name="gpxform">
 				<p><input type="radio" name="gpxsource" value="0" id="gpxsource_upload" onchange="return toggle(event, 0, 'gpxfile') && toggle(event, 1, 'gpxsample');" checked /> <label for="gpxsource_upload">Upload GPX:</label>
-					<input type="file" id="gpxfile" />
+					<input type="file" id="gpxfile" /><br />
 				   <input type="radio" name="gpxsource" value="1" id="gpxsource_sample" onchange="return toggle(event, 0, 'gpxfile') && toggle(event, 1, 'gpxsample');" /> <label for="gpxsource_sample">Sample GPX:</label>
 					<select id="gpxsample" disabled>
 						<option value="0" selected>South Mountain</option>

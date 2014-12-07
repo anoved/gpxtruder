@@ -116,7 +116,7 @@ var setup = function() {
 				var upload_url = window.URL.createObjectURL(files[0]);
 			} else {
 				if (parseInt(form.gpxsample.value) == 0) {
-					var upload_url = "SouthMtn.gpx";
+					var upload_url = "gpx/SouthMtn.gpx";
 				} else {
 					return;
 				}
