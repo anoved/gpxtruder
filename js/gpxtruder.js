@@ -105,14 +105,28 @@ var setup = function() {
 				return;
 			}
 			
-			// Assign a local URL to the file selected for upload
-			// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
-			//var upload_url = window.URL.createObjectURL(document.getElementById('gpxfile').files[0]);
+			if (radioValue(form.gpxsource) == 0) {
+				// Assign a local URL to the file selected for upload
+				// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
+				var files = document.getElementById('gpxfile').files;
+				if (files.length == 0) {
+					Messages.error('No GPX file selected.');
+					return;
+				}
+				var upload_url = window.URL.createObjectURL(files[0]);
+			} else {
+				if (parseInt(form.gpxsample.value) == 0) {
+					var upload_url = "SouthMtn.gpx";
+				} else {
+					return;
+				}
+			}
 			
-			var upload_url = "SouthMtn.gpx";
 			loader(options, upload_url);
 			
-			//window.URL.revokeObjectURL(upload_url);
+			if (radioValue(form.gpxsource) == 0) {
+				window.URL.revokeObjectURL(upload_url);
+			}
 		},
 		false
 	);
@@ -124,7 +138,7 @@ var loader = function(options, gpx_url) {
 	
 	var req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
-		if (req.readyState === 4 && req.status == 200) {
+		if (req.readyState === 4 /*&& req.status == 200*/) {
 			
 			if (!req.responseXML) {
 				Messages.error("This doesn't appear to be a GPX file.");
