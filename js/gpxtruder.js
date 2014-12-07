@@ -1,6 +1,40 @@
 var OJSCAD = undefined;
 
+/*
+ * Invoked when the page is loaded.
+ */
 var setup = function() {
+	
+	// Setup notifications
+	Messages.msgdiv = document.getElementById('messages');
+	
+	// Setup WebGL preview display (and STL converter)
+	OJSCAD = new OpenJsCad.Processor(document.getElementById('display'), {
+		color: [0, 0.6, 0.1],
+		openJsCadPath: "js/",
+		viewerwidth: "800px",
+		viewerheight: "400px",
+		bgColor: [0.553, 0.686, 0.8, 1]
+	});
+	
+	// submitInput is invoked directly by the Extrude button's
+	// onclick method, but listen for stray submit events anyway.
+	document.forms[0].addEventListener(
+		'submit',
+		function(e) {
+			e.preventDefault();
+			submitInput();
+			return false;
+		},
+		false
+	);
+}
+
+/*
+ * Invoked when the "Extrude Route" button is clicked.
+ * Validates options and initiates loading of GPX file.
+ */
+var submitInput = function() {
 	
 	var radioValue = function(radios) {
 		for (var i = 0, len = radios.length; i < len; i++) {
@@ -67,73 +101,57 @@ var setup = function() {
 		return true;
 	};
 	
-	// Setup notifications
-	Messages.msgdiv = document.getElementById('messages');
+	var form = document.forms[0];
+	var options = {
+		buffer:         parseFloat(form.path_width.value) / 2.0,
+		vertical:       parseFloat(form.vertical.value),
+		bedx:           parseFloat(form.width.value),
+		bedy:           parseFloat(form.depth.value),
+		base:           parseFloat(form.base.value),
+		zcut:           form.zcut.checked,
+		shapetype:      radioValue(form.shape),
+		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
+		smoothtype:     radioValue(form.smooth),
+		smoothspan:     parseFloat(form.mindist.value),
+		jscadDiv:       document.getElementById('code_jscad'),
+		oscadDiv:       document.getElementById('code_openscad')
+	};
 	
-	// Setup WebGL preview display (and STL converter)
-	OJSCAD = new OpenJsCad.Processor(document.getElementById('display'), {
-		color: [0, 0.6, 0.1],
-		openJsCadPath: "js/",
-		viewerwidth: "800px",
-		viewerheight: "400px",
-		bgColor: [0.553, 0.686, 0.8, 1]
-	});
+	if (!validOptions(options)) {
+		return;
+	}
 	
-	// Setup input form; handle submit events locally
-	document.forms.namedItem('gpxform').addEventListener(
-		'submit',
-		function(ev) {
-			ev.preventDefault();
-			
-			var form = ev.target;
-			var options = {
-				buffer:         parseFloat(form.path_width.value) / 2.0,
-				vertical:       parseFloat(form.vertical.value),
-				bedx:           parseFloat(form.width.value),
-				bedy:           parseFloat(form.depth.value),
-				base:           parseFloat(form.base.value),
-				zcut:           form.zcut.checked,
-				shapetype:      radioValue(form.shape),
-				markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
-				smoothtype:     radioValue(form.smooth),
-				smoothspan:     parseFloat(form.mindist.value),
-				jscadDiv:       document.getElementById('code_jscad'),
-				oscadDiv:       document.getElementById('code_openscad')
-			};
-			
-			if (!validOptions(options)) {
-				return;
-			}
-			
-			if (radioValue(form.gpxsource) == 0) {
-				// Assign a local URL to the file selected for upload
-				// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
-				var files = document.getElementById('gpxfile').files;
-				if (files.length == 0) {
-					Messages.error('No GPX file selected.');
-					return;
-				}
-				var upload_url = window.URL.createObjectURL(files[0]);
-			} else {
-				if (parseInt(form.gpxsample.value) == 0) {
-					var upload_url = "gpx/SouthMtn.gpx";
-				} else {
-					return;
-				}
-			}
-			
-			loader(options, upload_url);
-			
-			if (radioValue(form.gpxsource) == 0) {
-				window.URL.revokeObjectURL(upload_url);
-			}
-		},
-		false
-	);
-}
+	if (radioValue(form.gpxsource) == 0) {
+		// Assign a local URL to the file selected for upload
+		// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
+		var files = document.getElementById('gpxfile').files;
+		if (files.length == 0) {
+			Messages.error('No GPX file selected.');
+			return;
+		}
+		var upload_url = window.URL.createObjectURL(files[0]);
+	} else {
+		if (parseInt(form.gpxsample.value) == 0) {
+			var upload_url = "gpx/SouthMtn.gpx";
+		} else {
+			return;
+		}
+	}
+	
+	loader(options, upload_url);
+	
+	if (radioValue(form.gpxsource) == 0) {
+		window.URL.revokeObjectURL(upload_url);
+	}
+};
 
+/*
+ * Invoked by submitInput (above) if options look reasonable.
+ * Issues an XMLHttpRequest to load the route GPX file.
+ * The onreadystatechange handler initiates parsing and display.
+ */
 var loader = function(options, gpx_url) {
-		
+	
 	Messages.clear();
 	
 	var req = new XMLHttpRequest();
