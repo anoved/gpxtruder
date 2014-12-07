@@ -57,7 +57,13 @@
 		<div id="input" class="panel">
 			<p class="iolabel"><img src="img/input.png" width="129" height="31" alt="Input" /></p>
 			<form enctype="multipart/form-data" method="post" name="gpxform">
-				<p>GPX file: <input type="file" id="gpxfile" required /></p>
+				<p><input type="radio" name="gpxsource" value="0" id="gpxsource_upload" onchange="return toggle(event, 0, 'gpxfile') && toggle(event, 1, 'gpxsample');" checked /> <label for="gpxsource_upload">Upload GPX:</label>
+					<input type="file" id="gpxfile" />
+				   <input type="radio" name="gpxsource" value="1" id="gpxsource_sample" onchange="return toggle(event, 0, 'gpxfile') && toggle(event, 1, 'gpxsample');" /> <label for="gpxsource_sample">Sample GPX:</label>
+					<select id="gpxsample" disabled>
+						<option value="0" selected>South Mountain</option>
+						<option value="1">Virgil Crest Ultra</option>
+					</select></p>
 				<details>
 					<summary>Route</summary>
 					<div class="group">
