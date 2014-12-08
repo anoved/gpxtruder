@@ -1011,7 +1011,7 @@ var Parser = {
 			var v = this.point(trkpts[i]);
 			
 			if (isNaN(v[2])) {
-				Messages.error(trkpts[i].getElementsByTagName('ele')[0].innerHTML);
+				Messages.error(trkpts[i].getElementsByTagName('ele')[0].textContent);
 				return null;
 			}
 			
@@ -1026,7 +1026,7 @@ var Parser = {
 		return [
 			parseFloat(pt.getAttribute('lon')),
 			parseFloat(pt.getAttribute('lat')),
-			parseFloat(pt.getElementsByTagName('ele')[0].innerHTML)
+			parseFloat(pt.getElementsByTagName('ele')[0].textContent)
 		];
 	}
 };
