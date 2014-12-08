@@ -56,7 +56,7 @@
 		
 		<div id="input" class="panel">
 			<p class="iolabel"><img src="img/input.png" width="129" height="31" alt="Input" /></p>
-			<form enctype="multipart/form-data" method="post" name="gpxform">
+			<form enctype="multipart/form-data" method="get" name="gpxform">
 				<p><input type="radio" name="gpxsource" value="0" id="gpxsource_upload" onchange="return toggle(event, 0, 'gpxfile') && toggle(event, 1, 'gpxsample');" checked /> <label for="gpxsource_upload">Upload GPX:</label>
 					<input type="file" id="gpxfile" /><br />
 				   <input type="radio" name="gpxsource" value="1" id="gpxsource_sample" onchange="return toggle(event, 0, 'gpxfile') && toggle(event, 1, 'gpxsample');" /> <label for="gpxsource_sample">Sample GPX:</label>
