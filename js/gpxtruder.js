@@ -1008,7 +1008,14 @@ var Parser = {
 		// No processing is done at this point.
 		var pts = [];
 		for (var i = 0; i < trkpts.length; i++) {
-			pts.push(this.point(trkpts[i]));
+			var v = this.point(trkpts[i]);
+			
+			if (isNaN(v[2])) {
+				Messages.error(trkpts[i].getElementsByTagName('ele')[0].innerHTML);
+				return null;
+			}
+			
+			pts.push(v);
 		}
 		
 		return pts;
