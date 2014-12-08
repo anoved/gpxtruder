@@ -1008,14 +1008,7 @@ var Parser = {
 		// No processing is done at this point.
 		var pts = [];
 		for (var i = 0; i < trkpts.length; i++) {
-			var v = this.point(trkpts[i]);
-			
-			if (isNaN(v[2])) {
-				Messages.error(trkpts[i].getElementsByTagName('ele')[0].textContent);
-				return null;
-			}
-			
-			pts.push(v);
+			pts.push(this.point(trkpts[i]));
 		}
 		
 		return pts;
@@ -1026,6 +1019,7 @@ var Parser = {
 		return [
 			parseFloat(pt.getAttribute('lon')),
 			parseFloat(pt.getAttribute('lat')),
+			// Mobile Safari doesn't seem to like using .innerHTML with XML
 			parseFloat(pt.getElementsByTagName('ele')[0].textContent)
 		];
 	}
