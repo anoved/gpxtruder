@@ -8,7 +8,7 @@ Make 3D-printable elevation models of GPX tracks. Try it now at [gpxtruder.xyz](
 
 ## Limitations
 
-GPXtruder was written to fulfil a personal interest. In that respect it is a success, but ambitious users should be aware that it still has many limitations
+GPXtruder was written to fulfil a personal interest. In that respect it is a success, but ambitious users should be aware it has many limitations. Browse the code in the [`gh-pages` branch](https://github.com/anoved/gpxtruder/tree/gh-pages).
 
 - Input GPX files must include elevations (`ele` tags). If your GPX file does not include elevations, you can run it through [GPS Visualizer's DEM database service](http://www.gpsvisualizer.com/elevation) to lookup and insert elevations. *To-do: lookup elevations automatically if necessary.*
 - Route smoothing is achieved by discarding points that are close together. A threshold distance may be manually set or automatically estimated. Smoothing reduces the total route length and reduces detail. *To-do: more sophisticated smoothing that preserves route shape and length while still reducing geometric complexity.*
