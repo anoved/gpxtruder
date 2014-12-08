@@ -1388,7 +1388,7 @@ OpenJsCad.Processor.prototype = {
   generateOutputFileBlobUrl: function() {
     var blob = this.currentObjectToBlob();
     var windowURL=OpenJsCad.getWindowURL();
-    this.outputFileBlobUrl = windowURL.createObjectURL(blob)
+    this.outputFileBlobUrl = windowURL.createObjectURL(blob);
     if(!this.outputFileBlobUrl) throw new Error("createObjectURL() failed"); 
     this.hasOutputFile = true;
     this.downloadOutputFileLink.href = this.outputFileBlobUrl;
@@ -1397,6 +1397,7 @@ OpenJsCad.Processor.prototype = {
     this.downloadOutputFileLink.setAttribute("download", this.getFilenameForRenderedObject() + "." + ext);
     this.enableItems();
     if(this.onchange) this.onchange();
+    Messages.status("BlobUrl file");
   },
 
   generateOutputFileFileSystem: function() {
@@ -1423,6 +1424,7 @@ OpenJsCad.Processor.prototype = {
                       that.downloadOutputFileLink.setAttribute("download", fileEntry.name);
                       that.enableItems();
                       if(that.onchange) that.onchange();
+                      Messages.status("Filesystem file");
                     };
                     fileWriter.onerror = function(e) {
                       throw new Error('Write failed: ' + e.toString());
