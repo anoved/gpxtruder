@@ -1170,7 +1170,7 @@ OpenJsCad.Processor.prototype = {
     this.downloadOutputFileLink.style.display = this.hasOutputFile? "inline":"none";
     this.errordiv.style.display = this.hasError? "block":"none";
     this.statusdiv.style.display = this.hasError? "none":"block";
-    this.basemapButton.style.display = (this.viewer.basemapurl != "") ? "inline" : "none";
+    this.basemapButton.style.display = (this.viewer && this.viewer.basemapurl != "") ? "inline" : "none";
   },
 
   setOpenJsCadPath: function(path) {
