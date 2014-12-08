@@ -6,7 +6,19 @@ Make 3D-printable elevation models of GPX tracks. Try it now at [gpxtruder.xyz](
 
 ## Examples
 
-## Limitations
+## Limitations & To-Do
+
+GPXtruder was written to fulfil a personal interest. In that respect it is a success, but others should recognize it has many limitations and 
+
+- Input GPX files must include elevations (`ele` tags). If your GPX file does not include elevations, you can run it through [GPS Visualizer's DEM database service](http://www.gpsvisualizer.com/elevation) to lookup and insert elevations. *To-do: lookup elevations automatically if necessary.*
+- Route smoothing is achieved by discarding points that are close together. A threshold distance may be manually set or automatically estimated. Smoothing reduces the total route length and reduces detail. *To-do: more sophisticated smoothing that preserves route shape and length while still reducing geometric complexity.*
+- "Noisy" GPX tracks (such as dense clusters of points recorded when motionless) can result in spikes in the output model. Abrupt course changes (such as hairpin turns) can result in similar artifacts. GPXtruder attempts to mitigate these issues with route smoothing and by buffering the path around acute corners differently. *To-do: more sophisticated handling of pauses, spurs, and pivots.*
+- Self-intersecting models may be generated due to acute corners or crossing paths. Some software may consider such models invalid or non-manifold. *To-do: report or resolve self-intersections.*
+- Untested with very large routes, polar routes, and routes that span hemisphere boundaries.
+- Untested with many device and browser combinations.
+- Javascript spaghetti. *To-do: general cleanup and re-structuring to facilitate easier future development.*
+
+You can help resolve these and other problems by reporting bugs and additional details as [issues](https://github.com/anoved/gpxtruder/issues) or by [forking the project](https://github.com/anoved/gpxtruder/fork) and posting pull requests with fixes. All contributions are welcome.
 
 ## Acknowledgements
 
