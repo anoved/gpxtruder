@@ -4,6 +4,20 @@ Make 3D-printable elevation models of GPX tracks. Try it now at [gpxtruder.xyz](
 
 ## Usage
 
+### Route options
+
+#### Vertical exaggeration
+
+This factor is applied to each elevation value. The default value is `5`. The minimum value is `1` (indicating no exaggeration). Try larger factors like `10`, `15`, or `20` to emphasize hills or  enhance the appearance of flat terrain.
+
+#### Clip to minimum elevation
+
+If clipping is enabled, the vertical extent of the output model is limited to the span between the route's minimum and maximum elevation. If disabled, the vertical extent will span from sea level (or the minimum elevation, if below sea level) to the route's maximum elevation. Elevation clipping is enabled by default.
+
+#### Smoothing
+
+Smoothing removes irregularities and reduces the geometric complexity of the output model, decreasing file size and processing time. However, it may also reduce the route length and alter the location of corners or other features. *Automatic* smoothing is enabled by default. For more precise control, select *Manual minimum interval*; points that are closer together than the specified interval may be discarded. An interval value of `0` disables smoothing.
+
 ## Examples
 
 ## Limitations
