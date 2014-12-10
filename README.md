@@ -1,6 +1,4 @@
-# GPXtruder
-
-![3 steps to 3D printing a GPX track with elevations](images/steps.png)
+![GPXtruder: 3 steps to 3D printing a GPX track with elevations](images/steps.png)
 
 Make 3D-printable elevation models of GPX tracks. Try it now at [gpxtruder.xyz](http://gpxtruder.xyz/).
 
