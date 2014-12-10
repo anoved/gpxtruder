@@ -80,11 +80,11 @@ A base adds an extra layer at the bottom of the model. It is intended to ensure 
 
 ---
 
-Once you've selected a GPX track and set your options, click *Extrude Route*. The *Output* panel will scroll into view.
+Once you've selected a GPX track and set your options, click *Extrude Route*. The [output panel](#output-panel) will scroll into view.
 
 ## Output panel
 
-In supported browsers, the *Output* panel will include a 3D preview of the extruded route model. If your browser does not support WebGL, you won't see this display, but you may still be able to download the model.
+After you click *Extrude Route* in the [input panel](#input-panel), the *Output* panel is updated with the results. In supported browsers, the output panel will include a 3D preview of the extruded route model. If your browser does not support WebGL, you won't see the preview display, but you can still download the model.
 
 ### Preview controls
 
@@ -100,9 +100,9 @@ Click the leftmost icon above the display to reset the initial zoom and perspect
 
 When you click the *Generate STL* button below the preview, it will change to a download link. Click the download link to download a 3D-printable `.stl` version of the extruded route model.
 
-If you enabled markers, use the menu next to the download button to toggle between the profile model and the markers model. This affects the preview display as well as the model that will be downloaded.
+If you enabled [markers](#markers), use the menu next to the download button to toggle between the profile model and the markers model. This affects the preview display as well as the model that will be downloaded.
 
-If you selected a *Map* style model, the preview may display the route aligned with a Google map of the underlying terrain. Click the *Download PDF* button beneath the preview to download a PDF version of the basemap. Note that the PDF is scaled to match the route model; print both at actual size to display together.
+If you created a [*Map* style model](#style), the preview may display the route above a Google map of the underlying terrain. Click the *Download PDF* button beneath the preview to download a PDF version of this basemap. Note that the PDF is scaled to match the route model; print both at actual size to display them together.
 
 ### Parametric CAD Scripts
 
