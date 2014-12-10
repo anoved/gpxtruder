@@ -34,13 +34,19 @@ Route options affect how the input GPX track is processed.
 
 #### Vertical exaggeration
 
+![Vertical exaggeration illustration](images/route-vert.png)
+
 This factor is applied to each elevation value. The default value is `5`. The minimum value is `1` (indicating no exaggeration). Try larger factors like `10` or `15` to emphasize hills or enhance the appearance of flat terrain.
 
 #### Clip to minimum elevation
 
+![Clip to minimum elevation illustration](images/route-clip.png)
+
 If clipping is enabled, the vertical extent of the output is limited to the span between the route's minimum and maximum elevation. If disabled, the vertical extent will span from sea level to the route's maximum elevation. (If the minimum elevation is below sea level, that will be used instead.) Elevation clipping is enabled by default.
 
 #### Smoothing
+
+![Smoothing illustration](images/route-smooth.png)
 
 Smoothing removes irregularities and reduces the geometric complexity of the output, decreasing file size and processing time. However, it may also reduce the route length and alter the shape or location of corners and curves. *Automatic* smoothing is enabled by default. For more precise control, select *Manual minimum interval*; points that are closer together than the specified interval will be discarded. An interval value of `0` disables smoothing.
 
