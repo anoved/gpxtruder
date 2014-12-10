@@ -58,9 +58,13 @@ Model options determine what kind of output is generated.
 
 #### Style
 
+![Style illustration](images/model-style.png)
+
 Three model styles are possible. The default *Map* style preserves the 2D course of the input GPX track. The *Linear* option unwinds the route into a straight line like a conventional elevation profile. The *Ring* option rolls the elevation profile into a circle so the start and end of the route meet. A basemap is displayed only if the *Map* style is selected.
 
 #### Markers
+
+![Markers illustration](images/model-markers.png)
 
 Markers are rectangular pillars indicating the location, orientation, and elevation of regular intervals along the route. By default, markers are not created. Select *Kilometers* or *Miles* to place markers at each kilometer or mile along the route. Select *Other interval* to enter a custom interval; the default custom interval is 5 miles (`8047` meters).
 
