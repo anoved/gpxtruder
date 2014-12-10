@@ -94,6 +94,8 @@ Once you've selected a GPX track and set your options, click *Extrude Route*. Th
 
 ## Output panel
 
+![Preview display screenshot](images/output-display.png)
+
 After you click *Extrude Route* in the [input panel](#input-panel), the *Output* panel is updated with the results. In supported browsers, the output panel will include a 3D preview of the extruded route model. If your browser does not support WebGL, you won't see the preview display, but you can still download the model.
 
 ### Preview controls
