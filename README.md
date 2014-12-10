@@ -104,6 +104,8 @@ Hold *Shift* and click and drag (or click and drag the middle mouse button) to p
 
 Hold *Control* and click and drag (or use the scroll wheel) to zoom the display.
 
+![Preview icons screenshot](images/output-preview-icons.png)
+
 Click the leftmost icon above the display to reset the initial zoom and perspective. Click the remaining icons to change to the indicated perspective without affecting zoom.
 
 ### Download controls
@@ -115,6 +117,8 @@ If you enabled [markers](#markers), use the menu next to the download button to 
 If you created a [*Map* style model](#style), the preview may display the route above a Google map of the underlying terrain. Click the *Download PDF* button beneath the preview to download a PDF version of this basemap. Note that the PDF is scaled to match the route model; print both at actual size to display them together.
 
 ### Parametric CAD Scripts
+
+![Parametric CAD Scripts screenshot](images/output-parametric.png)
 
 This section lists two versions of the code GPXtruder generates to convert your GPX track to a 3D `.stl` model. If you just want to print the route model as displayed in the preview, you can safely ignore this section. However, the code may be useful for some custom projects. The code at left is for use with [OpenJSCAD.org](http://openjscad.org/), an online tool; the code at right is for use with [OpenSCAD](http://www.openscad.org/), the original desktop version.
 
