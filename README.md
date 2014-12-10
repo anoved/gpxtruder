@@ -1,8 +1,22 @@
+# [GPXtruder](http://gpxtruder.xyz/)
+
 ![GPXtruder: 3 steps to 3D printing a GPX track with elevations](images/steps.png)
 
 Make 3D-printable elevation models of GPX tracks. Try it now at [gpxtruder.xyz](http://gpxtruder.xyz/).
 
 ---
+
+# Quick Reference
+
+Here's how it works:
+
+1. Select a GPX track
+2. Set some options
+3. Click *Extrude Route*
+4. Check out a preview
+5. Download an STL model
+
+The interface is divided into two main sections, described in more detail below: the [input panel](#input-panel) and the [output panel](#output-panel).
 
 ## Input panel
 
@@ -50,7 +64,7 @@ Markers are generated as a separate model. If markers are enabled, a menu will a
 
 ### Size options
 
-Size options control the size
+Size options control the size of the output.
 
 #### Bed width and Bed height
 
