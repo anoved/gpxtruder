@@ -133,6 +133,8 @@ var submitInput = function() {
 	} else {
 		if (parseInt(form.gpxsample.value) == 0) {
 			var upload_url = "gpx/SouthMtn.gpx";
+		} else if (parseInt(form.gpxsample.value) == 1) {
+			var upload_url = "gpx/VXX.gpx";
 		} else {
 			return;
 		}
