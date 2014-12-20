@@ -3,9 +3,7 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 		<title>GPXtruder: Make 3D-printable elevation models of GPX tracks</title>
-		
-		<script src="js/details-shim.js" type="text/javascript"></script>
-		
+				
 		<script async src="js/gpxtruder.js" type="text/javascript"></script>
 		<script async src="js/openjscad.js" type="text/javascript"></script>
 		<script async src="js/lightgl.js" type="text/javascript"></script>
@@ -15,7 +13,6 @@
 		<script async src="js/vincenty.js" type="text/javascript"></script>
 		<script async src="js/jspdf.min.js" type="text/javascript"></script>
 		
-		<link rel="stylesheet" href="css/details-shim.css" type="text/css">
 		<link rel="stylesheet" href="css/gpxtruder.css" type="text/css">
 		
 		<link rel="apple-touch-icon" sizes="152x152" href="img/apple-touch-icon-152-152.png">
@@ -31,6 +28,18 @@
 				return true;
 			}
 		</script>
+		
+		<script type="text/javascript">
+			function details_shim(a){if(!(a&&"nodeType"in a&&"tagName"in a))return details_shim.init();var b;if("details"==a.tagName.toLowerCase())b=a.getElementsByTagName("summary")[0];else if(a.parentNode&&"summary"==a.tagName.toLowerCase())b=a,a=b.parentNode;else return!1;if("boolean"==typeof a.open)return a.getAttribute("data-open")||(a.className=a.className.replace(/\bdetails_shim_open\b|\bdetails_shim_closed\b/g," ")),!1;var c=a.outerHTML||(new XMLSerializer).serializeToString(a),c=c.substring(0,c.indexOf(">")), c=-1!=c.indexOf("open")&&-1==c.indexOf('open=""')?"open":"closed";a.setAttribute("data-open",c);a.className+=" details_shim_"+c;b.addEventListener("click",function(){details_shim.toggle(a)});Object.defineProperty(a,"open",{get:function(){return"open"==this.getAttribute("data-open")},set:function(a){details_shim.toggle(this,a)}});for(b=0;b<a.childNodes.length;b++)if(3==a.childNodes[b].nodeType&&/[^\s]/.test(a.childNodes[b].data)){var c=document.createElement("span"),d=a.childNodes[b];a.insertBefore(c, d);a.removeChild(d);c.appendChild(d)}return!0}details_shim.toggle=function(a,b){b="undefined"===typeof b?"open"==a.getAttribute("data-open")?"closed":"open":b?"open":"closed";a.setAttribute("data-open",b);a.className=a.className.replace(/\bdetails_shim_open\b|\bdetails_shim_closed\b/g," ")+" details_shim_"+b};details_shim.init=function(){for(var a=document.getElementsByTagName("summary"),b=0;b<a.length;b++)details_shim(a[b])}; window.addEventListener?window.addEventListener("load",details_shim.init,!1):window.attachEvent&&window.attachEvent("onload",details_shim.init);
+		</script>
+		<style type="text/css">
+			details, summary {display: block;}
+			details.details_shim_closed > * {display: none;}
+			details.details_shim_closed > summary {display: block;}
+			details.details_shim_open   > summary {display: block;}
+			details.details_shim_closed > summary:before {display: inline-block; content: "\25b6"; padding: 0 0.1em; margin-right: 0.4em; font-size: 0.9em;}
+			details.details_shim_open   > summary:before {display: inline-block; content: "\25bc"; padding: 0; margin-right: 0.35em;}
+		</style>
 	</head>
 	<body onLoad="setup();">
 		
