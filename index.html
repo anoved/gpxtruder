@@ -12,9 +12,7 @@
 		<script async src="js/proj4.js" type="text/javascript"></script>
 		<script async src="js/vincenty.js" type="text/javascript"></script>
 		<script async src="js/jspdf.min.js" type="text/javascript"></script>
-		
-		<link rel="stylesheet" href="css/gpxtruder.css" type="text/css">
-		
+				
 		<link rel="apple-touch-icon" sizes="152x152" href="img/apple-touch-icon-152-152.png">
 		<link rel="shortcut icon" href="img/favicon.ico" />
 		
@@ -39,6 +37,192 @@
 			details.details_shim_open   > summary {display: block;}
 			details.details_shim_closed > summary:before {display: inline-block; content: "\25b6"; padding: 0 0.1em; margin-right: 0.4em; font-size: 0.9em;}
 			details.details_shim_open   > summary:before {display: inline-block; content: "\25bc"; padding: 0; margin-right: 0.35em;}
+		</style>
+		<style type="text/css">
+			body {
+				font-family: sans-serif;
+				background-image: url(img/contourtile.png);
+				background-repeat: repeat;
+				background-color: #D7E8A7;
+			}
+
+			/* Text styles */
+
+			.info {
+				font-size: x-small;
+				color: gray;
+			}
+
+			.info a {
+				color: gray;
+			}
+
+			/* Config option groups */
+
+			details {
+				margin-top:10px;
+				margin-bottom: 10px;
+			}
+
+			details summary {
+				font-weight: bold;
+				cursor: pointer;
+			}
+
+			details div.group {
+				padding-left: 10px;
+				border-left: 5px solid #D7E8A7;
+				margin: 10px;
+			}
+
+			div#output details div.group {
+				/*padding: 5px;
+				margin: 0;*/
+				border: none;
+			}
+
+			/* General sections */
+
+			div#intro {
+			}
+
+			div#input {
+			}
+
+			div#output {
+			}
+
+			div#promo {
+			}
+
+			div#footer {
+				text-align: center;
+			}
+
+			/* Section panels */
+
+			div.panel {
+				
+				margin-left: auto;
+				margin-right: auto;
+				margin-top: 10px;
+				margin-bottom: 10px;
+				
+				width: 800px;
+
+				padding: 10px;
+
+				border-radius: 10px;
+				border-width: 4px;
+				border-style: solid;
+				border-color: #c4d994;
+				
+				background: white;
+			}
+
+			div.panel :first-child {
+				margin-top: 0;
+			}
+
+			div.panel :last-child {
+				margin-bottom: 0;
+			}
+
+			p.iolabel {
+				float: right;
+			}
+
+			/* Step 1-2-3 Overview */
+
+			table#howto {
+				width: 100%;
+			}
+
+			table#howto td {
+				width: 33%;
+				vertical-align: top;
+			}
+
+			/* Code output */
+
+			table#outputcode {
+				width: 100%;
+			}
+
+			table#outputcode td {
+				width: 50%;
+				vertical-align: top;
+				padding-right: 5px;
+			}
+
+			textarea.codebox {
+				width: 100%;
+				border: 1px solid #c4d994;
+			}
+
+			/* Status message popups */
+
+			#messages {
+				position: fixed;
+				top: 0;
+				right: 0;
+			}
+
+			#messages div.msg {
+				float: right;
+				clear: right;
+				
+				box-shadow: 2px 2px 6px;
+				padding: 10px;
+				margin: 10px;
+				cursor: pointer;
+			}
+
+			#messages div.errormsg {
+				background: #FFCCCC;
+				border: 1px dashed red;
+			}
+
+			#messages div.statusmsg {
+				background: #CCCCFF;
+				border: 1px dotted blue;
+			}
+
+			/* OpenJSCAD display */
+
+			div#display div.error {
+				border: 5px dashed #DDD;
+				background-color: #EEE;
+				/* text */ color: #888;
+				padding: 10px;
+				clear: both;
+			}
+
+			canvas {
+				cursor: move;
+			}
+
+			/* Display view buttons */
+
+			.viewbuttonsdiv {
+				margin-bottom: 10px;
+			}
+
+			img.viewbutton {
+				cursor: pointer;
+				border: none;
+				margin-left: 5px;
+				margin-right: 5px;
+			}
+
+			/* Display status line */
+
+			.statusdiv {
+				margin-top: 10px;
+			}
+
+			#statusspan {
+			}
 		</style>
 	</head>
 	<body onLoad="setup();">
