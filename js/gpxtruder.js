@@ -259,9 +259,9 @@ Gpex.prototype.Display = function(code) {
 		
 		// Attempt to retrieve a basemap on two conditions:
 		// track shape is selected and zoom level is reasonable
-		if (!(this.options.shapetype === 0 && this.basemap())) {
+		//if (!(this.options.shapetype === 0 && this.basemap())) {
 			OJSCAD.viewer.clearBaseMap();
-		}
+		//}
 	}
 	
 	// Update the preview display (required to prepare STL export,
@@ -652,8 +652,35 @@ Gpex.prototype.ProjectPoints = function() {
 		this.pp.push(xyz);
 	}
 	
+	var k2utm = {
+		maxx: 641585,
+		minx: 631485,
+		maxy: 3977055,
+		miny: 3966795,
+		minz: this.bounds.minz,
+		maxz: this.bounds.maxz
+	};
+	
+	// to output track in UTM, switch proj4 def in PointProjector.mercator and set this.bounds = k2utm;
+	// This is necessary for best alignment with UTM landscape model.
+	
+	// lat/y 1, lng/x 0
+	/*
+	var sw = proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", "GOOGLE", [k2utm.minx, k2utm.miny]);
+	var ne = proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", "GOOGLE", [k2utm.maxx, k2utm.maxy]);
+	this.bounds.maxx = ne[0];
+	this.bounds.minx = sw[0];
+	this.bounds.maxy = ne[1];
+	this.bounds.miny = sw[1];
+	*/
+	
+	this.bounds = k2utm;
+	
 	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = ScaleBounds(this.bounds, this.bed);
+	
+	// store utm scale separately so we can z scale correctly
+	this.zscale = ScaleBounds(k2utm, this.bed);
 }
 
 var vector_angle = function(a, b) {
@@ -947,7 +974,7 @@ Gpex.prototype.pxyz = function(v) {
 	return [
 			this.scale * (v[0] - this.offset[0]),
 			this.scale * (v[1] - this.offset[1]),
-			this.scale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
+			this.zscale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
 	];
 }
 
@@ -1030,7 +1057,8 @@ var PointProjector = {
 	},
 	
 	mercator: function(v) {
-		return proj4('GOOGLE', [v[0], v[1]]).concat(v[2]);
+		return proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", [v[0], v[1]]).concat(v[2]);
+		//return proj4('GOOGLE', [v[0], v[1]]).concat(v[2]);
 	}
 };
 
