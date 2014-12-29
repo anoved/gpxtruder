@@ -550,12 +550,9 @@ Gpex.prototype.basemap = function(bounds) {
 	
 	var bedmax = Math.max(this.options.bedx, this.options.bedy);
 	
-	var bedwidth = this.options.bedx;
-	var bedheight = this.options.bedy;
-	
 	var mapsize = {
-		width:  Math.round(640 * bedwidth / bedmax),
-		height: Math.round(640 * bedheight / bedmax)
+		width:  Math.round(640 * this.options.bedx / bedmax),
+		height: Math.round(640 * this.options.bedy / bedmax)
 	};
 	
 	var sw = proj4("GOOGLE", "WGS84", [this.bounds.minx, this.bounds.miny]);
@@ -573,7 +570,7 @@ Gpex.prototype.basemap = function(bounds) {
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
 	
-	OJSCAD.viewer.setBaseMap(mapurl, mapscale, bedwidth, bedheight);
+	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.options.bedx, this.options.bedy);
 	
 	//console.log(mapurl, mapscale);
 	
@@ -602,7 +599,6 @@ function prepmap(img, scale, w, h) {
 		orientation: mapw > maph ? 'l' : 'p',
 		format: [mapw, maph]
 	});
-	
 	
 	pdfdoc.addImage(imgDataURL, 'JPEG', 0, 0, mapw, maph);
 	pdfdoc.setDrawColor(26, 26, 26);
