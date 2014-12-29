@@ -260,7 +260,7 @@ Gpex.prototype.Display = function(code) {
 		// Attempt to retrieve a basemap on two conditions:
 		// track shape is selected and zoom level is reasonable
 		if (!(this.options.shapetype === 0 && this.basemap())) {
-			OJSCAD.viewer.clearBaseMap(this.rotate);
+			OJSCAD.viewer.clearBaseMap();
 		}
 	}
 	
@@ -550,8 +550,8 @@ Gpex.prototype.basemap = function(bounds) {
 	
 	var bedmax = Math.max(this.options.bedx, this.options.bedy);
 	
-	var bedwidth = this.rotate ? this.options.bedy : this.options.bedx;
-	var bedheight = this.rotate ? this.options.bedx : this.options.bedy;
+	var bedwidth = this.options.bedx;
+	var bedheight = this.options.bedy;
 	
 	var mapsize = {
 		width:  Math.round(640 * bedwidth / bedmax),
@@ -573,7 +573,7 @@ Gpex.prototype.basemap = function(bounds) {
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
 	
-	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.rotate, bedwidth, bedheight);
+	OJSCAD.viewer.setBaseMap(mapurl, mapscale, bedwidth, bedheight);
 	
 	//console.log(mapurl, mapscale);
 	
@@ -610,24 +610,11 @@ function prepmap(img, scale, w, h) {
 	pdfdoc.save('basemap.pdf');
 }
 
-// Return scale factor necessary to fit extent to bed, disregarding rotation
+// Return scale factor necessary to fit extent to bed
 var Scale = function(bed, xextent, yextent) {
-	var mmax = Math.max(xextent, yextent),
-		mmin = Math.min(xextent, yextent),
-		bmax = Math.max(bed.x, bed.y),
-		bmin = Math.min(bed.x, bed.y),
-		fmax = bmax / mmax,
-		fmin = bmin / mmin;
-	return Math.min(fmax, fmin);
-}
-
-// Return boolean whether the model should be rotated to fit bed
-var Rotate = function(bed, xextent, yextent) {
-	if ((bed.x >= bed.y && xextent >= yextent) ||
-		(bed.x < bed.y && xextent < yextent)) {
-		return false;
-	}	
-	return true;
+	var xscale = bed.x / xextent,
+		yscale = bed.y / yextent;
+	return Math.min(xscale, yscale);
 }
 
 // point to project and cumulative distance along path
@@ -668,7 +655,6 @@ Gpex.prototype.ProjectPoints = function() {
 	var yextent = this.bounds.maxy - this.bounds.miny;
 	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = Scale(this.bed, xextent, yextent);
-	this.rotate = Rotate(this.bed, xextent, yextent);
 }
 
 var vector_angle = function(a, b) {
@@ -790,7 +776,7 @@ Gpex.prototype.process_path = function() {
 	PathSegment.last_face(faces, s);
 	
 	// Package results in a code object and pass it back to caller
-	return new Code(vertices, faces, this.markers, {rotation: this.rotate, markerWidth: 2 * this.options.buffer + 2});
+	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2});
 }
 
 /*
@@ -801,7 +787,6 @@ Gpex.prototype.process_path = function() {
  * - faces
  * - markers
  * - options = {
- *    rotate: // boolean; indicates whether model should be rotated to fit bed
  *    markerWidth: // used to size interval markers
  *   }
  * 
@@ -841,10 +826,6 @@ Code.prototype.jscad = function(preview) {
 		result += "polyhedron({points:[\n" + this.points + "\n],\ntriangles:[\n" + this.faces + "\n]})";
 	}
 	
-	if (this.options.rotation) {
-		result += ".rotateZ(90)";
-	}
-	
 	result += ";\n}\n\n";
 	
 	// markers
@@ -855,10 +836,6 @@ Code.prototype.jscad = function(preview) {
 		var m = this.markers[0] + this.markers.slice(1).map(function(s) {
 			return ".union(" + s + ")";
 		}).join("");
-		
-		if (this.options.rotation) {
-			m += ".rotateZ(90)";
-		}
 		
 		if (preview) {
 			result += "function marker(position, orientation, height) {\nvar z = height + 2;\n" +

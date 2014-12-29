@@ -184,9 +184,9 @@ OpenJsCad.Viewer.prototype = {
 		this.bedDepth = depth;
 	},
 	
-	setBaseMap: function(url, scale, rotate, mapw, maph) {
+	setBaseMap: function(url, scale, mapw, maph) {
 		
-		var hash = url + scale + rotate;
+		var hash = url + scale;
 		if (this.basemapurl === hash) {
 			return;
 		} else {
@@ -196,14 +196,8 @@ OpenJsCad.Viewer.prototype = {
 		var bedx = this.bedWidth/2,
 			bedy = this.bedDepth/2;
 		
-		this.bedmesh.vertices = [[-bedx * scale, bedy * scale, 0], [bedx * scale, bedy * scale, 0], [bedx * scale, -bedy * scale, 0], [-bedx * scale, -bedy * scale, 0]];
-		
-		if (rotate) {
-			this.bedmesh.coords = [[1, 1], [1, 0], [0, 0], [0, 1]];
-		} else {
-			this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
-		}
-		
+		this.bedmesh.vertices = [[-bedx * scale, bedy * scale, 0], [bedx * scale, bedy * scale, 0], [bedx * scale, -bedy * scale, 0], [-bedx * scale, -bedy * scale, 0]];	
+		this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
 		this.bedmesh.compile();
 		
 		var that = this;
@@ -218,7 +212,7 @@ OpenJsCad.Viewer.prototype = {
 		});
 	},
 	
-	clearBaseMap: function(rotate) {
+	clearBaseMap: function() {
 		this.basemapurl = "";
 		
 		var bedx = this.bedWidth/2,
@@ -230,11 +224,7 @@ OpenJsCad.Viewer.prototype = {
 			[ bedx, -bedy, 0],
 			[-bedx, -bedy, 0]
 		];
-		if (rotate) {
-			this.bedmesh.coords = [[1, 1], [1, 0], [0, 0], [0, 1]];
-		} else {
-			this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
-		}
+		this.bedmesh.coords = [[0, 1], [1, 1], [1, 0], [0, 0]];
 		this.bedmesh.compile();
 		
 		this.maptexture = GL.Texture.checkerboard();
