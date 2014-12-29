@@ -606,11 +606,16 @@ function prepmap(img, scale, w, h) {
 	pdfdoc.save('basemap.pdf');
 }
 
-// Return scale factor necessary to fit extent to bed
+// Return scale factor necessary to fit extents to bed
 var Scale = function(bed, xextent, yextent) {
 	var xscale = bed.x / xextent,
 		yscale = bed.y / yextent;
 	return Math.min(xscale, yscale);
+}
+
+// Return scale factor necessary to fit bounds to bed
+var ScaleBounds = function(bounds, bed) {
+	return Scale(bed, (bounds.maxx - bounds.minx), (bounds.maxy - bounds.miny));
 }
 
 // point to project and cumulative distance along path
@@ -647,10 +652,8 @@ Gpex.prototype.ProjectPoints = function() {
 		this.pp.push(xyz);
 	}
 	
-	var xextent = this.bounds.maxx - this.bounds.minx;
-	var yextent = this.bounds.maxy - this.bounds.miny;
 	this.offset = Offsets(this.bounds, this.options.zcut);
-	this.scale = Scale(this.bed, xextent, yextent);
+	this.scale = ScaleBounds(this.bounds, this.bed);
 }
 
 var vector_angle = function(a, b) {
