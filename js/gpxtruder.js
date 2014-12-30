@@ -98,6 +98,22 @@ var submitInput = function() {
 			return false;
 		}
 		
+		if (options.projection != "GOOGLE") {
+			
+			if (options.projection === "") {
+				Messages.error("Missing projection.");
+				return false;
+			}
+			
+			try {
+				// if successful, could stash projection object for later use...
+				proj4(options.projection);
+			} catch(err) {
+				Messages.error("Unrecognized projection.");
+				return false;
+			}
+		}
+		
 		return true;
 	};
 	
@@ -110,6 +126,7 @@ var submitInput = function() {
 		base:           parseFloat(form.base.value),
 		zcut:           form.zcut.checked,
 		shapetype:      radioValue(form.shape),
+		projection:     (radioValue(form.proj_type) == 0 ? "GOOGLE" : form.projection.value),
 		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
 		smoothtype:     radioValue(form.smooth),
 		smoothspan:     parseFloat(form.mindist.value),
@@ -187,6 +204,7 @@ function Gpex(options, pts) {
 	
 	// read-only configuration
 	this.options = options;
+	PointProjector.init(options.projection);
 	
 	// available bed extent
 	this.bed = {
@@ -257,11 +275,11 @@ Gpex.prototype.Display = function(code) {
 	if (OJSCAD.viewer) {
 		OJSCAD.viewer.setBedSize(this.options.bedx, this.options.bedy);
 		
-		// Attempt to retrieve a basemap on two conditions:
-		// track shape is selected and zoom level is reasonable
-		//if (!(this.options.shapetype === 0 && this.basemap())) {
+		// Attempt to retrieve a basemap on three conditions:
+		// map style is selected; default Google Maps projection is selected; zoom level is reasonable
+		if (!(this.options.shapetype === 0 && this.options.projection === "GOOGLE" && this.basemap())) {
 			OJSCAD.viewer.clearBaseMap();
-		//}
+		}
 	}
 	
 	// Update the preview display (required to prepare STL export,
@@ -674,13 +692,15 @@ Gpex.prototype.ProjectPoints = function() {
 	this.bounds.miny = sw[1];
 	*/
 	
-	this.bounds = k2utm;
+	//this.bounds = k2utm;
 	
 	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = ScaleBounds(this.bounds, this.bed);
 	
 	// store utm scale separately so we can z scale correctly
-	this.zscale = ScaleBounds(k2utm, this.bed);
+	//this.zscale = ScaleBounds(k2utm, this.bed);
+	// wacky hacky; I think only used when testing mixed projection/bounds
+	this.zscale = this.scale;
 }
 
 var vector_angle = function(a, b) {
@@ -1044,6 +1064,11 @@ var Parser = {
  */
 var PointProjector = {
 	
+	// must be called with a valid projDefinition prior to calling .mercator()
+	init: function(projDefinition) {
+		this.projection = proj4(projDefinition);
+	},
+	
 	linear: function(v, distRatio, total) {
 		return [0, distRatio * total, v[2]];
 	},
@@ -1057,8 +1082,7 @@ var PointProjector = {
 	},
 	
 	mercator: function(v) {
-		return proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", [v[0], v[1]]).concat(v[2]);
-		//return proj4('GOOGLE', [v[0], v[1]]).concat(v[2]);
+		return this.projection.forward([v[0], v[1]]).concat(v[2]);
 	}
 };
 
