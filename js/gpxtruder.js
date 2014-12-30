@@ -130,6 +130,11 @@ var submitInput = function() {
 		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
 		smoothtype:     radioValue(form.smooth),
 		smoothspan:     parseFloat(form.mindist.value),
+		fittype:        radioValue(form.fit_type),
+		region_minx:    parseFloat(form.region_minx.value),
+		region_maxx:	parseFloat(form.region_maxx.value),
+		region_miny:	parseFloat(form.region_miny.value),
+		region_maxy:	parseFloat(form.region_maxy.value),
 		jscadDiv:       document.getElementById('code_jscad'),
 		oscadDiv:       document.getElementById('code_openscad')
 	};
@@ -683,14 +688,15 @@ Gpex.prototype.ProjectPoints = function() {
 	// This is necessary for best alignment with UTM landscape model.
 	
 	// lat/y 1, lng/x 0
-	/*
-	var sw = proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", "GOOGLE", [k2utm.minx, k2utm.miny]);
-	var ne = proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", "GOOGLE", [k2utm.maxx, k2utm.maxy]);
-	this.bounds.maxx = ne[0];
-	this.bounds.minx = sw[0];
-	this.bounds.maxy = ne[1];
-	this.bounds.miny = sw[1];
-	*/
+	
+	//var sw = proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", "GOOGLE", [k2utm.minx, k2utm.miny]);
+	//var ne = proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", "GOOGLE", [k2utm.maxx, k2utm.maxy]);
+	if (this.options.fittype == 1) {
+		this.bounds.maxx = this.options.region_maxx;
+		this.bounds.minx = this.options.region_minx;
+		this.bounds.maxy = this.options.region_maxy;
+		this.bounds.miny = this.options.region_miny;
+	}
 	
 	//this.bounds = k2utm;
 	
