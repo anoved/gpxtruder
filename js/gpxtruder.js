@@ -650,7 +650,7 @@ Gpex.prototype.ProjectPoint = function(point, cdr) {
 	} else if (this.options.shapetype == 2) {
 		xyz = PointProjector.ring(point, cdr, this.ringRadius);
 	} else {
-		xyz = PointProjector.mercator(point);
+		xyz = PointProjector.project(point);
 	}
 	return xyz;
 }
@@ -684,7 +684,7 @@ Gpex.prototype.ProjectPoints = function() {
 		maxz: this.bounds.maxz
 	};
 	
-	// to output track in UTM, switch proj4 def in PointProjector.mercator and set this.bounds = k2utm;
+	// to output track in UTM, switch proj4 def in PointProjector.project and set this.bounds = k2utm;
 	// This is necessary for best alignment with UTM landscape model.
 	
 	// lat/y 1, lng/x 0
@@ -1070,7 +1070,7 @@ var Parser = {
  */
 var PointProjector = {
 	
-	// must be called with a valid projDefinition prior to calling .mercator()
+	// must be called with a valid projDefinition prior to calling .project()
 	init: function(projDefinition) {
 		this.projection = proj4(projDefinition);
 	},
@@ -1087,7 +1087,7 @@ var PointProjector = {
 		];
 	},
 	
-	mercator: function(v) {
+	project: function(v) {
 		return this.projection.forward([v[0], v[1]]).concat(v[2]);
 	}
 };
