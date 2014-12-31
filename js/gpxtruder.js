@@ -60,6 +60,15 @@ var submitInput = function() {
 		return markerSpan;
 	};
 	
+	var composeProjection = function(projType, utmZone, utmHemi, custom) {
+		if (projType === 1) {
+			return custom;
+		} else if (projType === 2) {
+			return "+proj=utm +zone=" + utmZone + (utmHemi == 1 ? " +south" : "") + " +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
+		}
+		return "GOOGLE";
+	};
+	
 	// returns true if options are valid, false otherwise
 	var validOptions = function(options) {
 		
@@ -98,20 +107,16 @@ var submitInput = function() {
 			return false;
 		}
 		
-		if (options.projection != "GOOGLE") {
-			
-			if (options.projection === "") {
-				Messages.error("Missing projection.");
-				return false;
-			}
-			
-			try {
-				// if successful, could stash projection object for later use...
-				proj4(options.projection);
-			} catch(err) {
-				Messages.error("Unrecognized projection.");
-				return false;
-			}
+		if (options.projection === "") {
+			Messages.error("Undefined map projection.");
+			return false;
+		}
+		
+		try {
+			PointProjector.init(options.projection);
+		} catch(err) {
+			Messages.error("Unrecognized map projection.");
+			return false;
 		}
 		
 		return true;
@@ -126,7 +131,7 @@ var submitInput = function() {
 		base:           parseFloat(form.base.value),
 		zcut:           form.zcut.checked,
 		shapetype:      radioValue(form.shape),
-		projection:     (radioValue(form.proj_type) == 0 ? "GOOGLE" : form.projection.value),
+		projection:     composeProjection(radioValue(form.proj_type), form.utm_zone.value, form.utm_hemisphere.value, form.projection.value),
 		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
 		smoothtype:     radioValue(form.smooth),
 		smoothspan:     parseFloat(form.mindist.value),
@@ -209,7 +214,6 @@ function Gpex(options, pts) {
 	
 	// read-only configuration
 	this.options = options;
-	PointProjector.init(options.projection);
 	
 	// available bed extent
 	this.bed = {
