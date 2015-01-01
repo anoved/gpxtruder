@@ -135,11 +135,6 @@ var submitInput = function() {
 		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
 		smoothtype:     radioValue(form.smooth),
 		smoothspan:     parseFloat(form.mindist.value),
-		fittype:        radioValue(form.fit_type),
-		region_minx:    parseFloat(form.region_minx.value),
-		region_maxx:	parseFloat(form.region_maxx.value),
-		region_miny:	parseFloat(form.region_miny.value),
-		region_maxy:	parseFloat(form.region_maxy.value),
 		jscadDiv:       document.getElementById('code_jscad'),
 		oscadDiv:       document.getElementById('code_openscad')
 	};
@@ -676,38 +671,15 @@ Gpex.prototype.ProjectPoints = function() {
 		this.projected_points.push(xyz);
 	}
 	
-	var k2utm = {
-		maxx: 641585,
-		minx: 631485,
-		maxy: 3977055,
-		miny: 3966795,
-		minz: this.bounds.minz,
-		maxz: this.bounds.maxz
-	};
-	
-	// to output track in UTM, switch proj4 def in PointProjector.project and set this.bounds = k2utm;
-	// This is necessary for best alignment with UTM landscape model.
-	
-	// lat/y 1, lng/x 0
-	
-	//var sw = proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", "GOOGLE", [k2utm.minx, k2utm.miny]);
-	//var ne = proj4("+proj=utm +zone=43 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", "GOOGLE", [k2utm.maxx, k2utm.maxy]);
-	if (this.options.fittype == 1) {
-		this.bounds.maxx = this.options.region_maxx;
-		this.bounds.minx = this.options.region_minx;
-		this.bounds.maxy = this.options.region_maxy;
-		this.bounds.miny = this.options.region_miny;
+	if (typeof(region) !== "undefined") {
+		this.bounds.minx = region.west;
+		this.bounds.miny = region.south;
+		this.bounds.maxx = region.east;
+		this.bounds.maxy = region.north;
 	}
-	
-	//this.bounds = k2utm;
-	
+		
 	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = ScaleBounds(this.bounds, this.bed);
-	
-	// store utm scale separately so we can z scale correctly
-	//this.zscale = ScaleBounds(k2utm, this.bed);
-	// wacky hacky; I think only used when testing mixed projection/bounds
-	this.zscale = this.scale;
 }
 
 var vector_angle = function(a, b) {
@@ -1001,7 +973,7 @@ Gpex.prototype.pxyz = function(v) {
 	return [
 			this.scale * (v[0] - this.offset[0]),
 			this.scale * (v[1] - this.offset[1]),
-			this.zscale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
+			this.scale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
 	];
 }
 
