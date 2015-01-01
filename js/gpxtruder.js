@@ -194,7 +194,7 @@ var loader = function(options, gpx_url) {
 			}
 			
 			// If all is well, proceed to extrude the GPX path.
-			new Gpex(options, pts);
+			g = new Gpex(options, pts);
 		}
 	}
 	
