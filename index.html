@@ -268,8 +268,11 @@
 					<div class="group">
 						<p>Vertical exaggeration: <input type="number" id="vertical" required min="1" step="1" value="5" /><br />
 						   <span class="info">Multiply elevation values by this factor to enhance terrain.</span></p>
-						<p>Clip to minimum elevation: <input type="checkbox" id="zcut" value="1" checked /><br />
-						   <span class="info">Uncheck to show full elevation above sea level.</span></p>
+						<p><input type="checkbox" id="zoverride" value="1" onchange="if (event.target.checked){document.getElementById('zcut').checked = false;} return toggle(event, event.target.checked ? 1 : 0, 'zconstant') && toggle(event, event.target.checked ? 0 : 1, 'zcut');"/> <label for="zoverride">Constant elevation:</label> <input type="number" id="zconstant" required value="10000" step="1" min="1" disabled /> (meters)<br />
+						<span class="info">Overrides GPX elevation values and clip setting. Useful for intersecting route with other elevation models.</span></p>
+						<p><input type="checkbox" id="zcut" value="1" checked /> <label for="zcut">Clip to minimum elevation</label><br />
+						<span class="info">Uncheck to show full elevation above sea level.</span></p>
+
 						<p>Smoothing: <input type="radio" name="smooth" value="0" id="smooth_auto" onchange="return toggle(event, 1, 'mindist');" checked /> <label for="smooth_auto">Automatic</label> <input type="radio" name="smooth" value="1" id="smooth_manual" onchange="return toggle(event, 1, 'mindist');" /> <label for="smooth_manual">Manual minimum interval:</label> <input type="number" id="mindist" required min="0" step="1" value="0" disabled /> (meters)<br />
 						   <span class="info">Simplify the route by discarding points that are close together. Automatic smoothing computes interval based on model shape, size, and scale.</span></p>
 					</div>

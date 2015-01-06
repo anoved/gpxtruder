@@ -102,6 +102,11 @@ var submitInput = function() {
 			return false;
 		}
 		
+		if (options.zoverride && (!isFinite(options.zconstant) || options.zconstant <= 0)) {
+			Messages.error("Constant elevation must be greater than 0.");
+			return false;
+		}
+		
 		if (!isFinite(options.base) || options.base < 0) {
 			Messages.error("Base height must be greater than or equal to 0.");
 			return false;
@@ -129,7 +134,9 @@ var submitInput = function() {
 		bedx:           parseFloat(form.width.value),
 		bedy:           parseFloat(form.depth.value),
 		base:           parseFloat(form.base.value),
-		zcut:           form.zcut.checked,
+		zcut:           form.zoverride.checked ? false : form.zcut.checked,
+		zoverride:      form.zoverride.checked,
+		zconstant:      parseFloat(form.zconstant.value),
 		shapetype:      radioValue(form.shape),
 		projection:     composeProjection(radioValue(form.proj_type), form.utm_zone.value, form.utm_hemisphere.value, form.projection.value),
 		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
@@ -188,7 +195,7 @@ var loader = function(options, gpx_url) {
 			}
 			
 			// Attempt to parse response XML as a GPX file.
-			var pts = Parser.file(req.responseXML);
+			var pts = Parser.file(req.responseXML, options.zoverride ? options.zconstant : null);
 			if (pts === null) {
 				return;
 			}
@@ -980,8 +987,13 @@ Gpex.prototype.pxyz = function(v) {
 // Rudimentary GPX parsing based on https://github.com/peplin/gpxviewer/
 var Parser = {
 	
+	// Default elevation value
+	elevation: null,
+	
 	// Parse GPX file, starting with tracks
-	file: function(content) {
+	// Elevation arg specifies default z value
+	file: function(content, elevation) {
+		this.elevation = elevation;
 		var tracks = content.documentElement.getElementsByTagName('trk');
 		if (tracks.length === 0) {
 			Messages.error("This file does not appear to contain any tracks.<br />(Are you sure it is a GPX file?)");
@@ -1003,8 +1015,10 @@ var Parser = {
 	
 	segment: function(segment) {
 		var trkpts = segment.getElementsByTagName('trkpt');
-		if (trkpts[0].getElementsByTagName('ele').length === 0) {
-			Messages.error('This GPX file does not appear to contain any elevation data.<br />Try using <a href="http://www.gpsvisualizer.com/elevation">GPX Visualizer</a> to add elevation data to your route.');
+		
+		// Only the first trkpt is tested for elevations; all others are assumed alike.
+		if (this.elevation === null && trkpts[0].getElementsByTagName('ele').length === 0) {
+			Messages.error('This GPX file does not appear to contain any elevation data.<br />Specify a constant default elevation or try using <a href="http://www.gpsvisualizer.com/elevation">GPX Visualizer</a> to add elevation data to your route.');
 			return null;
 		}
 		
@@ -1023,8 +1037,9 @@ var Parser = {
 		return [
 			parseFloat(pt.getAttribute('lon')),
 			parseFloat(pt.getAttribute('lat')),
+			// Prefer predefined constant elevation value if available
 			// Mobile Safari doesn't seem to like using .innerHTML with XML
-			parseFloat(pt.getElementsByTagName('ele')[0].textContent)
+			this.elevation || parseFloat(pt.getElementsByTagName('ele')[0].textContent)
 		];
 	}
 };
