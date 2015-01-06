@@ -112,6 +112,16 @@ var submitInput = function() {
 			return false;
 		}
 		
+		// Additional sanity checking could be applied to extents.
+		if (options.regionfit && (
+				!isFinite(options.region_minx) || 
+				!isFinite(options.region_maxx) ||
+				!isFinite(options.region_miny) ||
+				!isFinite(options.region_maxy))) {
+			Messages.error("Invalid region extents.");
+			return false;
+		}
+		
 		if (options.projection === "") {
 			Messages.error("Undefined map projection.");
 			return false;
@@ -137,6 +147,11 @@ var submitInput = function() {
 		zcut:           form.zoverride.checked ? false : form.zcut.checked,
 		zoverride:      form.zoverride.checked,
 		zconstant:      parseFloat(form.zconstant.value),
+		regionfit:      form.regionfit.checked,
+		region_minx:    parseFloat(form.east_min.value),
+		region_maxx:    parseFloat(form.east_max.value),
+		region_miny:    parseFloat(form.north_min.value),
+		region_maxy:    parseFloat(form.north_max.value),
 		shapetype:      radioValue(form.shape),
 		projection:     composeProjection(radioValue(form.proj_type), form.utm_zone.value, form.utm_hemisphere.value, form.projection.value),
 		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
@@ -678,13 +693,13 @@ Gpex.prototype.ProjectPoints = function() {
 		this.projected_points.push(xyz);
 	}
 	
-	if (typeof(region) !== "undefined") {
-		this.bounds.minx = region.west;
-		this.bounds.miny = region.south;
-		this.bounds.maxx = region.east;
-		this.bounds.maxy = region.north;
+	if (this.options.regionfit) {
+		this.bounds.maxx = this.options.region_maxx;
+		this.bounds.minx = this.options.region_minx;
+		this.bounds.maxy = this.options.region_maxy;
+		this.bounds.miny = this.options.region_miny;
 	}
-		
+	
 	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = ScaleBounds(this.bounds, this.bed);
 }
