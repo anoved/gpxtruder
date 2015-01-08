@@ -1,4 +1,4 @@
-var OJSCAD = undefined;
+var OJSCAD = null;
 
 /*
  * Invoked when the page is loaded.
@@ -28,7 +28,7 @@ var setup = function() {
 		},
 		false
 	);
-}
+};
 
 /*
  * Invoked when the "Extrude Route" button is clicked.
@@ -40,7 +40,6 @@ var submitInput = function() {
 		for (var i = 0, len = radios.length; i < len; i++) {
 			if (radios[i].checked) {
 				return parseInt(radios[i].value);
-				break;
 			}
 		}
 		return undefined;
@@ -165,20 +164,21 @@ var submitInput = function() {
 		return;
 	}
 	
-	if (radioValue(form.gpxsource) == 0) {
+	var upload_url = null;
+	if (radioValue(form.gpxsource) === 0) {
 		// Assign a local URL to the file selected for upload
 		// https://developer.mozilla.org/en-US/docs/Web/API/URL.createObjectURL
 		var files = document.getElementById('gpxfile').files;
-		if (files.length == 0) {
+		if (files.length === 0) {
 			Messages.error('No GPX file selected.');
 			return;
 		}
-		var upload_url = window.URL.createObjectURL(files[0]);
+		upload_url = window.URL.createObjectURL(files[0]);
 	} else {
-		if (parseInt(form.gpxsample.value) == 0) {
-			var upload_url = "gpx/SouthMtn.gpx";
-		} else if (parseInt(form.gpxsample.value) == 1) {
-			var upload_url = "gpx/VXX.gpx";
+		if (parseInt(form.gpxsample.value) === 0) {
+			upload_url = "gpx/SouthMtn.gpx";
+		} else if (parseInt(form.gpxsample.value) === 1) {
+			upload_url = "gpx/VXX.gpx";
 		} else {
 			return;
 		}
@@ -186,7 +186,7 @@ var submitInput = function() {
 	
 	loader(options, upload_url);
 	
-	if (radioValue(form.gpxsource) == 0) {
+	if (radioValue(form.gpxsource) === 0) {
 		window.URL.revokeObjectURL(upload_url);
 	}
 };
@@ -218,13 +218,13 @@ var loader = function(options, gpx_url) {
 			// If all is well, proceed to extrude the GPX path.
 			g = new Gpex(options, pts);
 		}
-	}
+	};
 	
 	// submit asynchronous request for the GPX file
 	req.open('GET', gpx_url, true);
 	req.overrideMimeType("text/xml");
 	req.send();
-}
+};
 
 // use a tidier options object
 function Gpex(options, pts) {
@@ -290,7 +290,7 @@ Gpex.prototype.Extrude = function(pts) {
 	
 	// return output geometry code
 	return this.process_path();
-}
+};
 
 Gpex.prototype.Display = function(code) {
 	
@@ -315,7 +315,7 @@ Gpex.prototype.Display = function(code) {
 	
 	// Bring the output div into view
 	document.getElementById('output').scrollIntoView();
-}
+};
 
 // Scan point array to determine bounds, path length, and marker locations.
 // Also assembles array of segment distances (n - 1 where n = point count)
@@ -337,7 +337,7 @@ Gpex.prototype.ScanPoints = function(pts) {
 					points[cur][1], points[cur][0],
 					pts[pre][1], pts[pre][0]);
 			
-			if (mindist == 0 || dist >= mindist) {
+			if (mindist === 0 || dist >= mindist) {
 				pts.push(points[cur]);
 				dst.push(dist);
 				total += dist;
@@ -451,7 +451,7 @@ Gpex.prototype.ScanPoints = function(pts) {
 	// now that totaldist is known, we can run projectpoints to get actual marker location -
 	// and the corresponding vector orientations.
 	
-	for (var i = 0; i < marker_objs.length; i++) {
+	for (i = 0; i < marker_objs.length; i++) {
 				
 		var marker_angle = vector_angle(
 			this.ProjectPoint(rawpoints[marker_objs[i].seg - 1], (rawpointcd[marker_objs[i].seg - 1])/this.distance),
@@ -471,21 +471,22 @@ Gpex.prototype.ScanPoints = function(pts) {
 	// is not vital for linear/ring shape - but might be faster.)
 	if (this.options.smoothtype === 0) {
 		
+		var scale = null;
 		if (this.options.shapetype === 0) {
 			// track: set scale based on approx route extent
 			var min_geo = proj4('GOOGLE', [min_lon, min_lat]);
 			var max_geo = proj4('GOOGLE', [max_lon, max_lat]);
 			var geo_x = max_geo[0] - min_geo[0];
 			var geo_y = max_geo[1] - min_geo[1];
-			var scale = Scale(this.bed, geo_x, geo_y);
+			scale = Scale(this.bed, geo_x, geo_y);
 		}
 		else if (this.options.shapetype === 1) {
 			// linear: set scale based on distance
-			var scale = Scale(this.bed, this.distance, 0);
+			scale = Scale(this.bed, this.distance, 0);
 		}
 		else if (this.options.shapetype === 2) {
 			// ring: set scale based on ring radius
-			var scale = Scale(this.bed, 2 * this.ringRadius, 2 * this.ringRadius);
+			scale = Scale(this.bed, 2 * this.ringRadius, 2 * this.ringRadius);
 		}
 		
 		// Model path buffer (mm) / scale = real world path buffer size (meters);
@@ -495,7 +496,7 @@ Gpex.prototype.ScanPoints = function(pts) {
 	
 	// smooth route by minimum distance filter
 	distFilter(rawpoints, smoothing_distance);
-}
+};
 
 var Bounds = function(xyz) {
 	this.minx = xyz[0];
@@ -504,7 +505,7 @@ var Bounds = function(xyz) {
 	this.maxy = xyz[1];
 	this.minz = xyz[2];
 	this.maxz = xyz[2];
-}
+};
 
 Bounds.prototype.Update = function(xyz) {
 	if (xyz[0] < this.minx) {
@@ -530,7 +531,7 @@ Bounds.prototype.Update = function(xyz) {
 	if (xyz[2] > this.maxz) {
 		this.maxz = xyz[2];
 	}
-}
+};
 
 // returns offset vector to translate model to output origin
 // zcut is boolean indicating whether to trim at min z or not
@@ -542,16 +543,13 @@ var Offsets = function(bounds, zcut) {
 	
 	// zero z offset uses full height above sea level
 	// disabled if minimum elevation is at or below 0
-	if (zcut == false && bounds.minz > 0) {
-		var zoffset = 0;
-	} else {
-		// by default, z offset is calculated to cut
-		// the elevation profile just below minimum
-		var zoffset = Math.floor(bounds.minz - 1);
+	var zoffset = 0;
+	if (zcut === true || bounds.minz <= 0) {
+		zoffset = Math.floor(bounds.minz - 1);
 	}
 	
 	return [xoffset, yoffset, zoffset];
-}
+};
 
 // jacked from http://stackoverflow.com/a/13274361/339879
 // ne/se: [lng, lat]
@@ -616,7 +614,7 @@ Gpex.prototype.basemap = function(bounds) {
 	//console.log(mapurl, mapscale);
 	
 	return true;
-}
+};
 
 /*
  * w & h are mm dimensions of bed extent
@@ -652,12 +650,12 @@ var Scale = function(bed, xextent, yextent) {
 	var xscale = bed.x / xextent,
 		yscale = bed.y / yextent;
 	return Math.min(xscale, yscale);
-}
+};
 
 // Return scale factor necessary to fit bounds to bed
 var ScaleBounds = function(bounds, bed) {
 	return Scale(bed, (bounds.maxx - bounds.minx), (bounds.maxy - bounds.miny));
-}
+};
 
 // point to project and cumulative distance along path
 // distance ratio now, now absolute distance
@@ -671,7 +669,7 @@ Gpex.prototype.ProjectPoint = function(point, cdr) {
 		xyz = PointProjector.project(point);
 	}
 	return xyz;
-}
+};
 
 Gpex.prototype.ProjectPoints = function() {
 	
@@ -702,13 +700,13 @@ Gpex.prototype.ProjectPoints = function() {
 	
 	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = ScaleBounds(this.bounds, this.bed);
-}
+};
 
 var vector_angle = function(a, b) {
 	var dx = b[0] - a[0],
 		dy = b[1] - a[1];
 	return Math.atan2(dy, dx);
-}
+};
 
 /*
  * Given a point array and index of a point,
@@ -726,7 +724,7 @@ Gpex.prototype.segment_angle = function(i) {
 	
 	// angle between this point and the next
 	return vector_angle(this.output_points[i], this.output_points[i + 1]);
-}
+};
 
 /*
  * Return a pair of 2D points representing the joints
@@ -758,7 +756,7 @@ Gpex.prototype.joint_points = function(i, rel, avga) {
 		ry = this.output_points[i][1] + jointr * Math.sin(avga - Math.PI/2);
 	
 	return [[lx, ly], [rx, ry]];
-}
+};
 
 /*
  * Given an output point array with at least two points, loop
@@ -776,11 +774,11 @@ Gpex.prototype.process_path = function() {
 		return false;
 	};
 	
-	var last_angle = undefined,
-		angle = undefined,
-		rel_angle = undefined,
-		joint_angle = undefined,
-		path_pts = undefined,
+	var last_angle,
+		angle,
+		rel_angle,
+		joint_angle,
+		path_pts,
 		vertices = [],
 		faces = [];
 		
@@ -797,10 +795,9 @@ Gpex.prototype.process_path = function() {
 		joint_angle = rel_angle / 2 + last_angle;
 		
 		// Collapse series of acute angle segments into a single cusp.
-		if (acuteAngle(rel_angle)
-			&& (i < this.output_points.length - 1)
-			&& acuteAngle(this.segment_angle(i + 1) - angle)) {
-			
+		if (acuteAngle(rel_angle) &&
+				(i < this.output_points.length - 1) &&
+				acuteAngle(this.segment_angle(i + 1) - angle)) {
 			// by continuing, we add no points or faces to the model,
 			// and do not update last_angle - it remains pointing at
 			// whatever it did before we hit this weird acute segment
@@ -824,7 +821,7 @@ Gpex.prototype.process_path = function() {
 	
 	// Package results in a code object and pass it back to caller
 	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2});
-}
+};
 
 /*
  * SCAD Code
@@ -856,7 +853,7 @@ var Code = function(points, faces, markers, options) {
 	});
 	
 	this.options = options;
-}
+};
 
 // preview mode: boolean; openjscad.js (built-in preview) and openjscad.org (external) use different dialects.
 Code.prototype.jscad = function(preview) {
@@ -906,7 +903,7 @@ Code.prototype.jscad = function(preview) {
 	}
 	
 	return result;
-}
+};
 
 Code.prototype.oscad = function() {
 	
@@ -924,7 +921,7 @@ Code.prototype.oscad = function() {
 	
 	result += "profile();\n";
 	return result;
-}
+};
 
 var PathSegment = {
 	
@@ -963,7 +960,7 @@ var PathSegment = {
 	// Path segment faces; s is segment index
 	faces: function(a, s) {
 		
-		if (s == 0) {
+		if (s === 0) {
 			this.first_face(a);
 			return;
 		}
@@ -997,7 +994,7 @@ Gpex.prototype.pxyz = function(v) {
 			this.scale * (v[1] - this.offset[1]),
 			this.scale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
 	];
-}
+};
 
 // Rudimentary GPX parsing based on https://github.com/peplin/gpxviewer/
 var Parser = {
