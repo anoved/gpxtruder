@@ -268,22 +268,30 @@ function Gpex(options, pts) {
 
 Gpex.prototype.Extrude = function(pts) {
 		
-	// populates this.ll (lat/lon vectors)
+	// populates this.ll (lat/lon vectors) and this.markers
 	this.ScanPoints(pts);
 	
 	// populates projected point vectors
 	this.ProjectPoints();
 	
-	// scale/center projected point vectors
-	this.output_points = this.projected_points.map(this.pxyz, this);
+	// fit returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] projected vector
+	var fit = function(v) {
+		return [
+			this.scale * (v[0] - this.offset[0]),
+			this.scale * (v[1] - this.offset[1]),
+			this.scale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
+		];
+	};
 	
-	// scale/center markers (overwriting originals)
-	// can't do this at the time markers is initially populated
-	// because we don't have scale/offset until ProjectPoints
-	//this.markers = this.markers.map(this.pxyz, this);
+	// apply the necessary scale and offset to fit projected points to output area
+	this.output_points = this.projected_points.map(fit, this);
+	
+	// likewise, scale and offset marker locations to fit output
+	// (can't do this at the time markers is initially populated
+	// because we don't have scale/offset until ProjectPoints)
 	this.markers = this.markers.map(function(m) {
 		return {
-			location: this.pxyz(m.location),
+			location: fit(m.location),
 			orientation: m.orientation
 		};
 	}, this);
@@ -319,6 +327,7 @@ Gpex.prototype.Display = function(code) {
 
 // Scan point array to determine bounds, path length, and marker locations.
 // Also assembles array of segment distances (n - 1 where n = point count)
+// A monstrous behemoth.
 Gpex.prototype.ScanPoints = function(pts) {
 	
 	var that = this;
@@ -498,6 +507,153 @@ Gpex.prototype.ScanPoints = function(pts) {
 	distFilter(rawpoints, smoothing_distance);
 };
 
+Gpex.prototype.ProjectPoints = function() {
+	
+	// cumulative distance
+	var cd = 0;
+	
+	// Initialize extents using first projected point.
+	var xyz = this.ProjectPoint(this.ll[0], 0);
+	this.bounds = new Bounds(xyz);
+	this.projected_points.push(xyz);
+	
+	// Project the rest of the points, updating extents.
+	for (var i = 1; i < this.ll.length; i++) {
+		
+		cd += this.d[i-1];
+		
+		xyz = this.ProjectPoint(this.ll[i], cd/this.smooth_total);
+		this.bounds.Update(xyz);
+		this.projected_points.push(xyz);
+	}
+	
+	if (this.options.regionfit) {
+		this.bounds.maxx = this.options.region_maxx;
+		this.bounds.minx = this.options.region_minx;
+		this.bounds.maxy = this.options.region_maxy;
+		this.bounds.miny = this.options.region_miny;
+	}
+	
+	this.offset = Offsets(this.bounds, this.options.zcut);
+	this.scale = ScaleBounds(this.bounds, this.bed);
+};
+
+/*
+ * Given an output point array with at least two points, loop
+ * through each segment (pair of points). In each iteration
+ * of the for loop, pj and pk are the 2D coordinates of the
+ * corners of the quad representing a buffered path for
+ * that segment; consecutive segments share endpoints.
+ * Another monstrous behemoth.
+ */
+Gpex.prototype.process_path = function() {
+	
+	var acuteAngle = function(angle) {
+		if ((Math.abs(angle) > Math.PI/2) && (Math.abs(angle) < (3 * Math.PI)/2)) {
+			return true;
+		}
+		return false;
+	};
+	
+	var that = this;
+	
+	/*
+	 * Given a point array and index of a point,
+	 * return the angle of the vector from that point
+	 * to the next. (2D) (If the index is to the last point,
+	 * return the preceding segment's angle. Point array
+	 * should have at least 2 points!)
+	 */
+	var segmentAngle = function(i) {
+		// in case of final point, repeat last segment angle
+		if (i + 1 == that.output_points.length) {
+			return segmentAngle(i - 1);
+		}
+		// angle between this point and the next
+		return vector_angle(that.output_points[i], that.output_points[i + 1]);
+	};
+	
+	/*
+	 * Return a pair of 2D points representing the joints
+	 * where the buffered paths around the actual segment
+	 * intersect - segment endpoints offset perpendicular
+	 * to segment by buffer distance, adjusted for tidy
+	 * intersection with adjacent segment's buffered path.
+	 * absa is absolute angle of this segment; avga is the
+	 * average angle between this segment and the next.
+	 * (p could be kept as a Gpex property.)
+	 */
+	var jointPoints = function(i, rel, avga) {
+
+		// distance from endpoint to segment buffer intersection
+		var jointr = that.options.buffer/Math.cos(rel/2);
+		
+		// arbitrary hack to prevent extremely spiky corner artifacts
+		// on acute angles. Optimal solution would introduce additional
+		// corner points. (As-is, path width is not maintained here.)
+		
+		if (Math.abs(jointr) > that.options.buffer * 2) {
+			jointr = Math.sign(jointr) * that.options.buffer * 2;
+		}
+		
+		// joint coordinates (endpoint offset at bisect angle by jointr)
+		var	lx = that.output_points[i][0] + jointr * Math.cos(avga + Math.PI/2),
+			ly = that.output_points[i][1] + jointr * Math.sin(avga + Math.PI/2),
+			rx = that.output_points[i][0] + jointr * Math.cos(avga - Math.PI/2),
+			ry = that.output_points[i][1] + jointr * Math.sin(avga - Math.PI/2);
+		
+		return [[lx, ly], [rx, ry]];
+	};
+	
+	var last_angle,
+		angle,
+		rel_angle,
+		joint_angle,
+		path_pts,
+		vertices = [],
+		faces = [];
+		
+	// s is segment counter used for calculating face indices; it is
+	// managed separately from i in case we skip any acute/noisy segment
+	for (var i = 0, s = 0; i < this.output_points.length; i++) {
+		
+		angle = segmentAngle(i);
+		if (i === 0) {
+			last_angle = angle;
+		}
+		
+		rel_angle = angle - last_angle;
+		joint_angle = rel_angle / 2 + last_angle;
+		
+		// Collapse series of acute angle segments into a single cusp.
+		if (acuteAngle(rel_angle) &&
+				(i < this.output_points.length - 1) &&
+				acuteAngle(segmentAngle(i + 1) - angle)) {
+			// by continuing, we add no points or faces to the model,
+			// and do not update last_angle - it remains pointing at
+			// whatever it did before we hit this weird acute segment
+			continue;
+		}
+		
+		path_pts = jointPoints(i, rel_angle, joint_angle);
+		
+		// next four points of segment polyhedron
+		PathSegment.points(vertices, path_pts, this.output_points[i][2]);
+		
+		// faces connecting first four points to last four of segment
+		// if s == 0, default to first_face behavior
+		PathSegment.faces(faces, s);
+		s = s + 1;
+		last_angle = angle;
+	}
+	
+	// final endcap
+	PathSegment.last_face(faces, s);
+	
+	// Package results in a code object and pass it back to caller
+	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2});
+};
+
 var Bounds = function(xyz) {
 	this.minx = xyz[0];
 	this.maxx = xyz[0];
@@ -549,6 +705,18 @@ var Offsets = function(bounds, zcut) {
 	}
 	
 	return [xoffset, yoffset, zoffset];
+};
+
+// Return scale factor necessary to fit extents to bed
+var Scale = function(bed, xextent, yextent) {
+	var xscale = bed.x / xextent,
+		yscale = bed.y / yextent;
+	return Math.min(xscale, yscale);
+};
+
+// Return scale factor necessary to fit bounds to bed
+var ScaleBounds = function(bounds, bed) {
+	return Scale(bed, (bounds.maxx - bounds.minx), (bounds.maxy - bounds.miny));
 };
 
 // jacked from http://stackoverflow.com/a/13274361/339879
@@ -645,17 +813,6 @@ function prepmap(img, scale, w, h) {
 	pdfdoc.save('basemap.pdf');
 }
 
-// Return scale factor necessary to fit extents to bed
-var Scale = function(bed, xextent, yextent) {
-	var xscale = bed.x / xextent,
-		yscale = bed.y / yextent;
-	return Math.min(xscale, yscale);
-};
-
-// Return scale factor necessary to fit bounds to bed
-var ScaleBounds = function(bounds, bed) {
-	return Scale(bed, (bounds.maxx - bounds.minx), (bounds.maxy - bounds.miny));
-};
 
 // point to project and cumulative distance along path
 // distance ratio now, now absolute distance
@@ -671,156 +828,10 @@ Gpex.prototype.ProjectPoint = function(point, cdr) {
 	return xyz;
 };
 
-Gpex.prototype.ProjectPoints = function() {
-	
-	// cumulative distance
-	var cd = 0;
-	
-	// Initialize extents using first projected point.
-	var xyz = this.ProjectPoint(this.ll[0], 0);
-	this.bounds = new Bounds(xyz);
-	this.projected_points.push(xyz);
-	
-	// Project the rest of the points, updating extents.
-	for (var i = 1; i < this.ll.length; i++) {
-		
-		cd += this.d[i-1];
-		
-		xyz = this.ProjectPoint(this.ll[i], cd/this.smooth_total);
-		this.bounds.Update(xyz);
-		this.projected_points.push(xyz);
-	}
-	
-	if (this.options.regionfit) {
-		this.bounds.maxx = this.options.region_maxx;
-		this.bounds.minx = this.options.region_minx;
-		this.bounds.maxy = this.options.region_maxy;
-		this.bounds.miny = this.options.region_miny;
-	}
-	
-	this.offset = Offsets(this.bounds, this.options.zcut);
-	this.scale = ScaleBounds(this.bounds, this.bed);
-};
-
 var vector_angle = function(a, b) {
 	var dx = b[0] - a[0],
 		dy = b[1] - a[1];
 	return Math.atan2(dy, dx);
-};
-
-/*
- * Given a point array and index of a point,
- * return the angle of the vector from that point
- * to the next. (2D) (If the index is to the last point,
- * return the preceding segment's angle. Point array
- * should have at least 2 points!)
- */
-Gpex.prototype.segment_angle = function(i) {
-	
-	// in case of final point, repeat last segment angle
-	if (i + 1 == this.output_points.length) {
-		return this.segment_angle(i - 1);
-	}
-	
-	// angle between this point and the next
-	return vector_angle(this.output_points[i], this.output_points[i + 1]);
-};
-
-/*
- * Return a pair of 2D points representing the joints
- * where the buffered paths around the actual segment
- * intersect - segment endpoints offset perpendicular
- * to segment by buffer distance, adjusted for tidy
- * intersection with adjacent segment's buffered path.
- * absa is absolute angle of this segment; avga is the
- * average angle between this segment and the next.
- * (p could be kept as a Gpex property.)
- */
-Gpex.prototype.joint_points = function(i, rel, avga) {
-
-	// distance from endpoint to segment buffer intersection
-	var jointr = this.options.buffer/Math.cos(rel/2);
-	
-	// arbitrary hack to prevent extremely spiky corner artifacts
-	// on acute angles. Optimal solution would introduce additional
-	// corner points. (As-is, path width is not maintained here.)
-	
-	if (Math.abs(jointr) > this.options.buffer * 2) {
-		jointr = Math.sign(jointr) * this.options.buffer * 2;
-	}
-	
-	// joint coordinates (endpoint offset at bisect angle by jointr)
-	var	lx = this.output_points[i][0] + jointr * Math.cos(avga + Math.PI/2),
-		ly = this.output_points[i][1] + jointr * Math.sin(avga + Math.PI/2),
-		rx = this.output_points[i][0] + jointr * Math.cos(avga - Math.PI/2),
-		ry = this.output_points[i][1] + jointr * Math.sin(avga - Math.PI/2);
-	
-	return [[lx, ly], [rx, ry]];
-};
-
-/*
- * Given an output point array with at least two points, loop
- * through each segment (pair of points). In each iteration
- * of the for loop, pj and pk are the 2D coordinates of the
- * corners of the quad representing a buffered path for
- * that segment; consecutive segments share endpoints.
- */
-Gpex.prototype.process_path = function() {
-	
-	var acuteAngle = function(angle) {
-		if ((Math.abs(angle) > Math.PI/2) && (Math.abs(angle) < (3 * Math.PI)/2)) {
-			return true;
-		}
-		return false;
-	};
-	
-	var last_angle,
-		angle,
-		rel_angle,
-		joint_angle,
-		path_pts,
-		vertices = [],
-		faces = [];
-		
-	// s is segment counter used for calculating face indices; it is
-	// managed separately from i in case we skip any acute/noisy segment
-	for (var i = 0, s = 0; i < this.output_points.length; i++) {
-		
-		angle = this.segment_angle(i);
-		if (i === 0) {
-			last_angle = angle;
-		}
-		
-		rel_angle = angle - last_angle;
-		joint_angle = rel_angle / 2 + last_angle;
-		
-		// Collapse series of acute angle segments into a single cusp.
-		if (acuteAngle(rel_angle) &&
-				(i < this.output_points.length - 1) &&
-				acuteAngle(this.segment_angle(i + 1) - angle)) {
-			// by continuing, we add no points or faces to the model,
-			// and do not update last_angle - it remains pointing at
-			// whatever it did before we hit this weird acute segment
-			continue;
-		}
-		
-		path_pts = this.joint_points(i, rel_angle, joint_angle);
-		
-		// next four points of segment polyhedron
-		PathSegment.points(vertices, path_pts, this.output_points[i][2]);
-		
-		// faces connecting first four points to last four of segment
-		// if s == 0, default to first_face behavior
-		PathSegment.faces(faces, s);
-		s = s + 1;
-		last_angle = angle;
-	}
-	
-	// final endcap
-	PathSegment.last_face(faces, s);
-	
-	// Package results in a code object and pass it back to caller
-	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2});
 };
 
 /*
@@ -985,15 +996,6 @@ var PathSegment = {
 		a.push([i + 0, i + 1, i + 5]);
 	}
 	
-};
-
-// returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] Projected vector
-Gpex.prototype.pxyz = function(v) {
-	return [
-			this.scale * (v[0] - this.offset[0]),
-			this.scale * (v[1] - this.offset[1]),
-			this.scale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
-	];
 };
 
 // Rudimentary GPX parsing based on https://github.com/peplin/gpxviewer/
