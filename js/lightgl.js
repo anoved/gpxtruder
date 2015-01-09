@@ -159,7 +159,7 @@ var GL = (function() {
 	Texture.fromURL = function(url, options) {
 		var texture = Texture.checkerboard(options);
 		var image = new Image();
-		image.crossOrigin = "anonymous"
+		image.crossOrigin = "anonymous";
 		var context = gl;
 		image.onload = function() {
 			context.makeCurrent();
@@ -351,14 +351,15 @@ var GL = (function() {
 		// doesn't need to be called every frame, only needs to be done when the data
 		// changes.
 		compile: function() {
+			var buffer;
 			for(var attribute in this.vertexBuffers) {
-				var buffer = this.vertexBuffers[attribute];
+				buffer = this.vertexBuffers[attribute];
 				buffer.data = this[buffer.name];
 				buffer.compile();
 			}
 
 			for(var name in this.indexBuffers) {
-				var buffer = this.indexBuffers[name];
+				buffer = this.indexBuffers[name];
 				buffer.data = this[name];
 				buffer.compile();
 			}
@@ -389,10 +390,11 @@ var GL = (function() {
 		// for the resulting normals to be smooth.
 		computeNormals: function() {
 			if(!this.normals) this.addVertexBuffer('normals', 'gl_Normal');
-			for(var i = 0; i < this.vertices.length; i++) {
+			var i;
+			for(i = 0; i < this.vertices.length; i++) {
 				this.normals[i] = new Vector();
 			}
-			for(var i = 0; i < this.triangles.length; i++) {
+			for(i = 0; i < this.triangles.length; i++) {
 				var t = this.triangles[i];
 				var a = Vector.fromArray(this.vertices[t[0]]);
 				var b = Vector.fromArray(this.vertices[t[1]]);
@@ -402,7 +404,7 @@ var GL = (function() {
 				this.normals[t[1]] = this.normals[t[1]].add(normal);
 				this.normals[t[2]] = this.normals[t[2]].add(normal);
 			}
-			for(var i = 0; i < this.vertices.length; i++) {
+			for(i = 0; i < this.vertices.length; i++) {
 				this.normals[i] = this.normals[i].unit().toArray();
 			}
 			this.compile();
@@ -567,10 +569,11 @@ var GL = (function() {
 			for(var i = 0; i <= detail; i++) {
 				// Generate a row of vertices on the surface of the sphere
 				// using barycentric coordinates.
-				for(var j = 0; i + j <= detail; j++) {
-					var a = i / detail;
-					var b = j / detail;
-					var c = (detail - i - j) / detail;
+				var j, a, b, c;
+				for(j = 0; i + j <= detail; j++) {
+					a = i / detail;
+					b = j / detail;
+					c = (detail - i - j) / detail;
 					var vertex = {
 						vertex: new Vector(fix(a), fix(b), fix(c)).unit().multiply(scale).toArray()
 					};
@@ -580,9 +583,9 @@ var GL = (function() {
 
 				// Generate triangles from this row and the previous row.
 				if(i > 0) {
-					for(var j = 0; i + j <= detail; j++) {
-						var a = (i - 1) * (detail + 1) + ((i - 1) - (i - 1) * (i - 1)) / 2 + j;
-						var b = i * (detail + 1) + (i - i * i) / 2 + j;
+					for(j = 0; i + j <= detail; j++) {
+						a = (i - 1) * (detail + 1) + ((i - 1) - (i - 1) * (i - 1)) / 2 + j;
+						b = i * (detail + 1) + (i - i * i) / 2 + j;
 						mesh.triangles.push(tri(data[a], data[a + 1], data[b]));
 						if(i + j < detail) {
 							mesh.triangles.push(tri(data[b], data[a + 1], data[b + 1]));
@@ -1051,8 +1054,8 @@ var GL = (function() {
 			this.uniforms(matrices);
 
 			// Create and enable attribute pointers as necessary.
-			var length = 0;
-			for(var attribute in vertexBuffers) {
+			var length = 0, attribute;
+			for(attribute in vertexBuffers) {
 				var buffer = vertexBuffers[attribute];
 				var location = this.attributes[attribute] ||
 							gl.getAttribLocation(
@@ -1075,7 +1078,7 @@ var GL = (function() {
 			}
 
 			// Disable unused attribute pointers.
-			for(var attribute in this.attributes) {
+			for(attribute in this.attributes) {
 				if(!(attribute in vertexBuffers)) {
 					gl.disableVertexAttribArray(this.attributes[attribute]);
 				}
