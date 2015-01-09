@@ -48,24 +48,25 @@ function distVincenty(lat1, lon1, lat2, lon2) {
       cosU2 = Math.cos(U2);
 
   var lambda = L,
-      lambdaP, iterLimit = 100;
+      lambdaP, iterLimit = 100,
+      sinAlpha, sinSigma, cosSigma, cos2SigmaM, cosSqAlpha, sigma, sinLambda, cosLambda;
   do {
-    var sinLambda = Math.sin(lambda),
-        cosLambda = Math.cos(lambda);
-    var sinSigma = Math.sqrt((cosU2 * sinLambda) * (cosU2 * sinLambda) + (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda) * (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda));
-    if (sinSigma == 0) return 0; // co-incident points
-    var cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
-    var sigma = Math.atan2(sinSigma, cosSigma);
-    var sinAlpha = cosU1 * cosU2 * sinLambda / sinSigma;
-    var cosSqAlpha = 1 - sinAlpha * sinAlpha;
-    var cos2SigmaM = cosSigma - 2 * sinU1 * sinU2 / cosSqAlpha;
+    sinLambda = Math.sin(lambda);
+    cosLambda = Math.cos(lambda);
+    sinSigma = Math.sqrt((cosU2 * sinLambda) * (cosU2 * sinLambda) + (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda) * (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda));
+    if (sinSigma === 0) return 0; // co-incident points
+    cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
+    sigma = Math.atan2(sinSigma, cosSigma);
+    sinAlpha = cosU1 * cosU2 * sinLambda / sinSigma;
+    cosSqAlpha = 1 - sinAlpha * sinAlpha;
+    cos2SigmaM = cosSigma - 2 * sinU1 * sinU2 / cosSqAlpha;
     if (isNaN(cos2SigmaM)) cos2SigmaM = 0; // equatorial line: cosSqAlpha=0 (§6)
     var C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
     lambdaP = lambda;
     lambda = L + (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM)));
   } while (Math.abs(lambda - lambdaP) > 1e-12 && --iterLimit > 0);
 
-  if (iterLimit == 0) return NaN // formula failed to converge
+  if (iterLimit === 0) return NaN; // formula failed to converge
   var uSq = cosSqAlpha * (a * a - b * b) / (b * b);
   var A = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
   var B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
@@ -78,4 +79,4 @@ function distVincenty(lat1, lon1, lat2, lon2) {
 
 Number.prototype.toRad = function() {
 	return this * Math.PI / 180;
-}
+};
