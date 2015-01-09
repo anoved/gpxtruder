@@ -186,7 +186,7 @@ OpenJsCad.Viewer.prototype = {
 	
 	setBaseMap: function(url, scale, mapw, maph, dlcallback) {
 		
-		var hash = url + scale;
+		var hash = url + scale + mapw + maph;
 		if (this.basemapurl === hash) {
 			return;
 		} else {
