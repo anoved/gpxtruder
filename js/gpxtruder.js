@@ -724,17 +724,29 @@ var ScaleBounds = function(bounds, bed) {
 	return Scale(bed, (bounds.maxx - bounds.minx), (bounds.maxy - bounds.miny));
 };
 
+/*
+ * Basemap
+ * 
+ * Parameters:
+ * - view, a reference to the OpenJsCad.Viewer which will display this basemap
+ */
 var Basemap = function(view) {
 	this.view = view;
 };
 
 /*
- * Returns Google Maps zoom level appropriate to fit region containing points ne and se
- * jacked from http://stackoverflow.com/a/13274361/339879
- * ne/se: [lng, lat]
- * mapDim: {width: pixels, height: pixels}
+ * Basemap.ZoomLevel (helps Basemap.Update)
+ * 
+ * Returns:
+ * - Google Maps zoom level required for basemap.
+ * 
+ * Parameters:
+ * - ne, [lng, lat] array representing one corner of region
+ * - sw, [lng, lat] array representing opposite corner of region
+ * - mapDim, {width, height} desired map image pixel dimensions
  */
 Basemap.prototype.ZoomLevel = function(ne, sw, mapDim) {
+	// jacked from http://stackoverflow.com/a/13274361/339879
 	var WORLD_DIM = {height: 256, width: 256};
 	function latRad(lat) {
 		var sin = Math.sin(lat * Math.PI / 180);
@@ -757,30 +769,40 @@ Basemap.prototype.ZoomLevel = function(ne, sw, mapDim) {
 };
 
 /*
- * bounds {minx, miny, maxx, maxy}
- * bed {x, y}
- * offset {x, y}
+ * Basemap.Update
+ * Update basemap to fit specified region and bed dimensions.
+ * 
+ * Returns:
+ * - boolean true if updated, false if not for any reason
+ * 
+ * Parameters:
+ * - bounds, {minx, miny, maxx, maxy} region extents in GOOGLE proj coordinates
+ * - bed, {x, y} dimensions of bed in mm
+ * - offset, {x, y} center of region in GOOGLE proj coordinates (TODO infer from bounds)
  */
 Basemap.prototype.Update = function(bounds, bed, offset) {
-
 	var bedmax = Math.max(bed.x, bed.y);
 	var mapsize = {
 		width:  Math.round(640 * bed.x / bedmax),
 		height: Math.round(640 * bed.y / bedmax)
 	};
+	
 	var sw = proj4("GOOGLE", "WGS84", [bounds.minx, bounds.miny]);
 	var ne = proj4("GOOGLE", "WGS84", [bounds.maxx, bounds.maxy]);
 	var zoominfo = this.ZoomLevel(ne, sw, mapsize);
 	
+	// don't bother with base map if zoom level would be too high
 	if (zoominfo.zoom > 21) {
-		// don't bother with base map if zoom level would be too high
 		return false;
 	}
 	
 	var mapscale = mapsize[zoominfo.axis] / 256 / Math.exp(zoominfo.zoom * Math.LN2) / zoominfo.span;
 	var center = proj4("GOOGLE", "WGS84", [offset.x, offset.y]);
 
-	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
+	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" +
+			center[1].toFixed(6) + "," + center[0].toFixed(6) +
+			"&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height +
+			"&maptype=terrain&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
 	
 	if (this.view !== null) {
 		this.view.setBaseMap(mapurl, mapscale, bed.x, bed.y, this.Download);
@@ -789,38 +811,56 @@ Basemap.prototype.Update = function(bounds, bed, offset) {
 	return true;
 };
 
+/*
+ * Basemap.Clear
+ * Resets basemap texture. 
+ */
 Basemap.prototype.Clear = function() {
 	if (this.view !== null) {
 		this.view.clearBaseMap();
 	}
 };
 
+/*
+ * Basemap.Download
+ * Generates downloadable PDF version of basemap at correct scale.
+ * 
+ * Parameters:
+ * - img, basemap texture image
+ * - scale, applied to bed dimensions to get mm basemap dimensions
+ * - w, bed width in mm
+ * - h, bed height in mm
+ */
 Basemap.prototype.Download = function(img, scale, w, h) {
-	/*
-	 * w & h are mm dimensions of bed extent
-	 * scale applied to bed extent to get map extent
-	 */
 	
+	// Create a temporary canvas sized to fit map image
 	var canvas = document.createElement("canvas");
 	canvas.width = img.width;
 	canvas.height = img.height;
 	
+	// Draw the map image to the canvas
 	var context = canvas.getContext("2d");
 	context.drawImage(img, 0, 0);
 	
+	// Determine size of map image in mm based on mm bed size and bed-map scale.
 	var mapw = scale * w;
 	var maph = scale * h;
 	
-	var imgDataURL = canvas.toDataURL("image/jpeg");
-
+	// Create PDF to fit map image mm size exactly.
 	var pdfdoc = new jsPDF({
 		orientation: mapw > maph ? 'l' : 'p',
 		format: [mapw, maph]
 	});
 	
+	// Draw map image canvas to PDF (scale to fit)
+	var imgDataURL = canvas.toDataURL("image/jpeg");
 	pdfdoc.addImage(imgDataURL, 'JPEG', 0, 0, mapw, maph);
+	
+	// Draw bed outline centered on PDF above map image
 	pdfdoc.setDrawColor(26, 26, 26);
 	pdfdoc.rect(mapw/2 - w/2, maph/2 - h/2, w, h);
+	
+	// Trigger PDF download (TODO: name it appropriately)
 	pdfdoc.save('basemap.pdf');
 };
 
