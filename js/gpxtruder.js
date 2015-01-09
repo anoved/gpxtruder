@@ -278,11 +278,12 @@ Gpex.prototype.Extrude = function(pts) {
 	this.ProjectPoints();
 	
 	// fit returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] projected vector
+	var that = this;
 	var fit = function(v) {
 		return [
-			this.scale * (v[0] - this.offset[0]),
-			this.scale * (v[1] - this.offset[1]),
-			this.scale * (v[2] - this.offset[2]) * this.options.vertical + this.options.base
+			that.scale * (v[0] - that.offset[0]),
+			that.scale * (v[1] - that.offset[1]),
+			that.scale * (v[2] - that.offset[2]) * that.options.vertical + that.options.base
 		];
 	};
 	
