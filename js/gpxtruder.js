@@ -1,3 +1,4 @@
+// may be able to de-globalize this
 var OJSCAD = null;
 
 /*
@@ -232,6 +233,8 @@ function Gpex(options, pts) {
 	// read-only configuration
 	this.options = options;
 	
+	this.basemap = new Basemap(OJSCAD.viewer);
+	
 	// available bed extent
 	this.bed = {
 		x: this.options.bedx - (2 * this.options.buffer),
@@ -302,15 +305,17 @@ Gpex.prototype.Extrude = function(pts) {
 
 Gpex.prototype.Display = function(code) {
 	
-	// Tweak preview display if available
 	if (OJSCAD.viewer) {
 		OJSCAD.viewer.setBedSize(this.options.bedx, this.options.bedy);
-		
-		// Attempt to retrieve a basemap on three conditions:
-		// map style is selected; default Google Maps projection is selected; zoom level is reasonable
-		if (!(this.options.shapetype === 0 && this.options.projection === "GOOGLE" && this.basemap())) {
-			OJSCAD.viewer.clearBaseMap();
-		}
+	}
+	
+	// Attempt to retrieve a basemap on three conditions:
+	// map style is selected; default Google Maps projection is selected;
+	// zoom level is reasonable (determined during basemap update calc)
+	if (!(this.options.shapetype === 0 &&
+			this.options.projection === "GOOGLE" &&
+			this.basemap.Update(this.bounds, {x:this.options.bedx, y:this.options.bedy}, {x:this.offset[0], y:this.offset[1]}))) {
+		this.basemap.Clear();
 	}
 	
 	// Update the preview display (required to prepare STL export,
@@ -719,52 +724,53 @@ var ScaleBounds = function(bounds, bed) {
 	return Scale(bed, (bounds.maxx - bounds.minx), (bounds.maxy - bounds.miny));
 };
 
-// jacked from http://stackoverflow.com/a/13274361/339879
-// ne/se: [lng, lat]
-// mapDim: {width: pixels, height: pixels}
-function getBoundsZoomLevel(ne, sw, mapDim) {
-    var WORLD_DIM = { height: 256, width: 256 };
-    //var ZOOM_MAX = 21;
+var Basemap = function(view) {
+	this.view = view;
+};
 
-    function latRad(lat) {
-        var sin = Math.sin(lat * Math.PI / 180);
-        var radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
-        return Math.max(Math.min(radX2, Math.PI), -Math.PI) / 2;
-    }
-
-	//Math.floor
-    function zoom(mapPx, worldPx, fraction) {
-        return (Math.log(mapPx / worldPx / fraction) / Math.LN2);
-    }
-
-    var latFraction = (latRad(ne[1]) - latRad(sw[1])) / Math.PI;
-
-    var lngDiff = ne[0] - sw[0];
-    var lngFraction = ((lngDiff < 0) ? (lngDiff + 360) : lngDiff) / 360;
-	
-    var latZoom = zoom(mapDim.height, WORLD_DIM.height, latFraction);
-    var lngZoom = zoom(mapDim.width, WORLD_DIM.width, lngFraction);
-	
+/*
+ * Returns Google Maps zoom level appropriate to fit region containing points ne and se
+ * jacked from http://stackoverflow.com/a/13274361/339879
+ * ne/se: [lng, lat]
+ * mapDim: {width: pixels, height: pixels}
+ */
+Basemap.prototype.ZoomLevel = function(ne, sw, mapDim) {
+	var WORLD_DIM = {height: 256, width: 256};
+	function latRad(lat) {
+		var sin = Math.sin(lat * Math.PI / 180);
+		var radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
+		return Math.max(Math.min(radX2, Math.PI), -Math.PI) / 2;
+	}
+	function zoom(mapPx, worldPx, fraction) {
+		return (Math.log(mapPx / worldPx / fraction) / Math.LN2);
+	}
+	var latFraction = (latRad(ne[1]) - latRad(sw[1])) / Math.PI;
+	var lngDiff = ne[0] - sw[0];
+	var lngFraction = ((lngDiff < 0) ? (lngDiff + 360) : lngDiff) / 360;
+	var latZoom = zoom(mapDim.height, WORLD_DIM.height, latFraction);
+	var lngZoom = zoom(mapDim.width, WORLD_DIM.width, lngFraction);
 	return {
 		zoom: latZoom < lngZoom ? Math.floor(latZoom) : Math.floor(lngZoom),
 		span: latZoom < lngZoom ? latFraction : lngFraction,
 		axis: latZoom < lngZoom ? "height" : "width"
 	};
-}
+};
 
-// returns true if a basemap is set; returns false if no basemap is set
-Gpex.prototype.basemap = function(bounds) {
-	
-	var bedmax = Math.max(this.options.bedx, this.options.bedy);
-	
+/*
+ * bounds {minx, miny, maxx, maxy}
+ * bed {x, y}
+ * offset {x, y}
+ */
+Basemap.prototype.Update = function(bounds, bed, offset) {
+
+	var bedmax = Math.max(bed.x, bed.y);
 	var mapsize = {
-		width:  Math.round(640 * this.options.bedx / bedmax),
-		height: Math.round(640 * this.options.bedy / bedmax)
+		width:  Math.round(640 * bed.x / bedmax),
+		height: Math.round(640 * bed.y / bedmax)
 	};
-	
-	var sw = proj4("GOOGLE", "WGS84", [this.bounds.minx, this.bounds.miny]);
-	var ne = proj4("GOOGLE", "WGS84", [this.bounds.maxx, this.bounds.maxy]);
-	var zoominfo = getBoundsZoomLevel(ne, sw, mapsize);
+	var sw = proj4("GOOGLE", "WGS84", [bounds.minx, bounds.miny]);
+	var ne = proj4("GOOGLE", "WGS84", [bounds.maxx, bounds.maxy]);
+	var zoominfo = this.ZoomLevel(ne, sw, mapsize);
 	
 	if (zoominfo.zoom > 21) {
 		// don't bother with base map if zoom level would be too high
@@ -772,23 +778,28 @@ Gpex.prototype.basemap = function(bounds) {
 	}
 	
 	var mapscale = mapsize[zoominfo.axis] / 256 / Math.exp(zoominfo.zoom * Math.LN2) / zoominfo.span;
-	
-	var center = proj4("GOOGLE", "WGS84", [this.offset[0], this.offset[1]]);
+	var center = proj4("GOOGLE", "WGS84", [offset.x, offset.y]);
 
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" + center[1].toFixed(6) + "," + center[0].toFixed(6) + "&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height + "&maptype=terrain&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
 	
-	OJSCAD.viewer.setBaseMap(mapurl, mapscale, this.options.bedx, this.options.bedy);
-	
-	//console.log(mapurl, mapscale);
+	if (this.view !== null) {
+		this.view.setBaseMap(mapurl, mapscale, bed.x, bed.y, this.Download);
+	}
 	
 	return true;
 };
 
-/*
- * w & h are mm dimensions of bed extent
- * scale applied to bed extent to get map extent
- */
-function prepmap(img, scale, w, h) {
+Basemap.prototype.Clear = function() {
+	if (this.view !== null) {
+		this.view.clearBaseMap();
+	}
+};
+
+Basemap.prototype.Download = function(img, scale, w, h) {
+	/*
+	 * w & h are mm dimensions of bed extent
+	 * scale applied to bed extent to get map extent
+	 */
 	
 	var canvas = document.createElement("canvas");
 	canvas.width = img.width;
@@ -811,8 +822,7 @@ function prepmap(img, scale, w, h) {
 	pdfdoc.setDrawColor(26, 26, 26);
 	pdfdoc.rect(mapw/2 - w/2, maph/2 - h/2, w, h);
 	pdfdoc.save('basemap.pdf');
-}
-
+};
 
 // point to project and cumulative distance along path
 // distance ratio now, now absolute distance

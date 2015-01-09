@@ -184,7 +184,7 @@ OpenJsCad.Viewer.prototype = {
 		this.bedDepth = depth;
 	},
 	
-	setBaseMap: function(url, scale, mapw, maph) {
+	setBaseMap: function(url, scale, mapw, maph, dlcallback) {
 		
 		var hash = url + scale;
 		if (this.basemapurl === hash) {
@@ -206,7 +206,7 @@ OpenJsCad.Viewer.prototype = {
 				// insert a "Download PDF" button next to Generate STL
 				var basemapButton = document.getElementById("pdfmaplink");
 				basemapButton.onclick = function(e) {
-					prepmap(mapImage, scale, mapw, maph);
+					dlcallback(mapImage, scale, mapw, maph);
 				};
 			}
 		});
@@ -945,6 +945,7 @@ OpenJsCad.Processor.prototype = {
 		usagehelp.innerHTML = "Click and drag to rotate. Hold <em>Alt</em> to switch rotation axes. Hold <em>Shift</em> or middle mouse button to pan. Hold <em>Control</em> or scroll to zoom.";
 		this.containerdiv.appendChild(usagehelp);
 	} catch(e) {
+		this.viewer = null;
 		this.viewerdiv.innerHTML = "<p>Preview disabled (" + e.toString() + ").</p>";
 		this.viewerdiv.className = "error";
 		this.containerdiv.appendChild(viewerdiv);
