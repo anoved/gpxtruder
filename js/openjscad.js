@@ -709,15 +709,15 @@ OpenJsCad.parseJsCadScriptASync = function(script, options, callback) {
 
   var baseurl = document.location.href.replace(/\?.*$/, '');
   var openjscadurl = baseurl;
-  if (typeof options['openJsCadPath'] != 'undefined') {
+  if (typeof options.openJsCadPath != 'undefined') {
     // trailing '/' indicates it is a folder. This is necessary because makeAbsoluteUrl is called
     // on openjscadurl
-    openjscadurl = OpenJsCad.makeAbsoluteUrl( options['openJsCadPath'], baseurl ) + '/';
+    openjscadurl = OpenJsCad.makeAbsoluteUrl( options.openJsCadPath, baseurl ) + '/';
   }
 
   var libraries = [];
-  if (typeof options['libraries'] != 'undefined') {
-    libraries = options['libraries'];
+  if (typeof options.libraries != 'undefined') {
+    libraries = options.libraries;
   }
 
   var workerscript = "";
@@ -1161,22 +1161,22 @@ OpenJsCad.Processor.prototype = {
     this.downloadOutputFileLink.style.display = this.hasOutputFile? "inline":"none";
     this.errordiv.style.display = this.hasError? "block":"none";
     this.statusdiv.style.display = this.hasError? "none":"block";
-    this.basemapButton.style.display = (this.viewer && this.viewer.basemapurl != "") ? "inline" : "none";
+    this.basemapButton.style.display = (this.viewer && this.viewer.basemapurl !== "") ? "inline" : "none";
   },
 
   setOpenJsCadPath: function(path) {
-    this.options[ 'openJsCadPath' ] = path;
+    this.options.openJsCadPath = path;
   },
 
   addLibrary: function(lib) {
-    if( typeof this.options[ 'libraries' ] == 'undefined' ) {
-      this.options[ 'libraries' ] = [];
+    if( typeof this.options.libraries == 'undefined' ) {
+      this.options.libraries = [];
     }
-    this.options[ 'libraries' ].push( lib );
+    this.options.libraries.push( lib );
   },
   
   setError: function(txt) {
-    this.hasError = (txt != "");
+    this.hasError = (txt !== "");
     this.errorpre.textContent = txt;
     this.enableItems();
   },
