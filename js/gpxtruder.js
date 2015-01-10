@@ -315,7 +315,7 @@ Gpex.prototype.Display = function(code) {
 	// zoom level is reasonable (determined during basemap update calc)
 	if (!(this.options.shapetype === 0 &&
 			this.options.projection === "GOOGLE" &&
-			this.basemap.Update(this.bounds, {x:this.options.bedx, y:this.options.bedy}, {x:this.offset[0], y:this.offset[1]}))) {
+			this.basemap.Update(this.bounds, {x:this.options.bedx, y:this.options.bedy}))) {
 		this.basemap.Clear();
 	}
 	
@@ -695,13 +695,16 @@ Bounds.prototype.Update = function(xyz) {
 	}
 };
 
+Bounds.prototype.Center = function() {
+	return [(this.minx + this.maxx) / 2, (this.miny + this.maxy) / 2];
+}
+
 // returns offset vector to translate model to output origin
 // zcut is boolean indicating whether to trim at min z or not
 var Offsets = function(bounds, zcut) {
 	
 	// xy offset used to center model around origin
-	var xoffset = (bounds.minx + bounds.maxx) / 2;
-	var yoffset = (bounds.miny + bounds.maxy) / 2;
+	var xy = bounds.Center();
 	
 	// zero z offset uses full height above sea level
 	// disabled if minimum elevation is at or below 0
@@ -710,7 +713,7 @@ var Offsets = function(bounds, zcut) {
 		zoffset = Math.floor(bounds.minz - 1);
 	}
 	
-	return [xoffset, yoffset, zoffset];
+	return [xy[0], xy[1], zoffset];
 };
 
 // Return scale factor necessary to fit extents to bed
@@ -781,7 +784,7 @@ Basemap.prototype.ZoomLevel = function(ne, sw, mapDim) {
  * - bed, {x, y} dimensions of bed in mm
  * - offset, {x, y} center of region in GOOGLE proj coordinates (TODO infer from bounds)
  */
-Basemap.prototype.Update = function(bounds, bed, offset) {
+Basemap.prototype.Update = function(bounds, bed) {
 	var bedmax = Math.max(bed.x, bed.y);
 	var mapsize = {
 		width:  Math.round(640 * bed.x / bedmax),
@@ -798,8 +801,7 @@ Basemap.prototype.Update = function(bounds, bed, offset) {
 	}
 	
 	var mapscale = mapsize[zoominfo.axis] / 256 / Math.exp(zoominfo.zoom * Math.LN2) / zoominfo.span;
-	var center = proj4("GOOGLE", "WGS84", [offset.x, offset.y]);
-
+	var center = proj4("GOOGLE", "WGS84", bounds.Center());
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" +
 			center[1].toFixed(6) + "," + center[0].toFixed(6) +
 			"&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height +
