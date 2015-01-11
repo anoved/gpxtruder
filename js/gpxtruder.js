@@ -308,10 +308,10 @@ Gpex.prototype.Display = function(code) {
 	
 	// If fitting route to bed, report region extent
 	if (!this.options.regionfit) {
-		document.forms[0].east_min.value = this.bounds.minx;
-		document.forms[0].east_max.value = this.bounds.maxx;
-		document.forms[0].north_min.value = this.bounds.miny;
-		document.forms[0].north_max.value = this.bounds.maxy;
+		document.forms[0].east_min.value = Math.round(this.bounds.minx);
+		document.forms[0].east_max.value = Math.round(this.bounds.maxx);
+		document.forms[0].north_min.value = Math.round(this.bounds.miny);
+		document.forms[0].north_max.value = Math.round(this.bounds.maxy);
 	}
 	
 	// 1. Assumes bounds are meters (true for GM & UTM)
