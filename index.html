@@ -305,7 +305,7 @@
 							West: <input type="text" id="east_min" size="5" disabled />
 							North: <input type="text" id="north_max" size="5" disabled />
 							East: <input type="text" id="east_max" size="5" disabled /> (meters)<br />
-						<span class="info">If enabled, output is scaled to fit region (instead of route) to bed. Region extent coordinate system depends on map projection.</span></p>
+						<span class="info">If enabled, output is scaled to fit region to bed. Coordinate system depends on map projection. (Google Maps uses <a href="http://docs.openlayers.org/library/spherical_mercator.html">Spherical Mercator</a> meters.)</span></p>
 						<p>Markers: <input type="radio" name="marker" value="0" id="marker_none" onchange="return toggle(event, 3, 'marker_interval');" checked /> <label for="marker_none">None</label>
 									<input type="radio" name="marker" value="1" id="marker_km" onchange="return toggle(event, 3, 'marker_interval');" /> <label for="marker_km">Kilometers</label>
 									<input type="radio" name="marker" value="2" id="marker_mi" onchange="return toggle(event, 3, 'marker_interval');" /> <label for="marker_mi">Miles</label>

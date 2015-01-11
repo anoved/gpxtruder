@@ -306,6 +306,14 @@ Gpex.prototype.Extrude = function(pts) {
 
 Gpex.prototype.Display = function(code) {
 	
+	// If fitting route to bed, report region extent
+	if (!this.options.regionfit) {
+		document.forms[0].east_min.value = this.bounds.minx;
+		document.forms[0].east_max.value = this.bounds.maxx;
+		document.forms[0].north_min.value = this.bounds.miny;
+		document.forms[0].north_max.value = this.bounds.maxy;
+	}
+	
 	if (OJSCAD.viewer) {
 		OJSCAD.viewer.setBedSize(this.options.bedx, this.options.bedy);
 	}
@@ -720,7 +728,7 @@ Bounds.prototype.Update = function(xyz) {
  */
 Bounds.prototype.Center = function() {
 	return [(this.minx + this.maxx) / 2, (this.miny + this.maxy) / 2];
-}
+};
 
 // returns offset vector to translate model to output origin
 // zcut is boolean indicating whether to trim at min z or not
