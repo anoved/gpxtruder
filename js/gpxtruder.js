@@ -660,15 +660,32 @@ Gpex.prototype.process_path = function() {
 	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2});
 };
 
+/*
+ * Bounds
+ * Initialize new Bounds object to a single point.
+ * 
+ * Parameters:
+ * - [x, y, z] initial point ([0, 0, 0] if undefined)
+ */
 var Bounds = function(xyz) {
-	this.minx = xyz[0];
-	this.maxx = xyz[0];
-	this.miny = xyz[1];
-	this.maxy = xyz[1];
-	this.minz = xyz[2];
-	this.maxz = xyz[2];
+	if (typeof(xyz) === "undefined") {
+		this.minx = this.maxx = 0;
+		this.miny = this.maxy = 0;
+		this.minz = this.maxz = 0;
+	} else {
+		this.minx = this.maxx = xyz[0];
+		this.miny = this.maxy = xyz[1];
+		this.minz = this.maxz = xyz[2];
+	}
 };
 
+/*
+ * Bounds.Update
+ * Expand bounded region (if necessary) to include new point.
+ * 
+ * Parameters:
+ * - [x, y, z] new point
+ */
 Bounds.prototype.Update = function(xyz) {
 	if (xyz[0] < this.minx) {
 		this.minx = xyz[0];
@@ -695,6 +712,12 @@ Bounds.prototype.Update = function(xyz) {
 	}
 };
 
+/*
+ * Bounds.Center
+ * 
+ * Returns:
+ * - [x, y] bounds extent center
+ */
 Bounds.prototype.Center = function() {
 	return [(this.minx + this.maxx) / 2, (this.miny + this.maxy) / 2];
 }
