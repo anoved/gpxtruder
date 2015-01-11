@@ -805,7 +805,6 @@ Basemap.prototype.ZoomLevel = function(ne, sw, mapDim) {
  * Parameters:
  * - bounds, {minx, miny, maxx, maxy} region extents in GOOGLE proj coordinates
  * - bed, {x, y} dimensions of bed in mm
- * - offset, {x, y} center of region in GOOGLE proj coordinates (TODO infer from bounds)
  */
 Basemap.prototype.Update = function(bounds, bed) {
 	var bedmax = Math.max(bed.x, bed.y);
