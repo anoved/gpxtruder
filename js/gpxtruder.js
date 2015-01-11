@@ -314,6 +314,14 @@ Gpex.prototype.Display = function(code) {
 		document.forms[0].north_max.value = this.bounds.maxy;
 	}
 	
+	// 1. Assumes bounds are meters (true for GM & UTM)
+	// 2. Approximate scale based on X extent (itself based on opp corners)
+	// Be better to at least look at a segment of a
+	// single circle of lat through extent centroid 
+	var xextent = this.bounds.maxx - this.bounds.minx;
+	var xscale = Math.round(xextent * 1000 / this.options.bedx);
+	console.log("1:" + xscale);
+	
 	if (OJSCAD.viewer) {
 		OJSCAD.viewer.setBedSize(this.options.bedx, this.options.bedy);
 	}
