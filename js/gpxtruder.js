@@ -1121,6 +1121,12 @@ var Parser = {
 	segment: function(segment) {
 		var trkpts = segment.getElementsByTagName('trkpt');
 		
+		// Can do much without at least two points to connect into a path
+		if (trkpts.length < 2) {
+			Messages.error('This GPX file does not contain enough track points to display.<br />(GPXtruder expects the first segment of the first track to contain at least two points.)');
+			return null;
+		}
+		
 		// Only the first trkpt is tested for elevations; all others are assumed alike.
 		if (this.elevation === null && trkpts[0].getElementsByTagName('ele').length === 0) {
 			Messages.error('This GPX file does not appear to contain any elevation data.<br />Specify a constant default elevation or try using <a href="http://www.gpsvisualizer.com/elevation">GPX Visualizer</a> to add elevation data to your route.');
