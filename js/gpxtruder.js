@@ -488,9 +488,20 @@ Gpex.prototype.ScanPoints = function(pts) {
 	// than initial distance. Consider using filtered distance... or ratio, not absolute.
 	this.ringRadius = this.distance / (Math.PI * 2);
 	
+	// Ballpark UTM zone (does not handle iffy cases)
+	if (this.options.projtype === 2) {
+		var lat = (min_lat + max_lat) / 2;
+		var lon = (min_lon + max_lon) / 2;
+		// set this.options.projection
+		console.log(UTM.proj(lat, lon));
+	}
+	
+	// PointProjector.init now (couldn't earlier as we might not have had UTM,
+	// but need it now since the following marker location loop uses projector)
+	// Clearly this function needs to be split up.
+	
 	// now that totaldist is known, we can run projectpoints to get actual marker location -
 	// and the corresponding vector orientations.
-	
 	for (i = 0; i < marker_objs.length; i++) {
 				
 		var marker_angle = vector_angle(
@@ -1198,6 +1209,29 @@ var PointProjector = {
 	project: function(v) {
 		return this.projection.forward([v[0], v[1]]).concat(v[2]);
 	}
+};
+
+var UTM = {
+	
+	proj: function(lat, lon) {	
+		var proj = "+proj=utm +zone=";
+		proj += this.zone(lon);
+		proj += this.hemi(lat);
+		proj += " +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
+		return proj;
+	},
+	
+	hemi: function(lat) {
+		return (lat < 0 ? ' +south' : '');
+	},
+	
+	zone: function(lon) {
+		lon += 180;     // put in range 0 to 360
+		lon -= lon % 6; // reduce to last multiple of 6
+		lon /= 6;       // count how many multiples of 6
+		return lon + 1; // start at 1 instead of 0
+	}
+	
 };
 
 var Messages = {
