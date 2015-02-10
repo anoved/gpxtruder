@@ -153,6 +153,7 @@ var submitInput = function() {
 		region_miny:    parseFloat(form.north_min.value),
 		region_maxy:    parseFloat(form.north_max.value),
 		shapetype:      radioValue(form.shape),
+		projtype:       radioValue(form.proj_type),
 		projection:     composeProjection(radioValue(form.proj_type), form.utm_zone.value, form.utm_hemisphere.value, form.projection.value),
 		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
 		smoothtype:     radioValue(form.smooth),
@@ -279,11 +280,19 @@ Gpex.prototype.Extrude = function(pts) {
 	
 	// fit returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] projected vector
 	var that = this;
+	
+	// use approximate meter scaling (based on y extent) for custom projections
+	// (default Google Mercator and UTM options already express xy in meters)
+	var zscale = this.scale;
+	if (this.options.projtype === 1) {
+		zscale = this.bed.y / distVincenty(this.bounds.miny, this.bounds.minx, this.bounds.maxy, this.bounds.minx);
+	}
+	
 	var fit = function(v) {
 		return [
 			that.scale * (v[0] - that.offset[0]),
 			that.scale * (v[1] - that.offset[1]),
-			that.scale * (v[2] - that.offset[2]) * that.options.vertical + that.options.base
+			zscale * (v[2] - that.offset[2]) * that.options.vertical + that.options.base
 		];
 	};
 	
