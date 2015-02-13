@@ -60,15 +60,6 @@ var submitInput = function() {
 		return markerSpan;
 	};
 	
-	var composeProjection = function(projType, utmZone, utmHemi, custom) {
-		if (projType === 1) {
-			return custom;
-		} else if (projType === 2) {
-			return "+proj=utm +zone=" + utmZone + (utmHemi == 1 ? " +south" : "") + " +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
-		}
-		return "GOOGLE";
-	};
-	
 	// returns true if options are valid, false otherwise
 	var validOptions = function(options) {
 		
@@ -122,15 +113,10 @@ var submitInput = function() {
 			return false;
 		}
 		
-		if (options.projection === "") {
+		// Something must be entered for a custom projection
+		// proj type 0: GOOGLE; 1: custom; 2: UTM
+		if (options.projtype === 1 && options.projection === "") {
 			Messages.error("Undefined map projection.");
-			return false;
-		}
-		
-		try {
-			PointProjector.init(options.projection);
-		} catch(err) {
-			Messages.error("Unrecognized map projection.");
 			return false;
 		}
 		
@@ -154,7 +140,7 @@ var submitInput = function() {
 		region_maxy:    parseFloat(form.north_max.value),
 		shapetype:      radioValue(form.shape),
 		projtype:       radioValue(form.proj_type),
-		projection:     composeProjection(radioValue(form.proj_type), form.utm_zone.value, form.utm_hemisphere.value, form.projection.value),
+		projection:     form.projection.value,
 		markerInterval: markerInterval(radioValue(form.marker), parseFloat(form.marker_interval.value)),
 		smoothtype:     radioValue(form.smooth),
 		smoothspan:     parseFloat(form.mindist.value),
@@ -267,7 +253,12 @@ function Gpex(options, pts) {
 	// array of marker objects. Members include location vector and orientation.
 	this.markers = [];
 	
-	this.Display(this.Extrude(pts));
+	// Catch and report any errors that occur during extrusion or display.
+	try {
+		this.Display(this.Extrude(pts));
+	} catch(e) {
+		Messages.error(e.message);
+	}
 }
 
 Gpex.prototype.Extrude = function(pts) {
@@ -488,17 +479,24 @@ Gpex.prototype.ScanPoints = function(pts) {
 	// than initial distance. Consider using filtered distance... or ratio, not absolute.
 	this.ringRadius = this.distance / (Math.PI * 2);
 	
-	// Ballpark UTM zone (does not handle iffy cases)
 	if (this.options.projtype === 2) {
+		// Ballpark UTM zone (does not handle iffy cases)
 		var lat = (min_lat + max_lat) / 2;
 		var lon = (min_lon + max_lon) / 2;
-		// set this.options.projection
-		console.log(UTM.proj(lat, lon));
+		this.options.projection = UTM.proj(lat, lon);
+	} else if (this.options.projtype === 0) {
+		// Default Google web mercator
+		this.options.projection = "GOOGLE";
 	}
 	
 	// PointProjector.init now (couldn't earlier as we might not have had UTM,
 	// but need it now since the following marker location loop uses projector)
-	// Clearly this function needs to be split up.
+	try {
+		console.log(this.options.projection);
+		PointProjector.init(this.options.projection);
+	} catch(e) {
+		throw new Error("Unrecognized map projection.");
+	}
 	
 	// now that totaldist is known, we can run projectpoints to get actual marker location -
 	// and the corresponding vector orientations.
