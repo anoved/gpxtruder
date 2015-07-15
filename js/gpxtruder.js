@@ -1132,18 +1132,26 @@ var Parser = {
 			Messages.error("This file does not appear to contain any track segments.<br />(Are you sure it is a valid GPX file?)");
 			return null;
 		}
-		// Note: only the first segment is used
-		return this.segment(segments[0]);
+		
+		// concatenate all segments into one track (segment breaks may
+		// represent pauses, signal loss, etc, but still comprise one track)
+		var pts = [];
+		for (var i = 0; i < segments.length; i++) {
+			pts = pts.concat(this.segment(segments[i]));
+		}
+		
+		// Minimum of two points for a meaningful track. Checking at the track
+		// level rather than segment in case we get a set of one-point segments.
+		if (pts.length < 2) {
+			Messages.error('The primary track does not appear to contain enough points.<br />(At least two points are expected.)');
+			return null;
+		}
+		
+		return pts;
 	},
 	
 	segment: function(segment) {
 		var trkpts = segment.getElementsByTagName('trkpt');
-		
-		// Can do much without at least two points to connect into a path
-		if (trkpts.length < 2) {
-			Messages.error('This GPX file does not contain enough track points to display.<br />(GPXtruder expects the first segment of the first track to contain at least two points.)');
-			return null;
-		}
 		
 		// Only the first trkpt is tested for elevations; all others are assumed alike.
 		if (this.elevation === null && trkpts[0].getElementsByTagName('ele').length === 0) {
@@ -1153,6 +1161,7 @@ var Parser = {
 		
 		// Convert GPX XML trkpts to lon/lat/ele vectors
 		// No processing is done at this point.
+		// Silently accepts 0 length segments; check at track level.
 		var pts = [];
 		for (var i = 0; i < trkpts.length; i++) {
 			pts.push(this.point(trkpts[i]));
