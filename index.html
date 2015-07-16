@@ -17,14 +17,31 @@
 		<link rel="shortcut icon" href="img/favicon.ico" />
 		
 		<script type="text/javascript">
-			function toggle(event, onvalue, toggleid) {
+			var toggle = function(event, onvalue, toggleid) {
 				if (event.target.value == onvalue) {
 					document.getElementById(toggleid).disabled = false;
 				} else {
 					document.getElementById(toggleid).disabled = true;
 				}
 				return true;
-			}
+			};
+			
+			// Convenience function for setting region bounds directly from a
+			// QGIS layer extent string
+			var setRegion = function(regionString) {
+				var corners = regionString.split(' : ');
+				var minima = corners[0].split(',');
+				var maxima = corners[1].split(',');
+				var	minx = parseFloat(minima[0]),
+					miny = parseFloat(minima[1]),
+					maxx = parseFloat(maxima[0]),
+					maxy = parseFloat(maxima[1]);
+				document.forms[0].east_min.value = minx;
+				document.forms[0].east_max.value = maxx;
+				document.forms[0].north_min.value = miny;
+				document.forms[0].north_max.value = maxy;
+				document.forms[0].regionfit.checked = true;
+			};
 		</script>
 		
 		<script type="text/javascript">
