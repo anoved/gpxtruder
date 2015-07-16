@@ -93,8 +93,8 @@ var submitInput = function() {
 			return false;
 		}
 		
-		if (options.zoverride && (!isFinite(options.zconstant) || options.zconstant <= 0)) {
-			Messages.error("Constant elevation must be greater than 0.");
+		if (!isFinite(options.zconstant) || options.zconstant <= 0) {
+			Messages.error("Default elevation must be greater than 0.");
 			return false;
 		}
 		
@@ -198,7 +198,7 @@ var loader = function(options, gpx_url) {
 			}
 			
 			// Attempt to parse response XML as a GPX file.
-			var pts = Parser.file(req.responseXML, options.zoverride ? options.zconstant : null);
+			var pts = Parser.file(req.responseXML, options.zoverride, options.zconstant);
 			if (pts === null) {
 				return;
 			}
@@ -1110,13 +1110,15 @@ var PathSegment = {
 // Rudimentary GPX parsing based on https://github.com/peplin/gpxviewer/
 var Parser = {
 	
-	// Default elevation value
-	elevation: null,
+	forceElev: false,
+	defaultElev: 1,
 	
 	// Parse GPX file, starting with tracks
-	// Elevation arg specifies default z value
-	file: function(content, elevation) {
-		this.elevation = elevation;
+	// boolean forceElevation indicates if default should always be used or only if missing
+	// 
+	file: function(content, forceElevation, defaultElevation) {
+		this.forceElev = forceElevation;
+		this.defaultElev = defaultElevation;
 		var tracks = content.documentElement.getElementsByTagName('trk');
 		if (tracks.length === 0) {
 			Messages.error("This file does not appear to contain any tracks.<br />(Are you sure it is a GPX file?)");
@@ -1153,14 +1155,7 @@ var Parser = {
 	segment: function(segment) {
 		var trkpts = segment.getElementsByTagName('trkpt');
 		
-		// Only the first trkpt is tested for elevations; all others are assumed alike.
-		if (this.elevation === null && trkpts[0].getElementsByTagName('ele').length === 0) {
-			Messages.error('This GPX file does not appear to contain any elevation data.<br />Specify a constant default elevation or try using <a href="http://www.gpsvisualizer.com/elevation">GPX Visualizer</a> to add elevation data to your route.');
-			return null;
-		}
-		
 		// Convert GPX XML trkpts to lon/lat/ele vectors
-		// No processing is done at this point.
 		// Silently accepts 0 length segments; check at track level.
 		var pts = [];
 		for (var i = 0; i < trkpts.length; i++) {
@@ -1172,12 +1167,14 @@ var Parser = {
 	
 	// Returns numeric [lon, lat, ele] vector from GPX track point
 	point: function(pt) {
+		var elevation = this.defaultElev;
+		if (!this.forceElev && pt.getElementsByTagName('ele').length !== 0) {
+			elevation = parseFloat(pt.getElementsByTagName('ele')[0].textContent);
+		}
 		return [
 			parseFloat(pt.getAttribute('lon')),
 			parseFloat(pt.getAttribute('lat')),
-			// Prefer predefined constant elevation value if available
-			// Mobile Safari doesn't seem to like using .innerHTML with XML
-			this.elevation || parseFloat(pt.getElementsByTagName('ele')[0].textContent)
+			elevation
 		];
 	}
 };
