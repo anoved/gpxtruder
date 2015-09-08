@@ -498,6 +498,16 @@ Gpex.prototype.ScanPoints = function(pts) {
 		throw new Error("Unrecognized map projection.");
 	}
 	
+	// manual_markers is assumed to be a nested array of [lon, lat] pairs
+	if (typeof(manual_markers) != 'undefined') {
+		for (var i = 0; i < manual_markers.length; i++) {
+			this.markers.push({
+				location: this.ProjectPoint([manual_markers[i][0], manual_markers[i][1], this.options.zconstant], 0),
+				orientation: 0
+			});
+		}
+	}
+	
 	// now that totaldist is known, we can run projectpoints to get actual marker location -
 	// and the corresponding vector orientations.
 	for (i = 0; i < marker_objs.length; i++) {
