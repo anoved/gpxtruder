@@ -871,7 +871,7 @@ Basemap.prototype.Update = function(bounds, bed) {
 	var mapurl = "https://maps.googleapis.com/maps/api/staticmap?center=" +
 			center[1].toFixed(6) + "," + center[0].toFixed(6) +
 			"&zoom=" + zoominfo.zoom + "&size=" + mapsize.width + "x" + mapsize.height +
-			"&maptype=terrain&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
+			"&maptype=hybrid&scale=2&format=jpg&key=AIzaSyBMTdBdNXMyAWYU8Sn4dt4WYtsf5lqvldA";
 	
 	if (this.view !== null) {
 		this.view.setBaseMap(mapurl, mapscale, bed.x, bed.y, this.Download);
