@@ -102,6 +102,11 @@ var submitInput = function() {
 			Messages.error("Base height must be greater than or equal to 0.");
 			return false;
 		}
+
+		if (!isFinite(options.scalebarlength) || options.scalebarlength < 0) {
+			Messages.error("Scale bar length must be greater than or equal to 1.");
+			return false;
+		}
 		
 		// Additional sanity checking could be applied to extents.
 		if (options.regionfit && (
@@ -145,7 +150,9 @@ var submitInput = function() {
 		smoothtype:     radioValue(form.smooth),
 		smoothspan:     parseFloat(form.mindist.value),
 		jscadDiv:       document.getElementById('code_jscad'),
-		oscadDiv:       document.getElementById('code_openscad')
+		oscadDiv:       document.getElementById('code_openscad'),
+		scalebar:       form.genscalebar.checked,
+		scalebarlength: parseFloat(form.scalebarlength.value)
 	};
 	
 	if (!validOptions(options)) {

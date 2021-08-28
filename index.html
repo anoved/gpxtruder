@@ -317,6 +317,8 @@
 									<input type="radio" name="marker" value="2" id="marker_mi" onchange="return toggle(event, 3, 'marker_interval');" /> <label for="marker_mi">Miles</label>
 									<input type="radio" name="marker" value="3" id="marker_other" onchange="return toggle(event, 3, 'marker_interval');" /> <label for="marker_other">Other interval:</label> <input type="number" id="marker_interval" min="1" value="8047" disabled /> (meters)<br />
 						   <span class="info">If enabled, a secondary model is generated representing the position of each mile or kilometer marker.</span></p>
+						   <p><input type="checkbox" id="genscalebar" value="1" onchange="return toggle(event, event.target.checked ? 1 : 0, 'scalebarlength');" /> <label for="genscalebar">Generate scale bar: Length: <input type="number" id="scalebarlength" required min="0" step="1" value="5000" disabled /> (meters)</label><br />
+						<span class="info">If enabled, a scale bar is added at the lower right.</span></p>
 					</div>
 				</details>
 				<details>
