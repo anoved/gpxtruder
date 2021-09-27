@@ -259,6 +259,11 @@ function Gpex(options, pts) {
 	
 	// array of marker objects. Members include location vector and orientation.
 	this.markers = [];
+
+	// array of scalebar points x/y/z vectors (meters)
+	this.scalebar_points = [];
+	//array of the scaled scalebar points x/y/z vectors (mm)
+	this.scalebar_output_points = [];
 	
 	// Catch and report any errors that occur during extrusion or display.
 	try {
@@ -275,7 +280,12 @@ Gpex.prototype.Extrude = function(pts) {
 	
 	// populates projected point vectors
 	this.ProjectPoints();
-	
+
+	// add scalebar
+	this.PositionScaleBar();
+
+	this.calcOffsetsBounds();
+
 	// fit returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] projected vector
 	var that = this;
 	
@@ -296,6 +306,9 @@ Gpex.prototype.Extrude = function(pts) {
 	
 	// apply the necessary scale and offset to fit projected points to output area
 	this.output_points = this.projected_points.map(fit, this);
+
+	// apply the scale to the scalebar
+	this.scalebar_output_points = this.scalebar_points.map(fit, this);
 	
 	// likewise, scale and offset marker locations to fit output
 	// (can't do this at the time markers is initially populated
@@ -564,6 +577,29 @@ Gpex.prototype.ScanPoints = function(pts) {
 	distFilter(rawpoints, smoothing_distance);
 };
 
+Gpex.prototype.PositionScaleBar = function() {
+	// Determine X/Y/Z range
+	var deltaX = Math.abs(this.bounds.maxx - this.bounds.minx);
+	var deltaY = Math.abs(this.bounds.maxy - this.bounds.miny);
+	var deltaZ = Math.abs(this.bounds.maxz - this.bounds.minz);
+
+	// move bounds in the lower right to plase bar
+	this.bounds.maxx += deltaX * 0.1;
+	this.bounds.miny -= deltaY * 0.1;
+
+	// right startpoint
+	this.scalebar_points[0] = [];
+	this.scalebar_points[0][0] = this.bounds.maxx - deltaX * 0.05;
+	this.scalebar_points[0][1] = this.bounds.miny + deltaY * 0.05;
+	this.scalebar_points[0][2] = this.bounds.minz + deltaZ * 0.1;
+
+	// left endpoint
+	this.scalebar_points[1] = [];
+	this.scalebar_points[1][0] = this.scalebar_points[0][0] - this.scalebarlength;
+	this.scalebar_points[1][1] = this.scalebar_points[0][1];
+	this.scalebar_points[1][2] = this.bounds.minz + deltaZ * 0.1;
+};
+
 Gpex.prototype.ProjectPoints = function() {
 	
 	// cumulative distance
@@ -590,7 +626,9 @@ Gpex.prototype.ProjectPoints = function() {
 		this.bounds.maxy = this.options.region_maxy;
 		this.bounds.miny = this.options.region_miny;
 	}
-	
+};
+
+Gpex.prototype.calcOffsetsBounds = function() {
 	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = ScaleBounds(this.bounds, this.bed);
 };
@@ -640,7 +678,7 @@ Gpex.prototype.process_path = function() {
 	 * average angle between this segment and the next.
 	 * (p could be kept as a Gpex property.)
 	 */
-	var jointPoints = function(i, rel, avga) {
+	var jointPoints = function(input_point, rel, avga) {
 
 		// distance from endpoint to segment buffer intersection
 		var jointr = that.options.buffer/Math.cos(rel/2);
@@ -654,10 +692,10 @@ Gpex.prototype.process_path = function() {
 		}
 		
 		// joint coordinates (endpoint offset at bisect angle by jointr)
-		var	lx = that.output_points[i][0] + jointr * Math.cos(avga + Math.PI/2),
-			ly = that.output_points[i][1] + jointr * Math.sin(avga + Math.PI/2),
-			rx = that.output_points[i][0] + jointr * Math.cos(avga - Math.PI/2),
-			ry = that.output_points[i][1] + jointr * Math.sin(avga - Math.PI/2);
+		var	lx = input_point[0] + jointr * Math.cos(avga + Math.PI/2),
+			ly = input_point[1] + jointr * Math.sin(avga + Math.PI/2),
+			rx = input_point[0] + jointr * Math.cos(avga - Math.PI/2),
+			ry = input_point[1] + jointr * Math.sin(avga - Math.PI/2);
 		
 		return [[lx, ly], [rx, ry]];
 	};
@@ -692,7 +730,7 @@ Gpex.prototype.process_path = function() {
 			continue;
 		}
 		
-		path_pts = jointPoints(i, rel_angle, joint_angle);
+		path_pts = jointPoints(that.output_points[i], rel_angle, joint_angle);
 		
 		// next four points of segment polyhedron
 		PathSegment.points(vertices, path_pts, this.output_points[i][2]);
@@ -706,6 +744,16 @@ Gpex.prototype.process_path = function() {
 	
 	// final endcap
 	PathSegment.last_face(faces, s);
+
+	var sb_vertices = [],
+		sb_faces = [];
+
+	for (s=0; s < this.scalebar_output_points; s++) {
+		path_pts = jointPoints(this.scalebar_output_points[s], 0, Math.PI);
+		PathSegment.points(sb_vertices, path_pts, this.scalebar_output_points[s][2]);
+		PathSegment.faces(sb_faces, s);
+	}
+	PathSegment.last_face(sb_faces, s);
 	
 	// Package results in a code object and pass it back to caller
 	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2});
