@@ -102,6 +102,11 @@ var submitInput = function() {
 			Messages.error("Base height must be greater than or equal to 0.");
 			return false;
 		}
+
+		if (!isFinite(options.scalebarlength) || options.scalebarlength < 0) {
+			Messages.error("Scale bar length must be greater than or equal to 1.");
+			return false;
+		}
 		
 		// Additional sanity checking could be applied to extents.
 		if (options.regionfit && (
@@ -145,7 +150,9 @@ var submitInput = function() {
 		smoothtype:     radioValue(form.smooth),
 		smoothspan:     parseFloat(form.mindist.value),
 		jscadDiv:       document.getElementById('code_jscad'),
-		oscadDiv:       document.getElementById('code_openscad')
+		oscadDiv:       document.getElementById('code_openscad'),
+		scalebar:       form.genscalebar.checked,
+		scalebarlength: parseFloat(form.scalebarlength.value)
 	};
 	
 	if (!validOptions(options)) {
@@ -252,6 +259,11 @@ function Gpex(options, pts) {
 	
 	// array of marker objects. Members include location vector and orientation.
 	this.markers = [];
+
+	// array of scalebar points x/y/z vectors (meters)
+	this.scalebar_points = [];
+	//array of the scaled scalebar points x/y/z vectors (mm)
+	this.scalebar_output_points = [];
 	
 	// Catch and report any errors that occur during extrusion or display.
 	try {
@@ -268,7 +280,12 @@ Gpex.prototype.Extrude = function(pts) {
 	
 	// populates projected point vectors
 	this.ProjectPoints();
-	
+
+	// add scalebar
+	this.PositionScaleBar();
+
+	this.calcOffsetsBounds();
+
 	// fit returns a scaled and centered output unit [x, y, z] vector from input [x, y, z] projected vector
 	var that = this;
 	
@@ -289,6 +306,9 @@ Gpex.prototype.Extrude = function(pts) {
 	
 	// apply the necessary scale and offset to fit projected points to output area
 	this.output_points = this.projected_points.map(fit, this);
+
+	// apply the scale to the scalebar
+	this.scalebar_output_points = this.scalebar_points.map(fit, this);
 	
 	// likewise, scale and offset marker locations to fit output
 	// (can't do this at the time markers is initially populated
@@ -557,6 +577,29 @@ Gpex.prototype.ScanPoints = function(pts) {
 	distFilter(rawpoints, smoothing_distance);
 };
 
+Gpex.prototype.PositionScaleBar = function() {
+	// Determine X/Y/Z range
+	var deltaX = Math.abs(this.bounds.maxx - this.bounds.minx);
+	var deltaY = Math.abs(this.bounds.maxy - this.bounds.miny);
+	var deltaZ = Math.abs(this.bounds.maxz - this.bounds.minz);
+
+	// move bounds in the lower right to plase bar
+	this.bounds.maxx += deltaX * 0.1;
+	this.bounds.miny -= deltaY * 0.1;
+
+	// right startpoint
+	this.scalebar_points[0] = [];
+	this.scalebar_points[0][0] = this.bounds.maxx - deltaX * 0.05;
+	this.scalebar_points[0][1] = this.bounds.miny + deltaY * 0.05;
+	this.scalebar_points[0][2] = this.bounds.minz + deltaZ * 0.1;
+
+	// left endpoint
+	this.scalebar_points[1] = [];
+	this.scalebar_points[1][0] = this.scalebar_points[0][0] - this.options.scalebarlength;
+	this.scalebar_points[1][1] = this.scalebar_points[0][1];
+	this.scalebar_points[1][2] = this.bounds.minz + deltaZ * 0.1;
+};
+
 Gpex.prototype.ProjectPoints = function() {
 	
 	// cumulative distance
@@ -583,7 +626,9 @@ Gpex.prototype.ProjectPoints = function() {
 		this.bounds.maxy = this.options.region_maxy;
 		this.bounds.miny = this.options.region_miny;
 	}
-	
+};
+
+Gpex.prototype.calcOffsetsBounds = function() {
 	this.offset = Offsets(this.bounds, this.options.zcut);
 	this.scale = ScaleBounds(this.bounds, this.bed);
 };
@@ -633,7 +678,7 @@ Gpex.prototype.process_path = function() {
 	 * average angle between this segment and the next.
 	 * (p could be kept as a Gpex property.)
 	 */
-	var jointPoints = function(i, rel, avga) {
+	var jointPoints = function(input_point, rel, avga) {
 
 		// distance from endpoint to segment buffer intersection
 		var jointr = that.options.buffer/Math.cos(rel/2);
@@ -647,10 +692,10 @@ Gpex.prototype.process_path = function() {
 		}
 		
 		// joint coordinates (endpoint offset at bisect angle by jointr)
-		var	lx = that.output_points[i][0] + jointr * Math.cos(avga + Math.PI/2),
-			ly = that.output_points[i][1] + jointr * Math.sin(avga + Math.PI/2),
-			rx = that.output_points[i][0] + jointr * Math.cos(avga - Math.PI/2),
-			ry = that.output_points[i][1] + jointr * Math.sin(avga - Math.PI/2);
+		var	lx = input_point[0] + jointr * Math.cos(avga + Math.PI/2),
+			ly = input_point[1] + jointr * Math.sin(avga + Math.PI/2),
+			rx = input_point[0] + jointr * Math.cos(avga - Math.PI/2),
+			ry = input_point[1] + jointr * Math.sin(avga - Math.PI/2);
 		
 		return [[lx, ly], [rx, ry]];
 	};
@@ -685,7 +730,7 @@ Gpex.prototype.process_path = function() {
 			continue;
 		}
 		
-		path_pts = jointPoints(i, rel_angle, joint_angle);
+		path_pts = jointPoints(that.output_points[i], rel_angle, joint_angle);
 		
 		// next four points of segment polyhedron
 		PathSegment.points(vertices, path_pts, this.output_points[i][2]);
@@ -699,9 +744,20 @@ Gpex.prototype.process_path = function() {
 	
 	// final endcap
 	PathSegment.last_face(faces, s);
+
+	var sb_vertices = [],
+		sb_faces = [];
+
+	for (s=0; s < this.scalebar_output_points.length; s++) {
+		path_pts = jointPoints(this.scalebar_output_points[s], 0, Math.PI);
+		PathSegment.points(sb_vertices, path_pts, this.scalebar_output_points[s][2]);
+		PathSegment.faces(sb_faces, s);
+	}
+	PathSegment.last_face(sb_faces, s);
 	
 	// Package results in a code object and pass it back to caller
-	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2});
+	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2, scalebar: this.options.scalebar}, 
+					sb_vertices, sb_faces);
 };
 
 /*
@@ -965,17 +1021,25 @@ var vector_angle = function(a, b) {
  *   }
  * 
  */
-var Code = function(points, faces, markers, options) {
+var Code = function(points, faces, markers, options, sb_vertices, sb_faces) {
+
+	var pointMapping = function(v) {
+		return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
+	};
+
+	var faceMapping = function(v) {
+		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
+	};
 
 	// Compose points as a SCAD-ready string of vertex vectors
-	this.points = points.map(function(v) {
-		return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
-	}).join(",\n");
+	this.points = points.map(pointMapping).join(",\n");
 	
 	// Compose faces as a SCAD-ready string of face index vectors 
-	this.faces = faces.map(function(v) {
-		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
-	}).join(",\n");
+	this.faces = faces.map(faceMapping).join(",\n");
+
+	// add scalebar object
+	this.sb_points = sb_vertices.map(pointMapping).join(",\n");
+	this.sb_faces = sb_faces.map(faceMapping).join(",\n");
 	
 	// Compose markers as a list of strings; each is a call to the SCAD marker() module.
 	this.markers = markers.map(function(marker) {
@@ -1001,6 +1065,19 @@ Code.prototype.jscad = function(preview) {
 	}
 	
 	result += ";\n}\n\n";
+
+	// scalebar
+
+	if (this.options.scalebar) {
+		result += "function scalebar() {\nreturn ";
+		if (preview) {
+			result += "CSG.polyhedron({points:[\n" + this.sb_points + "\n],\nfaces:[\n" + this.sb_faces + "\n]})";
+		} else {
+			result += "polyhedron({points:[\n" + this.sb_points + "\n],\ntriangles:[\n" + this.sb_faces + "\n]})";
+		}
+		result += ";\n}\n\n";
+		models.push("{name: 'scalebar', caption: 'Scalebar', data: scalebar()}");
+	}
 	
 	// markers
 	
@@ -1029,7 +1106,8 @@ Code.prototype.jscad = function(preview) {
 	if (preview) {
 		result += "function main() {\nreturn [" + models.join(',') + "];\n}\n";
 	} else {
-		result += "function main() {\nreturn profile()" + (this.markers.length > 0 ? ".union(markers())" : "") + ";\n}\n";
+		result += "function main() {\nreturn profile()" + (this.markers.length > 0 ? ".union(markers())" : "") 
+		+ (this.options.scalebar ? ".union(scalebar())" : "")  + ";\n}\n";
 	}
 	
 	return result;
@@ -1038,6 +1116,11 @@ Code.prototype.jscad = function(preview) {
 Code.prototype.oscad = function() {
 	
 	var result = "module profile() {\npolyhedron(points=[\n" + this.points + "\n],\nfaces=[\n" + this.faces + "\n]);\n}\n\n";
+
+	if (this.options.scalebar) {
+		result += "module scalebar() {\npolyhedron(points=[\n" + this.sb_points + "\n],\nfaces=[\n" + this.sb_faces + "\n]);\n}\n";
+		result += "scalebar();\n\n";
+	}
 	
 	if (this.markers.length > 0) {
 		result += "module marker(position, orientation, height) {\n" +
