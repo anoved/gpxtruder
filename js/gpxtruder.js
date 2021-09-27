@@ -595,7 +595,7 @@ Gpex.prototype.PositionScaleBar = function() {
 
 	// left endpoint
 	this.scalebar_points[1] = [];
-	this.scalebar_points[1][0] = this.scalebar_points[0][0] - this.scalebarlength;
+	this.scalebar_points[1][0] = this.scalebar_points[0][0] - this.options.scalebarlength;
 	this.scalebar_points[1][1] = this.scalebar_points[0][1];
 	this.scalebar_points[1][2] = this.bounds.minz + deltaZ * 0.1;
 };
@@ -748,7 +748,7 @@ Gpex.prototype.process_path = function() {
 	var sb_vertices = [],
 		sb_faces = [];
 
-	for (s=0; s < this.scalebar_output_points; s++) {
+	for (s=0; s < this.scalebar_output_points.length; s++) {
 		path_pts = jointPoints(this.scalebar_output_points[s], 0, Math.PI);
 		PathSegment.points(sb_vertices, path_pts, this.scalebar_output_points[s][2]);
 		PathSegment.faces(sb_faces, s);
@@ -756,7 +756,8 @@ Gpex.prototype.process_path = function() {
 	PathSegment.last_face(sb_faces, s);
 	
 	// Package results in a code object and pass it back to caller
-	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2});
+	return new Code(vertices, faces, this.markers, {markerWidth: 2 * this.options.buffer + 2, scalebar: this.options.scalebar}, 
+					sb_vertices, sb_faces);
 };
 
 /*
@@ -1020,17 +1021,25 @@ var vector_angle = function(a, b) {
  *   }
  * 
  */
-var Code = function(points, faces, markers, options) {
+var Code = function(points, faces, markers, options, sb_vertices, sb_faces) {
+
+	var pointMapping = function(v) {
+		return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
+	};
+
+	var faceMapping = function(v) {
+		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
+	};
 
 	// Compose points as a SCAD-ready string of vertex vectors
-	this.points = points.map(function(v) {
-		return "[" + v[0].toFixed(4) + ", " + v[1].toFixed(4) + ", " + v[2].toFixed(4) + "]";
-	}).join(",\n");
+	this.points = points.map(pointMapping).join(",\n");
 	
 	// Compose faces as a SCAD-ready string of face index vectors 
-	this.faces = faces.map(function(v) {
-		return "[" + v[0] + ", " + v[1] + ", " + v[2] + "]";
-	}).join(",\n");
+	this.faces = faces.map(faceMapping).join(",\n");
+
+	// add scalebar object
+	this.sb_points = sb_vertices.map(pointMapping).join(",\n");
+	this.sb_faces = sb_faces.map(faceMapping).join(",\n");
 	
 	// Compose markers as a list of strings; each is a call to the SCAD marker() module.
 	this.markers = markers.map(function(marker) {
@@ -1056,6 +1065,19 @@ Code.prototype.jscad = function(preview) {
 	}
 	
 	result += ";\n}\n\n";
+
+	// scalebar
+
+	if (this.options.scalebar) {
+		result += "function scalebar() {\nreturn ";
+		if (preview) {
+			result += "CSG.polyhedron({points:[\n" + this.sb_points + "\n],\nfaces:[\n" + this.sb_faces + "\n]})";
+		} else {
+			result += "polyhedron({points:[\n" + this.sb_points + "\n],\ntriangles:[\n" + this.sb_faces + "\n]})";
+		}
+		result += ";\n}\n\n";
+		models.push("{name: 'scalebar', caption: 'Scalebar', data: scalebar()}");
+	}
 	
 	// markers
 	
@@ -1084,7 +1106,8 @@ Code.prototype.jscad = function(preview) {
 	if (preview) {
 		result += "function main() {\nreturn [" + models.join(',') + "];\n}\n";
 	} else {
-		result += "function main() {\nreturn profile()" + (this.markers.length > 0 ? ".union(markers())" : "") + ";\n}\n";
+		result += "function main() {\nreturn profile()" + (this.markers.length > 0 ? ".union(markers())" : "") 
+		+ (this.options.scalebar ? ".union(scalebar())" : "")  + ";\n}\n";
 	}
 	
 	return result;
@@ -1093,6 +1116,11 @@ Code.prototype.jscad = function(preview) {
 Code.prototype.oscad = function() {
 	
 	var result = "module profile() {\npolyhedron(points=[\n" + this.points + "\n],\nfaces=[\n" + this.faces + "\n]);\n}\n\n";
+
+	if (this.options.scalebar) {
+		result += "module scalebar() {\npolyhedron(points=[\n" + this.sb_points + "\n],\nfaces=[\n" + this.sb_faces + "\n]);\n}\n";
+		result += "scalebar();\n\n";
+	}
 	
 	if (this.markers.length > 0) {
 		result += "module marker(position, orientation, height) {\n" +
